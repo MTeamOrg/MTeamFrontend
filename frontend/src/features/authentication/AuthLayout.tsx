@@ -10,7 +10,7 @@ export function AuthLayout({ children }: PropsWithChildren) {
           <h1>Tu gimnasio,<br /><em>en un solo lugar.</em></h1>
           <p>Cuota, apto médico, acceso y clases. Todo desde la web, sin depender del mostrador.</p>
         </div>
-        <div className="branch-pill"><img src={pinIcon} alt="" /> 2 sedes · Villa Urquiza y Belgrano</div>
+        <div className="branch-pill"><img src={pinIcon} alt="" /> Entrená en nuestras sedes activas</div>
       </section>
       <section className="auth-content">{children}</section>
     </main>

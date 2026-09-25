@@ -19,6 +19,7 @@ function App() {
     <Routes>
       <Route path="/" element={<PublicSite />} />
       <Route path="/sedes" element={<PublicSite />} />
+      <Route path="/sedes/:branchId" element={<PublicSite />} />
       <Route path="/eventos" element={<PublicSite />} />
       <Route path="/novedades" element={<PublicSite />} />
       <Route path="/iniciar-sesion" element={<LoginPage />} />
