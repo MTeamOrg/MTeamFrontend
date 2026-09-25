@@ -7,16 +7,16 @@ import { authService } from './auth-service'
 import type { RegisterInput } from './auth-types'
 import { useAuth } from './use-auth'
 
-const initialForm: RegisterInput = { firstName: '', lastName: '', documentNumber: '', birthDate: '', email: '', phone: '', password: '' }
+const INITIAL_FORM: RegisterInput = { firstName: '', lastName: '', documentNumber: '', birthDate: '', email: '', phone: '', password: '' }
 
 export function RegisterPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState(initialForm)
+  const [form, setForm] = useState(INITIAL_FORM)
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  if (session) return <Navigate to="/inicio" replace />
+  if (session) return <Navigate to={session.user.isPasswordChangeRequired ? '/cambiar-contrasena' : session.user.role === 'ADMIN' ? '/admin' : session.user.role === 'TRAINER' ? '/entrenador' : '/socio'} replace />
 
   function updateField(field: keyof RegisterInput, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -42,7 +42,7 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
-      <div className="auth-heading compact-heading"><span className="eyebrow">SUMATE A M-TEAM</span><h2>Crear cuenta</h2><p>Completá tus datos para comenzar.</p></div>
+      <div className="auth-heading compact-heading"><h2>Crear cuenta</h2><p>Completá tus datos para registrarte como socio de M-TEAM.</p></div>
       <form className="auth-card register-card" onSubmit={handleSubmit}>
         {error && <div className="error-message" role="alert">{error}</div>}
         <div className="field-grid">
