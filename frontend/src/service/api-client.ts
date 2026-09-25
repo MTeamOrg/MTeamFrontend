@@ -1,4 +1,8 @@
 import { environment } from '../config/environment'
+import { authStorage } from '../features/authentication/auth-storage'
+
+export const AUTH_UNAUTHORIZED_EVENT = 'mteam:auth-unauthorized'
+export const AUTH_FORBIDDEN_EVENT = 'mteam:auth-forbidden'
 
 export interface ApiErrorResponse {
   code: string
@@ -21,22 +25,32 @@ export class ApiError extends Error {
 }
 
 interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
-  accessToken?: string
+  authenticated?: boolean
   body?: unknown
 }
 
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { accessToken, body, headers, ...requestOptions } = options
+  const { authenticated = true, body, headers, ...requestOptions } = options
   const requestHeaders = new Headers(headers)
   requestHeaders.set('Accept', 'application/json')
+  const accessToken = authenticated ? authStorage.read()?.accessToken : undefined
   if (accessToken) requestHeaders.set('Authorization', `Bearer ${accessToken}`)
   if (body !== undefined && !(body instanceof FormData)) requestHeaders.set('Content-Type', 'application/json')
 
-  const response = await fetch(`${environment.apiUrl}${path}`, {
-    ...requestOptions,
-    headers: requestHeaders,
-    body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body),
-  })
+  let response: Response
+  try {
+    response = await fetch(`${environment.apiUrl}${path}`, {
+      ...requestOptions,
+      headers: requestHeaders,
+      body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    throw new ApiError(0, {
+      code: 'NETWORK_ERROR',
+      message: 'No se pudo conectar con el servidor. Verificá que el backend esté iniciado.',
+      details: null,
+    })
+  }
 
   if (!response.ok) {
     const fallback: ApiErrorResponse = {
@@ -45,9 +59,14 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
       details: null,
     }
     const error = (await response.json().catch(() => fallback)) as ApiErrorResponse
+    if (response.status === 401) {
+      authStorage.clear()
+      window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
+    }
+    if (response.status === 403) window.dispatchEvent(new Event(AUTH_FORBIDDEN_EVENT))
     throw new ApiError(response.status, { ...fallback, ...error })
   }
 
-  if (response.status === 204) return undefined as T
+  if (response.status === 204 || response.headers.get('content-length') === '0') return undefined as T
   return (await response.json()) as T
 }
