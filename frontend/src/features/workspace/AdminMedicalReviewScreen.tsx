@@ -2,7 +2,7 @@ import { useCallback, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type MedicalCertificateStatus } from '../../service/backend-api'
-import { formatDateTime } from '../../service/date-time'
+import { formatDate, formatDateTime } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
 import { MedicalCertificateFileButton } from './MedicalCertificateFileButton'
@@ -20,9 +20,16 @@ const STATUS_CLASS: Record<MedicalCertificateStatus, string> = {
   REJECTED: 'badge-primary',
 }
 
+function membershipLabel(status: 'ACTIVE' | 'EXPIRED') {
+  return status === 'ACTIVE' ? 'Activa' : 'Vencida'
+}
+
 export function AdminMedicalReviewScreen({ id }: { id: string }) {
   const loader = useCallback(() => backendApi.getAdminMedicalCertificate(id), [id])
   const { data, loading, error, reload, setData } = useApiResource(loader)
+  const memberId = data?.memberId
+  const memberLoader = useCallback(() => memberId ? backendApi.getUser(memberId) : Promise.resolve(null), [memberId])
+  const member = useApiResource(memberLoader)
   const [reviewComment, setReviewComment] = useState('')
   const [actionError, setActionError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
@@ -86,25 +93,25 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
         <section className="surface-card medical-member-detail">
           <h2>{memberName}</h2>
           <p>DNI {data.member.documentNumber} · cargado el {formatDateTime(data.uploadedAt)}</p>
+          {data.reviewedAt && <p>Revisado el {formatDateTime(data.reviewedAt)}{data.reviewedBy ? ` por ${data.reviewedBy.firstName} ${data.reviewedBy.lastName}` : ''}</p>}
           <span className={`badge ${STATUS_CLASS[data.status]}`}>{STATUS_LABEL[data.status]}</span>
         </section>
         <section className="surface-card medical-preview-card" aria-label="Vista previa del certificado">
           <div className="medical-preview-canvas">
             <Icon name="file" size={48}/>
-            <span>Archivo médico</span>
-            <small>El backend no informa el nombre del archivo.</small>
+            <span>Documento de apto médico</span>
             <MedicalCertificateFileButton id={data.id}/>
           </div>
         </section>
       </div>
       <aside className="medical-review-side">
         <section className="surface-card medical-situation-card">
-          <h2>Datos del socio</h2>
+          <h2>Situación del socio</h2>
           <dl>
-            <div><dt>Correo</dt><dd>{data.member.email || 'No informado por el backend'}</dd></div>
-            <div><dt>ID de socio</dt><dd>{data.memberId}</dd></div>
+            <div><dt>Cuota</dt><dd>{member.loading ? 'Cargando…' : member.data?.membership ? membershipLabel(member.data.membership.status) : 'Sin datos disponibles'}</dd></div>
+            <div><dt>Período inicial</dt><dd>Sin datos disponibles</dd></div>
+            <div><dt>Vencimiento</dt><dd>{member.data?.membership?.expiresAt ? formatDate(member.data.membership.expiresAt) : 'Sin datos disponibles'}</dd></div>
           </dl>
-          <p className="medical-data-note">La respuesta actual no incluye membresía ni período inicial.</p>
         </section>
         {canReview && <button type="button" className="button button-primary medical-approve-button" disabled={submitting} onClick={() => void approve()}><Icon name="check" size={20}/>{submitting ? 'Guardando…' : 'Aprobar apto médico'}</button>}
         <section className="surface-card medical-reject-card">

@@ -1,5 +1,6 @@
 import type { UserRole, UserStatus } from '../features/authentication/auth-types'
 import { apiRequest } from './api-client'
+import { addDays } from './date-time'
 
 export interface Page<T> {
   items: T[]
@@ -271,9 +272,8 @@ function queryString(values: Record<string, string | number | boolean | undefine
 
 function dateTimeFilter(value: string, endOfDay = false) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
-  const date = new Date(`${value}T00:00:00`)
-  if (endOfDay) date.setDate(date.getDate() + 1)
-  return date.toISOString()
+  const date = endOfDay ? addDays(value, 1) : value
+  return `${date}T00:00:00-03:00`
 }
 
 export const backendApi = {

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderWithSession, stubApi, testUser } from '../../test/test-utils'
+import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser } from '../../test/test-utils'
 import { AdminMedicalReviewScreen } from './AdminMedicalReviewScreen'
 
 const pending = {
@@ -11,7 +11,7 @@ const pending = {
 } as const
 
 describe('revisión administrativa de aptos médicos', () => {
-  afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
   it('exige una observación no vacía para rechazar', async () => {
     const fetchStub = stubApi([{ path: '/medical-certificates/cert-1', handler: () => ({ body: pending }) }])
@@ -52,14 +52,56 @@ describe('revisión administrativa de aptos médicos', () => {
   })
 
   it('obtiene la URL temporal al abrir el archivo', async () => {
+    const tab = { opener: window, location: { href: '' }, close: vi.fn() }
     const fetchStub = stubApi([
       { path: '/medical-certificates/cert-1', handler: () => ({ body: pending }) },
       { path: '/medical-certificates/cert-1/file', handler: () => ({ body: { signedUrl: 'https://signed.example/cert-1', expiresIn: 300 } }) },
     ])
-    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window)
     renderWithSession(<AdminMedicalReviewScreen id="cert-1"/>, { user: testUser('ADMIN') })
     await screen.findAllByText('Lucas Torres')
     fireEvent.click(screen.getByRole('button', { name: /ver documento/i }))
     await waitFor(() => expect(fetchStub.mock.calls.some(([input]) => String(input).includes('/medical-certificates/cert-1/file'))).toBe(true))
+    await waitFor(() => expect(tab.location.href).toBe('https://signed.example/cert-1'))
+    expect(tab.opener).toBeNull()
+  })
+
+  it('cierra la pestaña y muestra el error si falla el acceso privado', async () => {
+    const tab = { opener: window, location: { href: '' }, close: vi.fn() }
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window)
+    stubApi([
+      { path: '/medical-certificates/cert-1', handler: () => ({ body: pending }) },
+      { path: '/medical-certificates/cert-1/file', handler: () => ({ status: 403, body: { code: 'FORBIDDEN', message: 'Sin permiso para abrir el archivo' } }) },
+    ])
+    renderWithSession(<AdminMedicalReviewScreen id="cert-1"/>, { user: testUser('ADMIN') })
+    fireEvent.click(await screen.findByRole('button', { name: /ver documento/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sin permiso para abrir el archivo')
+    expect(tab.close).toHaveBeenCalledOnce()
+    expect(tab.location.href).toBe('')
+  })
+
+  it('muestra la situación real del socio sin UUID ni mensajes técnicos', async () => {
+    const fetchStub = stubApi([
+      { path: '/medical-certificates/cert-1', handler: () => ({ body: pending }) },
+      { path: '/users/member-1', handler: () => ({ body: { membership: { status: 'ACTIVE', expiresAt: '2026-10-20' } } }) },
+    ])
+    renderWithSession(<AdminMedicalReviewScreen id="cert-1"/>, { user: testUser('ADMIN') })
+    expect(await screen.findByText('Situación del socio')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Activa')).toBeInTheDocument())
+    expect(screen.getByText('Sin datos disponibles')).toBeInTheDocument()
+    expect(requestsTo(fetchStub, 'GET', '/users/member-1')).toHaveLength(1)
+    expect(screen.queryByText('member-1')).not.toBeInTheDocument()
+    expect(screen.queryByText(/El backend|La respuesta actual/)).not.toBeInTheDocument()
+  })
+
+  it.each(['PENDING', 'APPROVED', 'REJECTED'] as const)('mantiene visible el estado %s en detalle móvil', async (status) => {
+    setMobileViewport(true)
+    stubApi([
+      { path: '/medical-certificates/cert-1', handler: () => ({ body: { ...pending, status } }) },
+      { path: '/users/member-1', handler: () => ({ body: { membership: null } }) },
+    ])
+    renderWithSession(<AdminMedicalReviewScreen id="cert-1"/>, { user: testUser('ADMIN') })
+    const label = { PENDING: 'Pendiente', APPROVED: 'Aprobado', REJECTED: 'Rechazado' }[status]
+    expect(await screen.findByText(label)).toBeInTheDocument()
   })
 })

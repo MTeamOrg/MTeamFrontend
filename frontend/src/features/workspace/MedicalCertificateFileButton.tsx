@@ -7,13 +7,20 @@ export function MedicalCertificateFileButton({ id, compact = false }: { id: stri
   const [error, setError] = useState('')
 
   async function openFile() {
-    setLoading(true)
     setError('')
+    const tab = window.open('about:blank', '_blank')
+    if (!tab) {
+      setError('Permití abrir una pestaña nueva para ver el documento.')
+      return
+    }
+    tab.opener = null
+    setLoading(true)
     try {
       const { signedUrl } = await backendApi.getMedicalCertificateFile(id)
-      const openedWindow = window.open(signedUrl, '_blank', 'noopener,noreferrer')
-      if (!openedWindow) setError('No se pudo abrir la URL temporal del archivo.')
+      if (!signedUrl) throw new Error('No se pudo obtener el acceso temporal al documento.')
+      tab.location.href = signedUrl
     } catch (value) {
+      tab.close()
       setError(value instanceof Error ? value.message : 'No se pudo abrir el documento.')
     } finally {
       setLoading(false)
