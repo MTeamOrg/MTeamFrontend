@@ -35,6 +35,7 @@
 .medical-dropzone strong{color:var(--black);font-size:15px;font-weight:600}
 .medical-dropzone span:not(.button){font-size:13px}
 .medical-hidden-file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.medical-dropzone.is-dragging{border-color:var(--purple);background:#f0eafb}
 .medical-upload-actions{display:flex;gap:10px;flex-wrap:wrap}
 .medical-upload-actions .button{min-height:36px;font-size:13px}
 .medical-upload-actions .button-primary{margin-left:auto}
@@ -144,7 +145,6 @@
   .medical-admin-screen .page-header{display:none}
   .medical-admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .medical-admin-metric{min-height:84px;gap:6px;padding:14px;border-radius:14px}
-  .medical-admin-metric:nth-child(n+3){display:none}
   .medical-admin-metric .status-card-label{font-size:10px}.medical-admin-metric .status-card-value{font-size:16px}.medical-admin-metric .status-card-sub{font-size:11px}
   .medical-list-panel{padding:0;border:0;background:transparent;box-shadow:none}
   .medical-list-heading{display:none}
@@ -152,9 +152,10 @@
   .medical-filter-toolbar .search-shell{flex:1;min-width:0;height:42px}
   .medical-filter-toggle{display:flex}
   .medical-filter-fields{display:none;width:100%;gap:7px;align-items:center}
-  .medical-filter-fields.is-open{display:flex}
-  .medical-filter-fields>select{flex:1;min-width:0;height:36px;font-size:10px}
-  .medical-filter-fields .medical-date-filter{display:none}
+  .medical-filter-fields.is-open{display:flex;flex-wrap:wrap}
+  .medical-filter-fields>select{flex:1 1 100%;min-width:0;height:36px;font-size:10px}
+  .medical-filter-fields .medical-date-filter{width:100%;justify-content:space-between}
+  .medical-filter-fields .medical-date-filter input{width:min(70%,220px)}
   .medical-table-wrap{display:none}
   .medical-mobile-list{display:grid;gap:12px}
   .medical-mobile-item{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:68px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--white);box-shadow:var(--card-shadow)}
@@ -162,14 +163,13 @@
   .medical-mobile-item:nth-child(odd) .medical-member-avatar{background:#8c9299}.medical-mobile-item:nth-child(4) .medical-member-avatar{background:var(--purple)}
   .medical-mobile-item>div{display:grid;gap:4px;min-width:0}.medical-mobile-item strong{font-size:12px}.medical-mobile-item small{overflow:hidden;color:var(--text-secondary);font-size:9px;text-overflow:ellipsis;white-space:nowrap}
   .medical-mobile-item>.badge{font-size:9px}.medical-mobile-item-link{position:absolute;inset:0;opacity:0}
-  .medical-admin-screen .table-pagination{display:none}
   .medical-review-desktop-header{display:none}
   .medical-review-grid{grid-template-columns:1fr;gap:14px}
   .medical-review-main,.medical-review-side{gap:14px}
   .medical-review-screen>.success-message,.medical-review-screen>.error-message{font-size:11px}
   .medical-member-detail{padding:16px;gap:7px;border-radius:14px}
   .medical-member-detail h2,.medical-situation-card h2,.medical-reject-card h2{font-size:16px}
-  .medical-member-detail p{font-size:11px}.medical-member-detail .badge{display:none}
+  .medical-member-detail p{font-size:11px}.medical-member-detail .badge{position:static;justify-self:start}
   .medical-preview-card{padding:0;border:0;background:transparent;box-shadow:none}
   .medical-preview-canvas{min-height:300px;padding:16px;background:var(--white);border-radius:14px}
   .medical-preview-canvas span{font-size:12px}.medical-preview-canvas a{font-size:11px}

@@ -22,11 +22,11 @@ function CertificateFile({ certificate, compact = false }: { certificate: Medica
   return <div className={compact ? 'medical-history-row' : 'medical-current-file'}>
     <span className="medical-file-icon" aria-hidden="true"><Icon name="file" size={compact ? 18 : 28}/></span>
     <div>
-      <strong>Archivo médico</strong>
-      <span>El backend no informa el nombre del archivo.</span>
+      <strong>Documento de apto médico</strong>
       <span>{compact ? `Cargado ${formatDate(certificate.uploadedAt)}` : `Cargado el ${formatDate(certificate.uploadedAt)}`}</span>
       {!compact && certificate.reviewedAt && <span>Revisado el {formatDate(certificate.reviewedAt)}</span>}
-      {compact && certificate.status === 'REJECTED' && certificate.reviewComment && <small>Rechazado: “{certificate.reviewComment}”</small>}
+      {certificate.reviewedBy && <small>Revisado por {certificate.reviewedBy.firstName} {certificate.reviewedBy.lastName}</small>}
+      {certificate.reviewComment && <small>Observación: “{certificate.reviewComment}”</small>}
     </div>
     {compact && <span className={`badge ${statusClass(certificate.status)}`}>{STATUS_LABEL[certificate.status]}</span>}
     {!compact && <div className="medical-file-actions">
@@ -40,7 +40,9 @@ export function MemberMedicalCertificateScreen() {
   const loader = useCallback(() => backendApi.getOwnMedicalCertificates(), [])
   const { data, loading, error, reload } = useApiResource(loader)
   const fileInput = useRef<HTMLInputElement>(null)
+  const cameraInput = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [dragging, setDragging] = useState(false)
   const [validationError, setValidationError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -76,6 +78,8 @@ export function MemberMedicalCertificateScreen() {
   if (loading) return <div className="app-page medical-screen">{header}<div className="app-card"><LoadingState/></div></div>
   if (error || !data) return <div className="app-page medical-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar tu certificado médico.'} retry={() => void reload()}/></div></div>
 
+  const canUpload = !data.current || data.current.status === 'REJECTED'
+
   return <div className="app-page medical-screen">
     {header}
     <div className="medical-member-grid">
@@ -89,28 +93,22 @@ export function MemberMedicalCertificateScreen() {
         </section>
 
         <section className="surface-card medical-upload-card" aria-labelledby="upload-certificate-title">
-          <h2 id="upload-certificate-title">{data.current ? 'Reemplazar certificado' : 'Cargar un nuevo certificado'}</h2>
-          <button type="button" className="medical-dropzone" onClick={() => fileInput.current?.click()}>
+          <h2 id="upload-certificate-title">{canUpload ? data.current ? 'Reemplazar certificado' : 'Cargar un nuevo certificado' : 'Estado del certificado'}</h2>
+          {canUpload ? <><button type="button" className={`medical-dropzone${dragging ? ' is-dragging' : ''}`} onClick={() => fileInput.current?.click()} onDragEnter={(event) => { event.preventDefault(); setDragging(true) }} onDragOver={(event) => event.preventDefault()} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); selectFile(event.dataTransfer.files[0]) }}>
             <Icon name="upload" size={28}/>
             <strong>{selectedFile ? selectedFile.name : 'Arrastrá el archivo o hacé clic para buscarlo'}</strong>
             <span>PDF, JPG o PNG · hasta 5 MB</span>
             <span className="button button-primary"><Icon name="upload" size={18}/>Elegir archivo</span>
-            <input
-              ref={fileInput}
-              className="medical-hidden-file-input"
-              type="file"
-              accept={MEDICAL_CERTIFICATE_ACCEPT}
-              capture="environment"
-              onChange={(event) => selectFile(event.target.files?.[0])}
-              aria-label="Seleccionar certificado médico"
-            />
           </button>
+          <input ref={fileInput} className="medical-hidden-file-input" type="file" accept={MEDICAL_CERTIFICATE_ACCEPT} onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Seleccionar certificado médico"/>
+          <input ref={cameraInput} className="medical-hidden-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Tomar foto del certificado"/>
           <div className="medical-upload-actions">
-            <button type="button" className="button button-secondary medical-camera-button" onClick={() => fileInput.current?.click()}><Icon name="camera" size={18}/>Tomar una foto</button>
+            <button type="button" className="button button-secondary medical-camera-button" onClick={() => cameraInput.current?.click()}><Icon name="camera" size={18}/>Tomar una foto</button>
             <button type="button" className="button button-primary" disabled={!selectedFile || submitting} onClick={() => void submitFile()}>{submitting ? 'Enviando…' : 'Enviar certificado'}</button>
           </div>
           {validationError && <p className="error-message" role="alert">{validationError}</p>}
-          {submitError && <p className="error-message" role="alert">{submitError}</p>}
+          {submitError && <p className="error-message" role="alert">{submitError}</p>}</> :
+            <p role="status">{data.current?.status === 'PENDING' ? 'Pendiente de revisión. No podés cargar otro certificado todavía.' : 'Aprobado. El apto aprobado no vence y no requiere una nueva carga.'}</p>}
         </section>
 
         <section className="surface-card medical-history" aria-labelledby="history-title">
@@ -130,7 +128,7 @@ export function MemberMedicalCertificateScreen() {
               <div><dt>Vence</dt><dd>{formatDate(data.initialPeriod.expiresAt)}</dd></div>
               <div><dt>Días restantes</dt><dd>{data.initialPeriod.daysRemaining}</dd></div>
             </dl>
-          </> : <p>El backend no informó un período inicial para tu cuenta.</p>}
+          </> : <p>Tu período inicial aún no comenzó.</p>}
         </section>
         <section className="surface-card medical-requirements">
           <h2>Qué tiene que decir el certificado</h2>
