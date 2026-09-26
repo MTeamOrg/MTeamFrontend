@@ -1,79 +1,84 @@
-# Contrato pendiente: certificados médicos
+# Contrato actual: certificados médicos
 
-La rama `develop` no expone todavía endpoints para cargar, listar o revisar certificados médicos. El frontend queda preparado contra este contrato y mostrará los estados reales de carga, error y lista vacía hasta que el backend lo implemente.
+Este documento refleja las rutas expuestas por `develop` en `MTeamBackend`. El frontend no asume que el listado o el detalle incluyan `fileName` o `fileUrl`: el acceso al documento se obtiene bajo demanda mediante una URL firmada y temporal.
 
-Todos los endpoints requieren el token Bearer de la sesión. Las URLs de archivos deben ser autorizadas por el backend, tener una duración controlada y no exponer documentos médicos públicamente.
+Todos los endpoints requieren el token Bearer de la sesión.
 
 ## Socio
 
-`GET /medical-certificates/me`
+`GET /members/me/medical-certificates?page=1&limit=20`
 
 ```json
 {
-  "current": {
-    "id": "certificate-id",
-    "fileName": "apto-medico.pdf",
-    "fileUrl": "https://signed.example/file",
-    "status": "APPROVED",
-    "uploadedAt": "2026-09-01T12:00:00Z",
-    "reviewedAt": "2026-09-02T12:00:00Z",
-    "reviewComment": null
-  },
-  "history": [],
-  "initialPeriod": {
-    "status": "COMPLETED",
-    "startsAt": "2026-07-12T00:00:00Z",
-    "endsAt": "2026-08-01T00:00:00Z",
-    "daysRemaining": 0
+  "items": [
+    {
+      "id": "certificate-id",
+      "memberId": "member-id",
+      "status": "APPROVED",
+      "uploadedAt": "2026-09-01T12:00:00.000Z",
+      "reviewedAt": "2026-09-02T12:00:00.000Z",
+      "reviewComment": null,
+      "member": {
+        "id": "member-id",
+        "firstName": "Ana",
+        "lastName": "Pérez",
+        "documentNumber": "123",
+        "email": "ana@example.com"
+      },
+      "reviewedBy": { "id": "admin-id", "firstName": "Lara", "lastName": "Admin" }
+    }
+  ],
+  "page": 1,
+  "limit": 20,
+  "total": 1,
+  "initialMedicalCertificatePeriod": {
+    "startsAt": "2026-09-01T12:00:00.000Z",
+    "expiresAt": "2026-09-21T12:00:00.000Z",
+    "daysRemaining": 6,
+    "isActive": true
   }
 }
 ```
 
-`initialPeriod` es opcional. Si no existe, el frontend no muestra el bloque de período inicial.
+`startsAt` y `expiresAt` pueden ser `null` cuando no existe un período inicial. El frontend muestra ese dato como no informado y no inventa una fecha.
 
-`POST /medical-certificates/me`
+`POST /members/me/medical-certificates`
 
 - Content-Type: `multipart/form-data`
 - Campo requerido: `file`
-- Tipos aceptados: `application/pdf`, `image/jpeg`, `image/png`
-- Tamaño máximo: 5 MB
-- Respuesta: un `MedicalCertificate` con la misma forma de `current`.
+- Tipos aceptados por la interfaz: PDF, JPG y PNG, hasta 5 MB.
+- Respuesta `201`: un certificado con la misma forma de un elemento de `items`.
 
 ## Administrador
 
-`GET /admin/medical-certificates?search=&status=&from=&to=&page=1&limit=20`
+`GET /medical-certificates?search=&status=&from=&to=&page=1&limit=20`
+
+La respuesta es una página con `items`, `page`, `limit` y `total`. Los filtros `from` y `to` se envían como fecha-hora ISO con zona horaria. No hay métricas agregadas en esta respuesta.
+
+`GET /medical-certificates/:certificateId`
+
+Devuelve un certificado con los campos de un elemento de `items`. No entrega una URL pública ni el nombre del archivo.
+
+`GET /medical-certificates/:certificateId/file`
 
 ```json
-{
-  "items": [],
-  "page": 1,
-  "limit": 20,
-  "total": 0,
-  "metrics": {
-    "pending": 0,
-    "approved": 0,
-    "rejected": 0,
-    "initialPeriod": 0
-  }
-}
+{ "signedUrl": "https://signed.example/file", "expiresIn": 300 }
 ```
 
-`metrics` es opcional. Si no se entrega, el frontend no calcula conteos sobre la página parcial ni muestra métricas inventadas.
+El frontend solicita esta respuesta al abrir el documento y usa `signedUrl` sin persistirla como URL del certificado.
 
-Cada item debe incluir `member` (`id`, `firstName`, `lastName`, `documentNumber`), `membership` (`status`, `expiresAt`) y, cuando corresponda, `initialPeriod`.
+`PATCH /medical-certificates/:certificateId/review`
 
-`GET /admin/medical-certificates/:id`
-
-Devuelve un item completo con los campos anteriores.
-
-`POST /admin/medical-certificates/:id/approve`
-
-Aprueba el certificado y devuelve el item actualizado.
-
-`POST /admin/medical-certificates/:id/reject`
+Para aprobar:
 
 ```json
-{ "reviewComment": "La imagen está cortada; por favor subí el certificado completo." }
+{ "status": "APPROVED" }
 ```
 
-`reviewComment` es obligatorio y no puede ser blanco. El backend debe validar también esta regla y verificar que el usuario administrador tenga permisos de revisión.
+Para rechazar:
+
+```json
+{ "status": "REJECTED", "reviewComment": "Falta la firma." }
+```
+
+El motivo de rechazo es obligatorio y no puede ser blanco.
