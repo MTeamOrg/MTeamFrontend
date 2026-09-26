@@ -14,13 +14,14 @@ const payment = (id: string, accreditedAt: string, amount: string, status: 'ACCR
   member: { id: 'm', firstName: 'A', lastName: 'B', documentNumber: '1', email: 'a@example.com' },
 })
 
-function adminRoutes(overrides: Partial<typeof totals> = {}, payments = [payment('p1', '2026-09-07T13:00:00Z', '10000'), payment('p2', '2026-09-05T13:00:00Z', '5000')]): ApiRoute[] {
+function adminRoutes(overrides: Partial<typeof totals> = {}, payments = [payment('p1', '2026-09-07T13:00:00Z', '10000'), payment('p2', '2026-09-05T13:00:00Z', '5000')], pendingMedicalCertificates = 4): ApiRoute[] {
   const values = { ...totals, ...overrides }
   return [
     { path: '/users', handler: () => ({ body: { items: [], page: 1, limit: 1, total: values.users } }) },
     { path: '/members', handler: (url) => ({ body: { items: [], page: 1, limit: 1, total: values[url.searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'] } }) },
     { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: payments.length, totalAmount: String(payments.reduce((sum, item) => sum + Number(item.amount), 0)) } }) },
     { path: '/payments', handler: () => ({ body: { items: payments, page: 1, limit: 100, total: payments.length } }) },
+    { path: '/medical-certificates', handler: () => ({ body: { items: [], page: 1, limit: 1, total: pendingMedicalCertificates } }) },
   ]
 }
 
@@ -47,8 +48,14 @@ describe('panel administrativo', () => {
     expect(screen.getByText('30')).toBeInTheDocument()
     const cards = [...document.querySelectorAll('.status-grid .status-card')]
     expect(cards.map((card) => card.querySelector('.status-card-label')?.textContent)).toEqual(['SOCIOS ACTIVOS', 'CUOTAS AL DÍA', 'CUOTAS VENCIDAS', 'APTOS PENDIENTES'])
-    expect(cards[3]).toHaveTextContent('—Backend pendiente')
+    expect(cards[3]).toHaveTextContent('4')
     expect(cards[3].querySelector('.status-card-value')).toHaveClass('tone-purple')
+    expect(cards[3]).toHaveAttribute('href', '/admin/aptos')
+    const pendingRequest = requestsTo(fetchStub, 'GET', '/medical-certificates')
+    expect(pendingRequest).toHaveLength(1)
+    expect(pendingRequest[0].url.searchParams.get('status')).toBe('PENDING')
+    expect(pendingRequest[0].url.searchParams.get('page')).toBe('1')
+    expect(pendingRequest[0].url.searchParams.get('limit')).toBe('1')
     const users = requestsTo(fetchStub, 'GET', '/users')[0].url.searchParams
     expect(users.get('role')).toBe('MEMBER')
     expect(users.get('status')).toBe('ACTIVE')
@@ -72,9 +79,10 @@ describe('panel administrativo', () => {
   })
 
   it('muestra cero sin inventar datos', async () => {
-    stubApi(adminRoutes({ users: 0, CURRENT: 0, EXPIRING_SOON: 0, EXPIRED: 0 }, []))
+    stubApi(adminRoutes({ users: 0, CURRENT: 0, EXPIRING_SOON: 0, EXPIRED: 0 }, [], 0))
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    await waitFor(() => expect(screen.getAllByText('0')).toHaveLength(3))
+    await waitFor(() => expect(screen.getAllByText('0')).toHaveLength(4))
+    expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')?.querySelector('.status-card-value')).toHaveTextContent('0')
     expect(await screen.findByText('$ 0')).toBeInTheDocument()
   })
 
@@ -85,7 +93,7 @@ describe('panel administrativo', () => {
       ...adminRoutes(),
     ])
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    expect(screen.getAllByText('Cargando…')).toHaveLength(3)
+    expect(screen.getAllByText('Cargando…')).toHaveLength(4)
     expect(await screen.findByText('141')).toBeInTheDocument()
     expect(screen.getByText('30')).toBeInTheDocument()
     expect(await screen.findByText('No se pudo cargar')).toBeInTheDocument()
@@ -103,7 +111,7 @@ describe('panel administrativo', () => {
     expect(within(actions).getByRole('link', { name: 'Registrar un pago' })).toHaveAttribute('href', '/admin/pagos')
     expect(within(actions).getByRole('link', { name: 'Registrar un pago' })).toHaveClass('button-primary')
     expect(within(actions).getByRole('link', { name: 'Crear una cuenta' })).toHaveAttribute('href', '/admin/usuarios')
-    expect(within(actions).getByRole('button', { name: 'Revisar aptos médicos' })).toBeDisabled()
+    expect(within(actions).getByRole('link', { name: 'Revisar aptos médicos' })).toHaveAttribute('href', '/admin/aptos')
     expect(within(actions).getByRole('button', { name: 'Publicar una novedad' })).toBeDisabled()
     await screen.findByText('184')
   })
@@ -128,6 +136,29 @@ describe('panel administrativo', () => {
     expect(document.body.textContent).not.toMatch(/Permitido|Rechazado|\d{2}:\d{2}/)
   })
 
+  it('muestra carga solo en la tarjeta de aptos mientras consulta su total', () => {
+    stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    const card = screen.getByText('APTOS PENDIENTES').closest('.status-card')!
+    expect(card).toHaveTextContent('—Cargando…')
+    expect(card).toHaveAttribute('href', '/admin/aptos')
+  })
+
+  it('aísla un error de aptos médicos y conserva socios, cuotas y el resto del dashboard', async () => {
+    stubApi([
+      { path: '/medical-certificates', handler: () => ({ status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Aptos no disponibles' } }) },
+      ...adminRoutes(),
+    ])
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    const card = screen.getByText('APTOS PENDIENTES').closest('.status-card')!
+    await waitFor(() => expect(card).toHaveTextContent('—No se pudo cargar'))
+    expect(card).toHaveAttribute('href', '/admin/aptos')
+    expect(screen.getByText('184')).toBeInTheDocument()
+    expect(screen.getByText('141')).toBeInTheDocument()
+    expect(screen.getByText('30')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
+  })
+
   it('el código del panel no contiene datos simulados', () => {
     for (const source of [adminSource, dataSource]) {
       expect(source).not.toMatch(/mock|fake|sample|Math\.random|setTimeout|Juan|Lucas/i)
@@ -148,6 +179,9 @@ describe('panel administrativo', () => {
     const more = screen.getByRole('heading', { name: 'Más secciones' }).closest('section')!
     expect(within(more).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/admin/accesos', '/admin/sedes', '/admin/eventos', '/admin/novedades'])
     expect(within(more).queryByText(/Cerrar sesión/)).not.toBeInTheDocument()
+    const actions = screen.getByRole('heading', { name: 'Acciones frecuentes' }).closest('section')!
+    expect(within(actions).getByRole('link', { name: 'Revisar aptos médicos' })).toHaveAttribute('href', '/admin/aptos')
+    expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')).toHaveAttribute('href', '/admin/aptos')
     const access = screen.getByRole('heading', { name: 'Últimos accesos' }).closest('section')!
     expect(within(access).getByRole('status')).toHaveTextContent('Historial de accesos no disponible')
     expect(screen.queryByRole('heading', { name: 'Período inicial de 20 días' })).not.toBeInTheDocument()
