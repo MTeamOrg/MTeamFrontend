@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemberPaymentsScreen } from './MemberPaymentsScreen'
+import { MemoryRouter } from 'react-router-dom'
 
 function json(body: unknown) {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -39,13 +40,13 @@ describe('pagos del socio', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('muestra importes decimales recibidos del backend', async () => {
-    render(<MemberPaymentsScreen/>)
+    render(<MemoryRouter><MemberPaymentsScreen/></MemoryRouter>)
     expect(await screen.findAllByText(/12\.345,67/)).toHaveLength(2)
     expect(screen.getByText('TRANSFERENCIA')).toBeInTheDocument()
   })
 
   it('solicita la página siguiente al paginar', async () => {
-    render(<MemberPaymentsScreen/>)
+    render(<MemoryRouter><MemberPaymentsScreen/></MemoryRouter>)
     fireEvent.click(await screen.findByRole('button', { name: 'Siguiente' }))
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('page=2'), expect.anything()))
     expect(await screen.findByText('Página 2')).toBeInTheDocument()
@@ -56,7 +57,7 @@ describe('pagos del socio', () => {
       if (String(input).includes('/membership')) return Promise.resolve(json(membership))
       return Promise.resolve(json({ items: [], page: 1, limit: 20, total: 0 }))
     })
-    render(<MemberPaymentsScreen/>)
+    render(<MemoryRouter><MemberPaymentsScreen/></MemoryRouter>)
     expect(await screen.findByText('Todavía no hay pagos registrados.')).toBeInTheDocument()
   })
 })

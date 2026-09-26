@@ -3,10 +3,14 @@ import {
   Bell,
   Building,
   CalendarDays,
+  Camera,
   ChartNoAxesColumnIncreasing,
   Check,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clock3,
+  Info,
   Copy,
   Dumbbell,
   Ellipsis,
@@ -25,10 +29,13 @@ import {
   Phone,
   Plus,
   QrCode,
+  RefreshCw,
   Search,
   SlidersHorizontal,
+  Trash2,
   TriangleAlert,
   Trophy,
+  Upload,
   User,
   Users,
   Wallet,
@@ -37,7 +44,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 
-export type IconName = 'home' | 'user' | 'users' | 'wallet' | 'file' | 'qr' | 'calendar' | 'map' | 'pin' | 'clock' | 'phone' | 'bell' | 'megaphone' | 'trophy' | 'image' | 'search' | 'filter' | 'plus' | 'chevron' | 'logout' | 'check' | 'alert' | 'chart' | 'building' | 'dumbbell' | 'edit' | 'more' | 'close' | 'menu' | 'eye' | 'mail' | 'lock' | 'arrow' | 'copy'
+export type IconName = 'home' | 'user' | 'users' | 'wallet' | 'file' | 'qr' | 'calendar' | 'map' | 'pin' | 'clock' | 'phone' | 'bell' | 'megaphone' | 'trophy' | 'image' | 'search' | 'filter' | 'plus' | 'chevron' | 'logout' | 'check' | 'alert' | 'chart' | 'building' | 'dumbbell' | 'edit' | 'more' | 'close' | 'menu' | 'eye' | 'mail' | 'lock' | 'arrow' | 'copy' | 'back' | 'next' | 'down' | 'refresh' | 'camera' | 'upload' | 'trash' | 'info'
 
 const ICONS: Record<IconName, LucideIcon> = {
   home: House,
@@ -74,6 +81,14 @@ const ICONS: Record<IconName, LucideIcon> = {
   lock: LockKeyhole,
   arrow: ArrowRight,
   copy: Copy,
+  back: ChevronLeft,
+  next: ChevronRight,
+  down: ChevronDown,
+  refresh: RefreshCw,
+  camera: Camera,
+  upload: Upload,
+  trash: Trash2,
+  info: Info,
 }
 
 export function Icon({ name, size = 20, ...props }: { name: IconName; size?: number } & LucideProps) {

@@ -9,6 +9,8 @@ import {
 import { addDays, formatDate, formatDateTime, gymDate, localDateTimeToGymOffset } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
+import { PageHeader } from './PageHeader'
+import { StatusCard } from './StatusCard'
 
 const money = (value: string | null | undefined) => value == null
   ? 'Sin configurar'
@@ -45,19 +47,19 @@ export function AdminPaymentsScreen() {
   const { data, loading, error, reload } = useApiResource(loader)
 
   const setFilter = (action: () => void) => { setPage(1); action() }
-  if (loading) return <LoadingState/>
-  if (error || !data) return <ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()}/>
+  const header = <PageHeader title="Pagos y cuota" description="Registrá pagos, consultá la recaudación y administrá el valor de la cuota.">
+    <button type="button" className="button button-primary" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20}/>Registrar pago</button>
+  </PageHeader>
+  const dialog = paymentOpen && <PaymentDialog onClose={() => setPaymentOpen(false)} onSaved={() => { setPaymentOpen(false); void reload() }}/>
+  if (loading) return <div className="app-page">{header}<div className="app-card"><LoadingState/></div>{dialog}</div>
+  if (error || !data) return <div className="app-page">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()}/></div>{dialog}</div>
 
-  return <section>
-    <div className="stat-grid stat-grid-four payment-stats"><Metric label="Pagos acreditados" value={String(data.summary.paymentCount)} icon="check"/><Metric label="Total del período" value={money(data.summary.totalAmount)} icon="wallet"/><Metric label="Cuota vigente" value={money(data.currentPrice?.amount)} icon="calendar"/><Metric label="Registros encontrados" value={String(data.payments.total)} icon="users"/></div>
-    <div className="admin-payments-layout"><section className="surface-card payment-list-panel"><div className="payment-list-heading"><div><h2>Pagos</h2><p>Datos acreditados y anulados registrados en el backend.</p></div><button className="button button-primary" onClick={() => setPaymentOpen(true)}><Icon name="plus"/> Registrar pago</button></div><div className="toolbar payment-filter-toolbar"><label className="search-shell"><Icon name="search"/><input aria-label="Filtrar por documento" placeholder="Documento" value={documentNumber} onChange={(event) => setFilter(() => setDocumentNumber(event.target.value))}/></label><input aria-label="Filtrar por medio" placeholder="Medio de pago" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}/><select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select><label className="date-filter">Desde<input type="date" value={from} max={to} onChange={(event) => setFilter(() => setFrom(event.target.value))}/></label><label className="date-filter">Hasta<input type="date" value={to} min={from} onChange={(event) => setFilter(() => setTo(event.target.value))}/></label></div>{!data.payments.items.length ? <EmptyState message="No hay pagos en el período o con los filtros seleccionados."/> : <div className="table-scroll"><table className="data-table"><thead><tr><th>Socio</th><th>Fecha</th><th>Importe</th><th>Medio</th><th>Comprobante</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}<span className="cell-subtext">{payment.member.documentNumber}</span></td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.method}</td><td>{payment.receiptNumber ?? '—'}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td>{payment.status === 'ACCREDITED' && <button className="text-link" onClick={() => void voidPayment(payment.id)}>Anular</button>}</td></tr>)}</tbody></table></div>}<div className="form-actions"><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></section><aside className="admin-payment-side"><PriceForm current={data.currentPrice?.amount ?? null} onSaved={() => void reload()}/><section className="surface-card"><h2>Historial de valores</h2><div className="price-history">{data.prices.items.length ? data.prices.items.map((price) => <p key={price.id}><span>{formatDate(price.effectiveFrom)}</span><strong>{money(price.amount)}</strong></p>) : <EmptyState message="No hay valores registrados."/>}</div></section></aside></div>
-    {paymentOpen && (
-      <PaymentDialog
-        onClose={() => setPaymentOpen(false)}
-        onSaved={() => { setPaymentOpen(false); void reload() }}
-      />
-    )}
-  </section>
+  return <div className="app-page">
+    {header}
+    <div className="status-grid"><StatusCard label="PAGOS ACREDITADOS" value={String(data.summary.paymentCount)} tone="black"/><StatusCard label="TOTAL DEL PERÍODO" value={money(data.summary.totalAmount)} tone="pink"/><StatusCard label="CUOTA VIGENTE" value={money(data.currentPrice?.amount)} tone="blue"/><StatusCard label="REGISTROS ENCONTRADOS" value={String(data.payments.total)} tone="purple"/></div>
+    <div className="admin-payments-layout"><section className="surface-card payment-list-panel"><div className="payment-list-heading"><div><h2>Pagos</h2><p>Datos acreditados y anulados registrados en el backend.</p></div></div><div className="toolbar payment-filter-toolbar"><label className="search-shell"><Icon name="search"/><input aria-label="Filtrar por documento" placeholder="Documento" value={documentNumber} onChange={(event) => setFilter(() => setDocumentNumber(event.target.value))}/></label><input aria-label="Filtrar por medio" placeholder="Medio de pago" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}/><select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select><label className="date-filter">Desde<input type="date" value={from} max={to} onChange={(event) => setFilter(() => setFrom(event.target.value))}/></label><label className="date-filter">Hasta<input type="date" value={to} min={from} onChange={(event) => setFilter(() => setTo(event.target.value))}/></label></div>{!data.payments.items.length ? <EmptyState message="No hay pagos en el período o con los filtros seleccionados."/> : <div className="table-scroll"><table className="data-table"><thead><tr><th>Socio</th><th>Fecha</th><th>Importe</th><th>Medio</th><th>Comprobante</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}<span className="cell-subtext">{payment.member.documentNumber}</span></td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.method}</td><td>{payment.receiptNumber ?? '—'}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td>{payment.status === 'ACCREDITED' && <button className="text-link" onClick={() => void voidPayment(payment.id)}>Anular</button>}</td></tr>)}</tbody></table></div>}<div className="form-actions"><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></section><aside className="admin-payment-side"><PriceForm current={data.currentPrice?.amount ?? null} onSaved={() => void reload()}/><section className="surface-card"><h2>Historial de valores</h2><div className="price-history">{data.prices.items.length ? data.prices.items.map((price) => <p key={price.id}><span>{formatDate(price.effectiveFrom)}</span><strong>{money(price.amount)}</strong></p>) : <EmptyState message="No hay valores registrados."/>}</div></section></aside></div>
+    {dialog}
+  </div>
 
   async function voidPayment(id: string) {
     const reason = window.prompt('Ingresá el motivo de la anulación:')?.trim()
@@ -69,10 +71,6 @@ export function AdminPaymentsScreen() {
       window.alert(value instanceof Error ? value.message : 'No se pudo anular el pago.')
     }
   }
-}
-
-function Metric({ label, value, icon }: { label: string; value: string; icon: 'check' | 'wallet' | 'calendar' | 'users' }) {
-  return <article className="stat-card"><span className="stat-icon blue"><Icon name={icon}/></span><div><span>{label}</span><strong>{value}</strong></div></article>
 }
 
 function PriceForm({ current, onSaved }: { current: string | null; onSaved: () => void }) {

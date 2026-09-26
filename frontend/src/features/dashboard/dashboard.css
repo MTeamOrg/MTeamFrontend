@@ -1,0 +1,49 @@
+/* Panel / Inicio — Figma A1 / MA1 and role home screens */
+
+.dashboard-header { display: grid; justify-items: start; gap: 8px; }
+.dashboard-pill { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: var(--pink-tint); color: var(--pink); font-size: 11px; font-weight: 600; letter-spacing: 0.66px; }
+.dashboard-header h1 { margin: 0; font-size: 40px; line-height: 1.2; font-weight: 700; color: var(--black); }
+.dashboard-header p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--text-secondary); }
+
+/* A1: wide left zone + 400px right zone, shared by the revenue/actions and access/initial-period rows */
+.admin-panel-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; column-gap: 20px; row-gap: 28px; }
+.dashboard-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+
+.dashboard-card { display: flex; flex-direction: column; gap: 14px; }
+.dashboard-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dashboard-card-header h2 { margin: 0; font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--black); }
+.revenue-card .dashboard-card-header { align-items: flex-start; }
+.revenue-card .dashboard-card-header h2 { font-size: 20px; }
+.pending-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 40px 20px; text-align: center; }
+.pending-state strong { font-size: 14px; font-weight: 600; color: var(--black); }
+.pending-state p { margin: 0; max-width: 360px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+.revenue-total { font-size: 20px; font-weight: 700; color: var(--pink); }
+.revenue-bars { height: 160px; display: flex; align-items: flex-end; gap: 12px; }
+.revenue-bar-slot { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.revenue-bar { width: 100%; border-radius: 8px; background: var(--background); }
+.revenue-bar.is-today { background: var(--pink); }
+
+.quick-actions { display: flex; flex-direction: column; gap: 14px; }
+.quick-actions .button { justify-content: flex-start; }
+
+.dashboard-list { display: flex; flex-direction: column; gap: 10px; }
+.payment-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.payment-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.payment-list li:last-child { border-bottom: 0; }
+.payment-list span:first-child { display: grid; gap: 2px; }
+.payment-list strong { font-size: 14px; font-weight: 600; }
+.payment-list small { font-size: 12px; color: var(--text-muted); }
+.dashboard-inline-link { display: inline-flex; align-items: center; gap: 8px; color: var(--pink); font-size: 14px; font-weight: 600; }
+.more-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+
+@media (max-width: 1100px) {
+  .admin-panel-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .dashboard-header { gap: 4px; }
+  .dashboard-header h1 { font-size: 25px; }
+  .dashboard-header p { font-size: 13px; }
+  .quick-actions { gap: 11px; padding: 16px; }
+  .dashboard-columns { grid-template-columns: 1fr; gap: 14px; }
+}
