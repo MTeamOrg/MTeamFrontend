@@ -13,7 +13,7 @@ const NO_API = 'El backend todavía no expone esta funcionalidad'
 const ACTIONS: QuickAction[] = [
   { label: 'Registrar un pago', icon: 'wallet', to: '/admin/pagos', primary: true },
   { label: 'Crear una cuenta', icon: 'users', to: '/admin/usuarios' },
-  { label: 'Revisar aptos médicos', icon: 'file', unavailableReason: NO_API },
+  { label: 'Revisar aptos médicos', icon: 'file', to: '/admin/aptos' },
   { label: 'Publicar una novedad', icon: 'megaphone', unavailableReason: NO_API },
 ]
 
@@ -41,10 +41,13 @@ const loadMembershipTotals = async () => {
 
 const loadRevenue = () => loadRevenueWeek()
 
-function MetricCard({ label, tone, value, loading, error }: { label: string; tone: StatusTone; value: number | undefined; loading: boolean; error: string }) {
-  if (loading) return <StatusCard label={label} value="—" tone={tone} sub="Cargando…"/>
-  if (error || value === undefined) return <StatusCard label={label} value="—" tone={tone} sub="No se pudo cargar"/>
-  return <StatusCard label={label} value={String(value)} tone={tone}/>
+const loadPendingMedicalCertificates = async () =>
+  (await backendApi.listAdminMedicalCertificates({ status: 'PENDING', page: 1, limit: 1 })).total
+
+function MetricCard({ label, tone, value, loading, error, to }: { label: string; tone: StatusTone; value: number | undefined; loading: boolean; error: string; to?: string }) {
+  if (loading) return <StatusCard label={label} value="—" tone={tone} sub="Cargando…" to={to}/>
+  if (error || value === undefined) return <StatusCard label={label} value="—" tone={tone} sub="No se pudo cargar" to={to}/>
+  return <StatusCard label={label} value={String(value)} tone={tone} to={to}/>
 }
 
 export function AdminDashboardScreen() {
@@ -53,6 +56,7 @@ export function AdminDashboardScreen() {
   const activeMembers = useApiResource(loadActiveMembers)
   const membership = useApiResource(loadMembershipTotals)
   const revenue = useApiResource(loadRevenue)
+  const pendingMedicalCertificates = useApiResource(loadPendingMedicalCertificates)
   const greeting = `Buen día, ${session?.user.firstName ?? ''}`
 
   const metricErrors = [activeMembers.error, membership.error].filter(Boolean)
@@ -61,7 +65,7 @@ export function AdminDashboardScreen() {
       <MetricCard label="SOCIOS ACTIVOS" tone="black" value={activeMembers.data ?? undefined} loading={activeMembers.loading} error={activeMembers.error}/>
       <MetricCard label="CUOTAS AL DÍA" tone="blue" value={membership.data?.upToDate} loading={membership.loading} error={membership.error}/>
       <MetricCard label="CUOTAS VENCIDAS" tone="pink" value={membership.data?.expired} loading={membership.loading} error={membership.error}/>
-      <StatusCard label="APTOS PENDIENTES" value="—" tone="purple" sub="Backend pendiente"/>
+      <MetricCard label="APTOS PENDIENTES" tone="purple" value={pendingMedicalCertificates.data ?? undefined} loading={pendingMedicalCertificates.loading} error={pendingMedicalCertificates.error} to="/admin/aptos"/>
     </div>
     {metricErrors.length > 0 && <p className="error-message" role="alert">
       {metricErrors.join(' · ')}
