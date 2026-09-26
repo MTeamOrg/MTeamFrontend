@@ -1,10 +1,11 @@
 import { useCallback, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { backendApi, type AdminMedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
-import { formatDate, formatDateTime } from '../../service/date-time'
+import { backendApi, type MedicalCertificateStatus } from '../../service/backend-api'
+import { formatDateTime } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
+import { MedicalCertificateFileButton } from './MedicalCertificateFileButton'
 import { PageHeader } from './PageHeader'
 
 const STATUS_LABEL: Record<MedicalCertificateStatus, string> = {
@@ -17,10 +18,6 @@ const STATUS_CLASS: Record<MedicalCertificateStatus, string> = {
   PENDING: 'badge-secondary',
   APPROVED: 'badge-info',
   REJECTED: 'badge-primary',
-}
-
-function membershipLabel(status: AdminMedicalCertificate['membership'] extends infer T ? T extends { status: infer S } ? S : never : never) {
-  return status === 'ACTIVE' ? 'Activa' : 'Vencida'
 }
 
 export function AdminMedicalReviewScreen({ id }: { id: string }) {
@@ -36,7 +33,7 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
     setActionError('')
     setActionMessage('')
     try {
-      const updated = await backendApi.approveMedicalCertificate(id)
+      const updated = await backendApi.reviewMedicalCertificate(id, 'APPROVED')
       setData(updated)
       setActionMessage('El certificado fue aprobado.')
     } catch (value) {
@@ -53,11 +50,15 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
       setActionError('La observación es obligatoria para rechazar el certificado.')
       return
     }
+    if (comment.length > 1000) {
+      setActionError('La observación no puede superar los 1000 caracteres.')
+      return
+    }
     setSubmitting(true)
     setActionError('')
     setActionMessage('')
     try {
-      const updated = await backendApi.rejectMedicalCertificate(id, comment)
+      const updated = await backendApi.reviewMedicalCertificate(id, 'REJECTED', comment)
       setData(updated)
       setActionMessage('El certificado fue rechazado.')
     } catch (value) {
@@ -88,23 +89,28 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
           <span className={`badge ${STATUS_CLASS[data.status]}`}>{STATUS_LABEL[data.status]}</span>
         </section>
         <section className="surface-card medical-preview-card" aria-label="Vista previa del certificado">
-          <div className="medical-preview-canvas"><Icon name="file" size={48}/><span>{data.fileName}</span><a href={data.fileUrl} target="_blank" rel="noreferrer">Abrir archivo</a></div>
+          <div className="medical-preview-canvas">
+            <Icon name="file" size={48}/>
+            <span>Archivo médico</span>
+            <small>El backend no informa el nombre del archivo.</small>
+            <MedicalCertificateFileButton id={data.id}/>
+          </div>
         </section>
       </div>
       <aside className="medical-review-side">
         <section className="surface-card medical-situation-card">
-          <h2>Situación del socio</h2>
+          <h2>Datos del socio</h2>
           <dl>
-            <div><dt>Cuota</dt><dd>{data.membership ? membershipLabel(data.membership.status) : 'Sin datos'}</dd></div>
-            <div><dt>Período inicial</dt><dd>{data.initialPeriod ? data.initialPeriod.daysRemaining ? `Quedan ${data.initialPeriod.daysRemaining} días` : data.initialPeriod.status === 'COMPLETED' ? 'Finalizado' : 'Activo' : 'Sin datos'}</dd></div>
-            {data.membership?.expiresAt && <div><dt>Vencimiento</dt><dd>{formatDate(data.membership.expiresAt)}</dd></div>}
+            <div><dt>Correo</dt><dd>{data.member.email || 'No informado por el backend'}</dd></div>
+            <div><dt>ID de socio</dt><dd>{data.memberId}</dd></div>
           </dl>
+          <p className="medical-data-note">La respuesta actual no incluye membresía ni período inicial.</p>
         </section>
         {canReview && <button type="button" className="button button-primary medical-approve-button" disabled={submitting} onClick={() => void approve()}><Icon name="check" size={20}/>{submitting ? 'Guardando…' : 'Aprobar apto médico'}</button>}
         <section className="surface-card medical-reject-card">
           <h2>Rechazar</h2>
           {canReview ? <form onSubmit={(event) => void reject(event)} noValidate>
-            <label className="medical-comment-field"><span className="sr-only">Observación para el socio</span><textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="Observación para el socio (obligatoria)…" required aria-label="Observación para el socio"/></label>
+            <label className="medical-comment-field"><span className="sr-only">Observación para el socio</span><textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="Observación para el socio (obligatoria)…" required maxLength={1000} aria-label="Observación para el socio"/></label>
             <button type="submit" className="button button-danger" disabled={submitting}><Icon name="close" size={20}/>{submitting ? 'Guardando…' : 'Rechazar apto médico'}</button>
           </form> : data.reviewComment && <p className="medical-review-comment">“{data.reviewComment}”</p>}
         </section>

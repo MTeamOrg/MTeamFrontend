@@ -56,12 +56,7 @@ export function AdminMedicalCertificatesScreen() {
 
   return <div className="app-page medical-admin-screen">
     {header}
-    {data.metrics && <div className="medical-admin-stat-grid">
-      <Metric label="Pendientes" value={data.metrics.pending} tone="purple" detail="Para revisar"/>
-      <Metric label="Aprobados" value={data.metrics.approved} tone="blue" detail="Sin vencimiento"/>
-      <Metric label="Rechazados" value={data.metrics.rejected} tone="pink" detail="Requieren corrección"/>
-      <Metric label="Período inicial" value={data.metrics.initialPeriod} tone="black" detail="Acceso temporal"/>
-    </div>}
+    <p className="medical-data-note">El backend actual no entrega métricas agregadas ni el nombre del archivo.</p>
     <section className="surface-card medical-list-panel" aria-labelledby="medical-list-title">
       <div className="dashboard-section-title medical-list-heading">
         <div><h2 id="medical-list-title">Listado de aptos</h2><p>Consultá el estado y revisá el archivo autorizado del socio.</p></div>
@@ -88,7 +83,7 @@ export function AdminMedicalCertificatesScreen() {
             <tbody>{data.items.map((certificate) => <tr key={certificate.id}>
               <td><strong>{certificateMember(certificate)}</strong></td>
               <td>{certificate.member.documentNumber}</td>
-              <td><span className="medical-table-file"><Icon name="file" size={16}/>{certificate.fileName}</span></td>
+              <td><span className="medical-table-file" title="El backend no informa el nombre del archivo"><Icon name="file" size={16}/>Archivo médico</span></td>
               <td>{formatDateTime(certificate.uploadedAt)}</td>
               <td><span className={`badge ${STATUS_CLASS[certificate.status]}`}>{STATUS_LABEL[certificate.status]}</span></td>
               <td><Link className="button button-secondary medical-review-button" to={`./${certificate.id}`}>{certificate.status === 'PENDING' ? 'Revisar' : 'Ver detalle'}</Link></td>
@@ -97,7 +92,7 @@ export function AdminMedicalCertificatesScreen() {
         </div>
         <div className="medical-mobile-list">{data.items.map((certificate) => <article className="medical-mobile-item" key={certificate.id}>
           <span className="medical-member-avatar">{certificate.member.firstName.slice(0, 1)}{certificate.member.lastName.slice(0, 1)}</span>
-          <div><strong>{certificateMember(certificate)}</strong><small>{certificate.member.documentNumber} · {certificate.fileName} · {formatDate(certificate.uploadedAt)}</small></div>
+          <div><strong>{certificateMember(certificate)}</strong><small>{certificate.member.documentNumber} · Archivo médico · {formatDate(certificate.uploadedAt)}</small></div>
           <span className={`badge ${STATUS_CLASS[certificate.status]}`}>{STATUS_LABEL[certificate.status]}</span>
           <Link className="medical-mobile-item-link" to={`./${certificate.id}`} aria-label={`Ver ${certificateMember(certificate)}`}><Icon name="chevron" size={18}/></Link>
         </article>)}</div>
@@ -105,12 +100,4 @@ export function AdminMedicalCertificatesScreen() {
       </> : <EmptyState message="No hay certificados que coincidan con los filtros."/>}
     </section>
   </div>
-}
-
-function Metric({ label, value, tone, detail }: { label: string; value: number; tone: 'purple' | 'blue' | 'pink' | 'black'; detail: string }) {
-  return <article className={`status-card medical-admin-metric tone-${tone}`}>
-    <span className="status-card-label">{label}</span>
-    <strong className={`status-card-value tone-${tone}`}>{value}</strong>
-    <span className="status-card-sub">{detail}</span>
-  </article>
 }

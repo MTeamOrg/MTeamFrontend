@@ -12,53 +12,58 @@ export type MembershipStatus = 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'
 export type PaymentStatus = 'ACCREDITED' | 'VOIDED'
 export type MedicalCertificateStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
+export interface MedicalCertificateMember {
+  id: string
+  firstName: string
+  lastName: string
+  documentNumber: string
+  email: string
+}
+
+export interface MedicalCertificateReviewer {
+  id: string
+  firstName: string
+  lastName: string
+}
+
 export interface MedicalCertificate {
   id: string
-  fileName: string
-  fileUrl: string
+  memberId: string
   status: MedicalCertificateStatus
   uploadedAt: string
   reviewedAt: string | null
   reviewComment: string | null
+  member: MedicalCertificateMember
+  reviewedBy: MedicalCertificateReviewer | null
 }
 
-export interface InitialPeriod {
-  status: 'ACTIVE' | 'COMPLETED'
-  startsAt: string
-  endsAt?: string | null
-  daysRemaining?: number | null
+export interface InitialMedicalCertificatePeriod {
+  startsAt: string | null
+  expiresAt: string | null
+  daysRemaining: number
+  isActive: boolean
 }
 
-export interface OwnMedicalCertificateResponse {
+export interface OwnMedicalCertificateResponse extends Page<MedicalCertificate> {
+  initialMedicalCertificatePeriod: InitialMedicalCertificatePeriod
+}
+
+export interface OwnMedicalCertificateView {
   current: MedicalCertificate | null
   history: MedicalCertificate[]
-  initialPeriod?: InitialPeriod | null
+  initialPeriod: InitialMedicalCertificatePeriod
+  page: number
+  limit: number
+  total: number
 }
 
-export interface AdminMedicalCertificate extends MedicalCertificate {
-  member: {
-    id: string
-    firstName: string
-    lastName: string
-    documentNumber: string
-  }
-  membership: {
-    status: 'ACTIVE' | 'EXPIRED'
-    expiresAt: string | null
-  } | null
-  initialPeriod?: InitialPeriod | null
+export interface MedicalCertificateFileResponse {
+  signedUrl: string
+  expiresIn: number
 }
 
-export interface MedicalCertificateMetrics {
-  pending: number
-  approved: number
-  rejected: number
-  initialPeriod: number
-}
-
-export interface AdminMedicalCertificatePage extends Page<AdminMedicalCertificate> {
-  metrics?: MedicalCertificateMetrics | null
-}
+export type AdminMedicalCertificate = MedicalCertificate
+export type AdminMedicalCertificatePage = Page<AdminMedicalCertificate>
 
 export interface OwnProfile {
   id: string
@@ -264,6 +269,13 @@ function queryString(values: Record<string, string | number | boolean | undefine
   return value ? `?${value}` : ''
 }
 
+function dateTimeFilter(value: string, endOfDay = false) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+  const date = new Date(`${value}T00:00:00`)
+  if (endOfDay) date.setDate(date.getDate() + 1)
+  return date.toISOString()
+}
+
 export const backendApi = {
   getCurrentIdentity: () => apiRequest<OwnProfile>('/auth/me'),
   getOwnProfile: () => apiRequest<OwnProfile>('/users/me'),
@@ -318,12 +330,24 @@ export const backendApi = {
 
   listOwnPayments: (page = 1, limit = 20) =>
     apiRequest<Page<Payment>>(`/members/me/payments${queryString({ page, limit })}`),
-  getOwnMedicalCertificate: () =>
-    apiRequest<OwnMedicalCertificateResponse>('/medical-certificates/me'),
+  getOwnMedicalCertificates: (page = 1, limit = 20) =>
+    apiRequest<OwnMedicalCertificateResponse>(
+      `/members/me/medical-certificates${queryString({ page, limit })}`,
+    ).then(({ items, page: responsePage, limit: responseLimit, total, initialMedicalCertificatePeriod }) => {
+      const [current = null, ...history] = items
+      return {
+        current,
+        history,
+        initialPeriod: initialMedicalCertificatePeriod,
+        page: responsePage,
+        limit: responseLimit,
+        total,
+      } satisfies OwnMedicalCertificateView
+    }),
   uploadOwnMedicalCertificate: (file: File) => {
     const body = new FormData()
     body.append('file', file)
-    return apiRequest<MedicalCertificate>('/medical-certificates/me', { method: 'POST', body })
+    return apiRequest<MedicalCertificate>('/members/me/medical-certificates', { method: 'POST', body })
   },
   listAdminMedicalCertificates: (filters: {
     search?: string
@@ -333,17 +357,27 @@ export const backendApi = {
     page?: number
     limit?: number
   }) => apiRequest<AdminMedicalCertificatePage>(
-    `/admin/medical-certificates${queryString(filters)}`,
+    `/medical-certificates${queryString({
+      ...filters,
+      from: filters.from ? dateTimeFilter(filters.from) : undefined,
+      to: filters.to ? dateTimeFilter(filters.to, true) : undefined,
+    })}`,
   ),
   getAdminMedicalCertificate: (id: string) =>
-    apiRequest<AdminMedicalCertificate>(`/admin/medical-certificates/${id}`),
-  approveMedicalCertificate: (id: string) =>
-    apiRequest<AdminMedicalCertificate>(`/admin/medical-certificates/${id}/approve`, { method: 'POST' }),
-  rejectMedicalCertificate: (id: string, reviewComment: string) =>
-    apiRequest<AdminMedicalCertificate>(`/admin/medical-certificates/${id}/reject`, {
-      method: 'POST',
-      body: { reviewComment },
-    }),
+    apiRequest<AdminMedicalCertificate>(`/medical-certificates/${id}`),
+  getMedicalCertificateFile: (id: string) =>
+    apiRequest<MedicalCertificateFileResponse>(`/medical-certificates/${id}/file`),
+  reviewMedicalCertificate: (
+    id: string,
+    status: Exclude<MedicalCertificateStatus, 'PENDING'>,
+    reviewComment?: string,
+  ) => apiRequest<AdminMedicalCertificate>(`/medical-certificates/${id}/review`, {
+    method: 'PATCH',
+    body: {
+      status,
+      ...(reviewComment ? { reviewComment } : {}),
+    },
+  }),
   listPayments: (filters: {
     page?: number
     limit?: number

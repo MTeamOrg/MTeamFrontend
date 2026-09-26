@@ -4,6 +4,7 @@ import { formatDate } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
+import { MedicalCertificateFileButton } from './MedicalCertificateFileButton'
 import { PageHeader } from './PageHeader'
 import { MEDICAL_CERTIFICATE_ACCEPT, validateMedicalCertificateFile } from './medical-certificate-validation'
 
@@ -21,21 +22,22 @@ function CertificateFile({ certificate, compact = false }: { certificate: Medica
   return <div className={compact ? 'medical-history-row' : 'medical-current-file'}>
     <span className="medical-file-icon" aria-hidden="true"><Icon name="file" size={compact ? 18 : 28}/></span>
     <div>
-      <strong>{certificate.fileName}</strong>
+      <strong>Archivo médico</strong>
+      <span>El backend no informa el nombre del archivo.</span>
       <span>{compact ? `Cargado ${formatDate(certificate.uploadedAt)}` : `Cargado el ${formatDate(certificate.uploadedAt)}`}</span>
       {!compact && certificate.reviewedAt && <span>Revisado el {formatDate(certificate.reviewedAt)}</span>}
       {compact && certificate.status === 'REJECTED' && certificate.reviewComment && <small>Rechazado: “{certificate.reviewComment}”</small>}
     </div>
     {compact && <span className={`badge ${statusClass(certificate.status)}`}>{STATUS_LABEL[certificate.status]}</span>}
     {!compact && <div className="medical-file-actions">
-      <a className="button button-secondary" href={certificate.fileUrl} target="_blank" rel="noreferrer"><Icon name="eye" size={16}/>Ver documento</a>
+      <MedicalCertificateFileButton id={certificate.id}/>
       <span className={`badge ${statusClass(certificate.status)}`}>{STATUS_LABEL[certificate.status]}</span>
     </div>}
   </div>
 }
 
 export function MemberMedicalCertificateScreen() {
-  const loader = useCallback(() => backendApi.getOwnMedicalCertificate(), [])
+  const loader = useCallback(() => backendApi.getOwnMedicalCertificates(), [])
   const { data, loading, error, reload } = useApiResource(loader)
   const fileInput = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -80,7 +82,7 @@ export function MemberMedicalCertificateScreen() {
       <div className="medical-member-main">
         <section className="surface-card medical-current-card" aria-labelledby="current-certificate-title">
           <div className="dashboard-section-title">
-            <h2 id="current-certificate-title">Certificado actual</h2>
+            <h2 id="current-certificate-title">Último certificado</h2>
             {data.current && <span className={`badge ${statusClass(data.current.status)}`}>{STATUS_LABEL[data.current.status]}</span>}
           </div>
           {data.current ? <CertificateFile certificate={data.current}/> : <EmptyState message="Todavía no cargaste un certificado médico."/>}
@@ -118,14 +120,18 @@ export function MemberMedicalCertificateScreen() {
       </div>
 
       <aside className="medical-member-aside">
-        {data.initialPeriod && <section className="surface-card medical-initial-period">
+        <section className="surface-card medical-initial-period">
           <h2><Icon name="clock" size={18}/>Período inicial</h2>
-          <p>Durante los primeros 20 días desde tu primer pago podés ingresar aunque el apto todavía no esté aprobado.</p>
-          <dl>
-            <div><dt>Estado</dt><dd>{data.initialPeriod.status === 'COMPLETED' ? 'Finalizado' : 'Activo'}</dd></div>
-            <div><dt>Comenzó</dt><dd>{formatDate(data.initialPeriod.startsAt)}</dd></div>
-          </dl>
-        </section>}
+          {data.initialPeriod.startsAt ? <>
+            <p>Durante los primeros 20 días desde tu primer pago podés ingresar aunque el apto todavía no esté aprobado.</p>
+            <dl>
+              <div><dt>Estado</dt><dd>{data.initialPeriod.isActive ? 'Activo' : 'Finalizado'}</dd></div>
+              <div><dt>Comenzó</dt><dd>{formatDate(data.initialPeriod.startsAt)}</dd></div>
+              <div><dt>Vence</dt><dd>{formatDate(data.initialPeriod.expiresAt)}</dd></div>
+              <div><dt>Días restantes</dt><dd>{data.initialPeriod.daysRemaining}</dd></div>
+            </dl>
+          </> : <p>El backend no informó un período inicial para tu cuenta.</p>}
+        </section>
         <section className="surface-card medical-requirements">
           <h2>Qué tiene que decir el certificado</h2>
           <ul>
