@@ -14,6 +14,172 @@
 }
 @media(max-width:380px){.field-grid{grid-template-columns:1fr}.hero-copy h1{font-size:27px}.workspace-content{padding-right:14px;padding-left:14px}.stat-card{padding:8px}.stat-icon{width:29px;height:29px}.stat-card strong{font-size:12px}.workspace-mobile-tabs a{font-size:7px}}
 
+/* Medical certificates: shared responsive composition for S3 / MS3 / A7 / A8 / MA7 / MA8. */
+.medical-screen,.medical-admin-screen,.medical-review-screen{width:100%;min-width:0}
+.medical-screen .page-header p,.medical-admin-screen .page-header p,.medical-review-screen .page-header p{max-width:680px}
+.medical-member-grid{align-items:start;gap:20px}
+.medical-member-main,.medical-member-aside{gap:20px}
+.medical-current-card,.medical-upload-card,.medical-history,.medical-member-aside .surface-card{padding:20px}
+.medical-current-card .dashboard-section-title{margin:0 0 16px}
+.medical-current-card h2,.medical-upload-card h2,.medical-history h2,.medical-member-aside h2{font-size:20px}
+.medical-current-file{min-width:0;gap:12px}
+.medical-current-file>div{gap:5px}
+.medical-current-file strong,.medical-history-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.medical-current-file span:not(.medical-file-icon),.medical-history-row span:not(.medical-file-icon){font-size:12px}
+.medical-file-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.medical-file-actions .button{min-height:36px;padding:0 14px;font-size:13px}
+.medical-file-actions .badge{order:3}
+.medical-upload-card{display:grid;gap:14px}
+.medical-dropzone{position:relative;width:100%;min-height:218px;display:grid;place-content:center;justify-items:center;gap:9px;padding:20px;border:1px solid var(--input-border);border-radius:12px;background:var(--background);color:var(--text-secondary);text-align:center;cursor:pointer}
+.medical-dropzone>svg{color:var(--purple)}
+.medical-dropzone strong{color:var(--black);font-size:15px;font-weight:600}
+.medical-dropzone span:not(.button){font-size:13px}
+.medical-hidden-file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.medical-upload-actions{display:flex;gap:10px;flex-wrap:wrap}
+.medical-upload-actions .button{min-height:36px;font-size:13px}
+.medical-upload-actions .button-primary{margin-left:auto}
+.medical-history{padding:0;overflow:hidden}
+.medical-history h2{padding:20px 20px 14px;margin:0}
+.medical-history-row{display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--border);min-width:0}
+.medical-history-row>div{display:grid;gap:4px;min-width:0;flex:1}
+.medical-history-row small{color:var(--text-secondary);font-size:12px;white-space:normal}
+.medical-history-row .badge{flex:none}
+.medical-member-aside{display:grid;align-content:start}
+.medical-member-aside .surface-card{display:grid;gap:14px}
+.medical-member-aside h2{display:flex;align-items:center;gap:9px;margin:0}
+.medical-member-aside p{margin:0;font-size:14px;line-height:1.6;color:var(--text-location)}
+.medical-member-aside dl{margin:0;padding-top:12px;border-top:1px solid var(--border)}
+.medical-member-aside dl>div{display:flex;justify-content:space-between;gap:12px;padding-top:10px}
+.medical-member-aside dt{color:var(--text-secondary);font-size:13px}.medical-member-aside dd{margin:0;font-size:13px;text-align:right}
+.medical-requirements ul{display:grid;gap:7px;margin:0;padding:0;list-style:none;color:var(--text-location);font-size:14px;line-height:1.45}
+.medical-requirements li::before{content:'· ';font-weight:700}
+.medical-admin-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.medical-admin-metric{gap:8px;min-height:124px}
+.medical-admin-metric .status-card-value{font-size:22px}
+.medical-admin-metric.tone-purple .status-card-value{color:var(--purple)}
+.medical-admin-metric.tone-blue .status-card-value{color:var(--blue)}
+.medical-admin-metric.tone-pink .status-card-value{color:var(--pink)}
+.medical-admin-metric.tone-black .status-card-value{color:var(--black)}
+.medical-list-panel{padding:20px;min-width:0}
+.medical-list-heading{margin-bottom:16px}
+.medical-list-heading h2{margin:0 0 7px;font-size:22px}
+.medical-list-heading p{margin:0;color:var(--text-secondary);font-size:14px}
+.medical-filter-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.medical-filter-toolbar .search-shell{flex:1;min-width:250px}
+.medical-filter-fields{display:contents}
+.medical-filter-fields>select,.medical-date-filter input{height:44px;padding:0 12px;border:1px solid var(--input-border);border-radius:8px;background:var(--white);color:var(--black);font-size:13px}
+.medical-filter-fields>select{min-width:150px}
+.medical-filter-toggle{display:none;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid var(--input-border);border-radius:8px;background:var(--white);color:var(--text-secondary);cursor:pointer}
+.medical-date-filter{display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:12px}
+.medical-date-filter input{width:142px}
+.medical-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+.medical-table{min-width:880px}
+.medical-table th,.medical-table td{height:58px;padding:0 14px}
+.medical-table td strong{font-weight:600}.medical-table-file{display:inline-flex;align-items:center;gap:7px;color:var(--text-location)}
+.medical-table .medical-review-button{min-height:34px;font-size:12px}
+.medical-mobile-list{display:none}
+.medical-review-desktop-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.medical-review-desktop-header>.button{margin-top:2px}
+.medical-review-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.8fr);gap:20px;align-items:start}
+.medical-review-main,.medical-review-side{display:grid;align-content:start;gap:20px;min-width:0}
+.medical-member-detail{position:relative;display:grid;gap:8px;padding:20px}
+.medical-member-detail h2,.medical-situation-card h2,.medical-reject-card h2{margin:0;font-size:20px}
+.medical-member-detail p{margin:0;color:var(--text-secondary);font-size:14px}
+.medical-member-detail .badge{position:absolute;right:20px;top:20px}
+.medical-preview-card{padding:20px}
+.medical-preview-canvas{min-height:430px;display:grid;place-content:center;justify-items:center;gap:14px;border:1px solid var(--border);border-radius:12px;background:var(--background);color:var(--disabled);text-align:center}
+.medical-preview-canvas span{color:var(--text-secondary);font-size:14px}
+.medical-preview-canvas a{color:var(--pink);font-size:13px;font-weight:600}
+.medical-situation-card,.medical-reject-card{display:grid;gap:14px;padding:20px}
+.medical-situation-card dl{display:grid;gap:0;margin:0}
+.medical-situation-card dl>div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.medical-situation-card dt{color:var(--text-secondary);font-size:14px}.medical-situation-card dd{margin:0;font-size:14px;text-align:right}
+.medical-approve-button{width:100%}
+.medical-reject-card form{display:grid;gap:10px}
+.medical-comment-field textarea{display:block;width:100%;min-height:104px;padding:12px;border:1px solid var(--input-border);border-radius:8px;resize:vertical;font-size:14px}
+.medical-reject-card .button{width:100%}
+.medical-review-comment{margin:0;color:var(--text-secondary);font-size:14px;line-height:1.6}
+.medical-review-screen>.success-message,.medical-review-screen>.error-message{margin:0}
+.app-topbar-back{display:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+@media(max-width:1100px){
+  .medical-member-grid{grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr)}
+  .medical-admin-stat-grid{gap:12px}.medical-admin-metric{padding:14px}
+  .medical-review-grid{grid-template-columns:minmax(0,1.15fr) minmax(290px,.85fr)}
+}
+
+@media(max-width:700px){
+  .app-topbar-back{display:grid;place-items:center;margin:-2px 2px -2px -4px;color:var(--black)}
+  .medical-screen .page-header,.medical-admin-screen .page-header{display:none}
+  .medical-member-grid{grid-template-columns:1fr;gap:12px}
+  .medical-member-main,.medical-member-aside{gap:12px}
+  .medical-current-card,.medical-upload-card,.medical-member-aside .surface-card{padding:14px}
+  .medical-current-card .dashboard-section-title{margin-bottom:12px}
+  .medical-current-card h2,.medical-upload-card h2,.medical-history h2,.medical-member-aside h2{font-size:15px}
+  .medical-current-file{align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .medical-file-icon{width:48px;height:48px}
+  .medical-current-file>div{flex:1;min-width:calc(100% - 60px)}
+  .medical-current-file strong{font-size:11px}
+  .medical-current-file span:not(.medical-file-icon){font-size:9px}
+  .medical-file-actions{width:100%;justify-content:flex-start;margin-left:58px}
+  .medical-file-actions .button{min-height:32px;font-size:10px;padding:0 10px}
+  .medical-file-actions .badge{order:initial}
+  .medical-dropzone{min-height:160px;padding:14px}
+  .medical-dropzone strong{font-size:12px}
+  .medical-dropzone span:not(.button){font-size:10px}
+  .medical-dropzone .button{min-height:36px;padding:0 14px;font-size:11px}
+  .medical-upload-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .medical-upload-actions .button{min-height:36px;padding:0 8px;font-size:10px;white-space:normal}
+  .medical-upload-actions .button-primary{margin-left:0}
+  .medical-camera-button{display:inline-flex}
+  .medical-history h2{padding:14px 14px 11px}
+  .medical-history-row{gap:8px;padding:12px 14px}
+  .medical-history-row strong{font-size:10px}.medical-history-row span:not(.medical-file-icon){font-size:8px}.medical-history-row small{font-size:8px}
+  .medical-history-row .badge{font-size:8px;padding:0 7px}
+  .medical-member-aside{order:3}
+  .medical-member-aside .surface-card{gap:10px}
+  .medical-member-aside p,.medical-requirements ul{font-size:11px}
+  .medical-member-aside dt,.medical-member-aside dd{font-size:11px}
+  .medical-admin-screen .page-header{display:none}
+  .medical-admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .medical-admin-metric{min-height:84px;gap:6px;padding:14px;border-radius:14px}
+  .medical-admin-metric:nth-child(n+3){display:none}
+  .medical-admin-metric .status-card-label{font-size:10px}.medical-admin-metric .status-card-value{font-size:16px}.medical-admin-metric .status-card-sub{font-size:11px}
+  .medical-list-panel{padding:0;border:0;background:transparent;box-shadow:none}
+  .medical-list-heading{display:none}
+  .medical-filter-toolbar{gap:7px;margin:0 0 14px}
+  .medical-filter-toolbar .search-shell{flex:1;min-width:0;height:42px}
+  .medical-filter-toggle{display:flex}
+  .medical-filter-fields{display:none;width:100%;gap:7px;align-items:center}
+  .medical-filter-fields.is-open{display:flex}
+  .medical-filter-fields>select{flex:1;min-width:0;height:36px;font-size:10px}
+  .medical-filter-fields .medical-date-filter{display:none}
+  .medical-table-wrap{display:none}
+  .medical-mobile-list{display:grid;gap:12px}
+  .medical-mobile-item{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:68px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--white);box-shadow:var(--card-shadow)}
+  .medical-member-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--blue);color:var(--white);font-size:11px;font-weight:600}
+  .medical-mobile-item:nth-child(odd) .medical-member-avatar{background:#8c9299}.medical-mobile-item:nth-child(4) .medical-member-avatar{background:var(--purple)}
+  .medical-mobile-item>div{display:grid;gap:4px;min-width:0}.medical-mobile-item strong{font-size:12px}.medical-mobile-item small{overflow:hidden;color:var(--text-secondary);font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+  .medical-mobile-item>.badge{font-size:9px}.medical-mobile-item-link{position:absolute;inset:0;opacity:0}
+  .medical-admin-screen .table-pagination{display:none}
+  .medical-review-desktop-header{display:none}
+  .medical-review-grid{grid-template-columns:1fr;gap:14px}
+  .medical-review-main,.medical-review-side{gap:14px}
+  .medical-review-screen>.success-message,.medical-review-screen>.error-message{font-size:11px}
+  .medical-member-detail{padding:16px;gap:7px;border-radius:14px}
+  .medical-member-detail h2,.medical-situation-card h2,.medical-reject-card h2{font-size:16px}
+  .medical-member-detail p{font-size:11px}.medical-member-detail .badge{display:none}
+  .medical-preview-card{padding:0;border:0;background:transparent;box-shadow:none}
+  .medical-preview-canvas{min-height:300px;padding:16px;background:var(--white);border-radius:14px}
+  .medical-preview-canvas span{font-size:12px}.medical-preview-canvas a{font-size:11px}
+  .medical-situation-card,.medical-reject-card{padding:16px;gap:10px;border-radius:14px}
+  .medical-situation-card dl>div{padding:8px 0}.medical-situation-card dt,.medical-situation-card dd{font-size:11px}
+  .medical-approve-button{min-height:44px;font-size:14px}
+  .medical-comment-field textarea{min-height:74px;font-size:11px}.medical-reject-card .button{min-height:44px;font-size:13px}
+  .medical-review-comment{font-size:11px}
+}
+
 /* Shared layouts for screens and forms shown in the M-TEAM prototype. */
 .maps-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0}
 .branch-map{display:block;width:100%;height:300px;border:0;border-radius:16px;background:#e7e8ea}
@@ -390,4 +556,13 @@
   .admin-payment-side h2{font-size:14px}.price-history p,.fee-breakdown p{font-size:10px}
   .detail-actions{justify-content:flex-start}.detail-actions .button{flex:1;min-height:32px;font-size:9px}
   .detail-section-heading{font-size:14px}
+}
+
+/* Keep certificate-specific rows above the legacy workspace rules. */
+.medical-history-row{gap:12px;padding:14px 20px}
+.medical-current-file>div{gap:5px}
+.medical-file-actions{margin-left:auto}
+@media(max-width:700px){
+  .medical-history-row{gap:8px;padding:12px 14px}
+  .medical-file-actions{width:100%;margin-left:58px}
 }
