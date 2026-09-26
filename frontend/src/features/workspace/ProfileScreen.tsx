@@ -4,13 +4,19 @@ import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type OwnProfile } from '../../service/backend-api'
 import { formatDate } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
+import { PageHeader } from './PageHeader'
 
 export function ProfileScreen({ role, onPasswordChange }: { role: UserRole; onPasswordChange: () => void }) {
   const loader = useCallback(() => backendApi.getOwnProfile(), [])
   const { data, loading, error, reload, setData } = useApiResource(loader)
-  if (loading) return <LoadingState/>
-  if (error || !data) return <ErrorState message={error || 'No se pudo cargar el perfil.'} retry={() => void reload()}/>
-  return <ProfileForm key={data.id} profile={data} role={role} onPasswordChange={onPasswordChange} onUpdated={setData}/>
+  return <div className="app-page">
+    <PageHeader title="Mi perfil" description="Consultá tus datos y actualizá tu información de contacto."/>
+    {loading
+      ? <div className="app-card"><LoadingState/></div>
+      : error || !data
+        ? <div className="app-card"><ErrorState message={error || 'No se pudo cargar el perfil.'} retry={() => void reload()}/></div>
+        : <ProfileForm key={data.id} profile={data} role={role} onPasswordChange={onPasswordChange} onUpdated={setData}/>}
+  </div>
 }
 
 function ProfileForm({ profile, role, onPasswordChange, onUpdated }: { profile: OwnProfile; role: UserRole; onPasswordChange: () => void; onUpdated: (profile: OwnProfile) => void }) {

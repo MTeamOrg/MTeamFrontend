@@ -6,14 +6,39 @@ import {
   type AdminUserDetail,
   type CreateUserInput,
 } from '../../service/backend-api'
-import { formatDate, formatDateTime } from '../../service/date-time'
+import { describeApiError } from '../../service/api-errors'
+import { formatDate, formatDateTime, gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
+import { PageHeader } from './PageHeader'
 
 const ROLE_LABEL: Record<UserRole, string> = {
   MEMBER: 'Socio',
   TRAINER: 'Entrenador',
   ADMIN: 'Administrador',
+}
+
+type UserField = keyof CreateUserInput
+
+const FIELD_LABELS: Record<string, string> = {
+  firstName: 'Nombre',
+  lastName: 'Apellido',
+  documentNumber: 'Documento',
+  birthDate: 'Fecha de nacimiento',
+  email: 'Correo electrónico',
+  phone: 'Teléfono',
+  password: 'Contraseña temporal',
+  emergencyContactName: 'Contacto de emergencia',
+  emergencyContactPhone: 'Teléfono de emergencia',
+  specialty: 'Especialidad',
+  description: 'Descripción',
+}
+
+const BASE_REQUIRED: UserField[] = ['firstName', 'lastName', 'documentNumber', 'birthDate', 'email', 'phone', 'password']
+const REQUIRED_FIELDS: Record<UserRole, UserField[]> = {
+  MEMBER: BASE_REQUIRED,
+  ADMIN: BASE_REQUIRED,
+  TRAINER: [...BASE_REQUIRED, 'specialty', 'description'],
 }
 
 const EMPTY_USER: CreateUserInput = {
@@ -51,11 +76,13 @@ export function AdminUsersScreen() {
     action()
   }
 
-  return <section className="admin-list-layout">
+  return <div className="app-page">
+    <PageHeader title="Usuarios" description="Consultá y administrá las cuentas de socios, entrenadores y administradores.">
+      <button type="button" className="button button-primary" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20}/>Crear cuenta</button>
+    </PageHeader>
     <div className="admin-list-main">
-      <p className="page-intro">Consultá y administrá las cuentas registradas en el backend.</p>
       <div className="toolbar admin-list-toolbar">
-        <label className="search-shell"><Icon name="search"/><input aria-label="Buscar usuarios" placeholder="Nombre, documento o correo" value={search} onChange={(event) => resetPage(() => setSearch(event.target.value))}/></label>
+        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar usuarios" placeholder="Nombre, documento o correo" value={search} onChange={(event) => resetPage(() => setSearch(event.target.value))}/></label>
         <select aria-label="Filtrar por rol" value={role} onChange={(event) => resetPage(() => setRole(event.target.value as UserRole | ''))}>
           <option value="">Todos los roles</option>
           <option value="MEMBER">Socios</option>
@@ -67,7 +94,6 @@ export function AdminUsersScreen() {
           <option value="ACTIVE">Activas</option>
           <option value="INACTIVE">Desactivadas</option>
         </select>
-        <button className="button button-primary" onClick={() => setCreateOpen(true)}><Icon name="plus"/> Crear cuenta</button>
       </div>
       {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay usuarios que coincidan con los filtros."/> : <>
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Usuario</th><th>Documento</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{data.items.map((user) => <tr key={user.id}><td>{user.firstName} {user.lastName}</td><td>{user.documentNumber}</td><td>{user.email}</td><td>{ROLE_LABEL[user.role]}</td><td><span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></td><td><button className="text-link" onClick={() => setSelectedId(user.id)}>Ver detalle</button></td></tr>)}</tbody></table></div>
@@ -82,7 +108,7 @@ export function AdminUsersScreen() {
         onChanged={() => void reload()}
       />
     )}
-  </section>
+  </div>
 }
 
 function Pagination({ page, limit, total, setPage }: { page: number; limit: number; total: number; setPage: (page: number) => void }) {
@@ -97,37 +123,47 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    setSaving(true)
     setError('')
+    const blank = REQUIRED_FIELDS[form.role].filter((field) => !(form[field] ?? '').trim())
+    if (blank.length) {
+      setError(`Completá los campos obligatorios: ${blank.map((field) => FIELD_LABELS[field]).join(', ')}.`)
+      return
+    }
+    if (!/\d/.test(form.documentNumber)) {
+      setError('El documento debe contener al menos un número.')
+      return
+    }
+    setSaving(true)
     try {
+      const optional = (value: string | undefined) => value?.trim() ? value.trim() : undefined
       const body: CreateUserInput = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        documentNumber: form.documentNumber,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        documentNumber: form.documentNumber.trim(),
         birthDate: form.birthDate,
-        email: form.email,
-        phone: form.phone,
+        email: form.email.trim(),
+        phone: form.phone.trim(),
         password: form.password,
         role: form.role,
         ...(form.role === 'MEMBER' ? {
-          emergencyContactName: form.emergencyContactName || undefined,
-          emergencyContactPhone: form.emergencyContactPhone || undefined,
+          emergencyContactName: optional(form.emergencyContactName),
+          emergencyContactPhone: optional(form.emergencyContactPhone),
         } : {}),
         ...(form.role === 'TRAINER' ? {
-          specialty: form.specialty,
-          description: form.description,
+          specialty: form.specialty?.trim(),
+          description: form.description?.trim(),
         } : {}),
       }
       await backendApi.createUser(body)
       onCreated()
     } catch (value) {
-      setError(value instanceof Error ? value.message : 'No se pudo crear la cuenta.')
+      setError(describeApiError(value, 'No se pudo crear la cuenta.', FIELD_LABELS))
     } finally {
       setSaving(false)
     }
   }
 
-  return <Dialog title="Crear una cuenta" onClose={onClose}><form onSubmit={submit}><div className="dialog-fields"><Input label="Nombre" value={form.firstName} onChange={(value) => change('firstName', value)}/><Input label="Apellido" value={form.lastName} onChange={(value) => change('lastName', value)}/><Input label="Documento" value={form.documentNumber} onChange={(value) => change('documentNumber', value)}/><Input label="Fecha de nacimiento" type="date" value={form.birthDate} onChange={(value) => change('birthDate', value)}/><Input label="Correo electrónico" type="email" value={form.email} onChange={(value) => change('email', value)}/><Input label="Teléfono" value={form.phone} onChange={(value) => change('phone', value)}/><Input label="Contraseña temporal" type="password" value={form.password} onChange={(value) => change('password', value)}/><label className="read-field"><span>Rol</span><select value={form.role} onChange={(event) => change('role', event.target.value)}><option value="MEMBER">Socio</option><option value="TRAINER">Entrenador</option><option value="ADMIN">Administrador</option></select></label>{form.role === 'MEMBER' && <><Input label="Contacto de emergencia" required={false} value={form.emergencyContactName ?? ''} onChange={(value) => change('emergencyContactName', value)}/><Input label="Teléfono de emergencia" required={false} value={form.emergencyContactPhone ?? ''} onChange={(value) => change('emergencyContactPhone', value)}/></>}{form.role === 'TRAINER' && <><Input label="Especialidad" value={form.specialty ?? ''} onChange={(value) => change('specialty', value)}/><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)}/></>}</div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div></form></Dialog>
+  return <Dialog title="Crear una cuenta" onClose={onClose}><form onSubmit={submit}><div className="dialog-fields"><Input label="Nombre" value={form.firstName} maxLength={100} onChange={(value) => change('firstName', value)}/><Input label="Apellido" value={form.lastName} maxLength={100} onChange={(value) => change('lastName', value)}/><Input label="Documento" value={form.documentNumber} maxLength={30} onChange={(value) => change('documentNumber', value)}/><Input label="Fecha de nacimiento" type="date" value={form.birthDate} max={gymDate()} onChange={(value) => change('birthDate', value)}/><Input label="Correo electrónico" type="email" value={form.email} maxLength={255} onChange={(value) => change('email', value)}/><Input label="Teléfono" type="tel" value={form.phone} maxLength={30} onChange={(value) => change('phone', value)}/><Input label="Contraseña temporal" type="password" value={form.password} minLength={8} maxLength={72} hint="Entre 8 y 72 caracteres." onChange={(value) => change('password', value)}/><label className="read-field"><span>Rol</span><select value={form.role} onChange={(event) => change('role', event.target.value)}><option value="MEMBER">Socio</option><option value="TRAINER">Entrenador</option><option value="ADMIN">Administrador</option></select></label>{form.role === 'MEMBER' && <><Input label="Contacto de emergencia" required={false} maxLength={200} value={form.emergencyContactName ?? ''} onChange={(value) => change('emergencyContactName', value)}/><Input label="Teléfono de emergencia" type="tel" required={false} maxLength={30} value={form.emergencyContactPhone ?? ''} onChange={(value) => change('emergencyContactPhone', value)}/></>}{form.role === 'TRAINER' && <><Input label="Especialidad" maxLength={150} value={form.specialty ?? ''} onChange={(value) => change('specialty', value)}/><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)}/></>}</div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div></form></Dialog>
 }
 
 function UserDetailDialog({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
@@ -187,7 +223,7 @@ function UserDetail({ user, onUpdated }: { user: AdminUserDetail; onUpdated: (us
     }
   }
 
-  return <div><p><strong>{ROLE_LABEL[user.role]}</strong> · <span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></p><p>Documento: {user.documentNumber} · Alta: {formatDate(user.createdAt)}</p><form onSubmit={save}><div className="dialog-fields"><Input label="Correo electrónico" type="email" value={email} onChange={setEmail}/><Input label="Teléfono" value={phone} onChange={setPhone}/></div><div className="dialog-actions"><button type="button" className="button button-secondary" onClick={() => void toggleStatus()}>{user.status === 'ACTIVE' ? 'Desactivar cuenta' : 'Reactivar cuenta'}</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar datos'}</button></div></form><h3 className="detail-section-heading">Contraseña temporal</h3><div className="form-actions"><input aria-label="Nueva contraseña temporal" type="password" minLength={8} maxLength={72} value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)}/><button className="button button-secondary" disabled={temporaryPassword.length < 8} onClick={() => void resetPassword()}>Restablecer</button></div>{user.membership && <p>Cuota: {user.membership.status === 'ACTIVE' ? 'vigente' : 'vencida'} hasta {formatDate(user.membership.expiresAt)}</p>}{user.trainerProfile && <p>{user.trainerProfile.specialty} · {user.trainerProfile.description}</p>}{user.payments.length > 0 && <><h3 className="detail-section-heading">Pagos recientes</h3>{user.payments.slice(0, 5).map((payment) => <p key={payment.id}>{formatDateTime(payment.accreditedAt)} · {money(payment.amount)} · {payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</p>)}</>}<AuditHistory userId={user.id}/>{notice && <p className="success-message" role="status">{notice}</p>}{error && <p className="error-message" role="alert">{error}</p>}</div>
+  return <div><p><strong>{ROLE_LABEL[user.role]}</strong> · <span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></p><p>Documento: {user.documentNumber} · Alta: {formatDate(user.createdAt)}</p><form onSubmit={save}><div className="dialog-fields"><Input label="Correo electrónico" type="email" value={email} maxLength={255} onChange={setEmail}/><Input label="Teléfono" type="tel" value={phone} maxLength={30} onChange={setPhone}/></div><div className="dialog-actions"><button type="button" className="button button-secondary" onClick={() => void toggleStatus()}>{user.status === 'ACTIVE' ? 'Desactivar cuenta' : 'Reactivar cuenta'}</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar datos'}</button></div></form><h3 className="detail-section-heading">Contraseña temporal</h3><div className="form-actions"><input aria-label="Nueva contraseña temporal" type="password" minLength={8} maxLength={72} value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)}/><button className="button button-secondary" disabled={temporaryPassword.length < 8} onClick={() => void resetPassword()}>Restablecer</button></div>{user.membership && <p>Cuota: {user.membership.status === 'ACTIVE' ? 'vigente' : 'vencida'} hasta {formatDate(user.membership.expiresAt)}</p>}{user.trainerProfile && <p>{user.trainerProfile.specialty} · {user.trainerProfile.description}</p>}{user.payments.length > 0 && <><h3 className="detail-section-heading">Pagos recientes</h3>{user.payments.slice(0, 5).map((payment) => <p key={payment.id}>{formatDateTime(payment.accreditedAt)} · {money(payment.amount)} · {payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</p>)}</>}<AuditHistory userId={user.id}/>{notice && <p className="success-message" role="status">{notice}</p>}{error && <p className="error-message" role="alert">{error}</p>}</div>
 }
 
 function AuditHistory({ userId }: { userId: string }) {
@@ -207,8 +243,18 @@ function Dialog({ title, onClose, children }: { title: string; onClose: () => vo
   return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={title}><button className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{title}</h2>{children}</section></div>
 }
 
-function Input({ label, value, onChange, type = 'text', required = true }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
-  return <label className="read-field"><span>{label}</span><input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)}/></label>
+function Input({ label, value, onChange, type = 'text', required = true, minLength, maxLength, max, hint }: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  type?: string
+  required?: boolean
+  minLength?: number
+  maxLength?: number
+  max?: string
+  hint?: string
+}) {
+  return <label className="read-field"><span>{label}</span><input type={type} required={required} minLength={minLength} maxLength={maxLength} max={max} value={value} onChange={(event) => onChange(event.target.value)}/>{hint && <small className="field-hint">{hint}</small>}</label>
 }
 
 function money(value: string) {

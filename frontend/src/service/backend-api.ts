@@ -170,6 +170,42 @@ export interface Trainer extends PersonRef {
   description: string
 }
 
+export interface ScheduleClass {
+  id: string
+  activity: string
+  day: string
+  startsAt: string
+  startTime: string
+  branch: EntityRef
+  trainer: PersonRef | null
+}
+
+export interface WeeklySchedule {
+  id: string | null
+  weekStartsOn: string
+  classes: ScheduleClass[]
+}
+
+export interface ScheduledClassInput {
+  weekStartsOn: string
+  activity: string
+  startsAt: string
+  branchId: string
+  trainerId: string | null
+}
+
+export type ScheduledClassUpdate = Partial<Omit<ScheduledClassInput, 'weekStartsOn'>>
+
+export interface ScheduledClassRecord {
+  id: string
+  scheduleId: string
+  weekStartsOn: string
+  activity: string
+  startsAt: string
+  branchId: string
+  trainerId: string | null
+}
+
 function queryString(values: Record<string, string | number | boolean | undefined>) {
   const query = new URLSearchParams()
   Object.entries(values).forEach(([key, value]) => {
@@ -287,4 +323,20 @@ export const backendApi = {
     apiRequest<Page<Trainer>>(`/trainers${queryString({ page, limit })}`, {
       authenticated: false,
     }),
+
+  getWeeklySchedule: (weekStartsOn?: string) =>
+    apiRequest<WeeklySchedule>(`/weekly-schedules${queryString({ weekStartsOn })}`, {
+      authenticated: false,
+    }),
+  copyWeeklySchedule: (scheduleId: string, weekStartsOn: string) =>
+    apiRequest<WeeklySchedule>(`/weekly-schedules/${scheduleId}/copies`, {
+      method: 'POST',
+      body: { weekStartsOn },
+    }),
+  createScheduledClass: (body: ScheduledClassInput) =>
+    apiRequest<ScheduledClassRecord>('/scheduled-classes', { method: 'POST', body }),
+  updateScheduledClass: (id: string, body: ScheduledClassUpdate) =>
+    apiRequest<ScheduledClassRecord>(`/scheduled-classes/${id}`, { method: 'PATCH', body }),
+  deleteScheduledClass: (id: string) =>
+    apiRequest<void>(`/scheduled-classes/${id}`, { method: 'DELETE' }),
 }

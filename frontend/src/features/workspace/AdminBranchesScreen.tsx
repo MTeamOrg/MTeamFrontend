@@ -3,6 +3,8 @@ import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type Branch, type BranchInput } from '../../service/backend-api'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
+import { PageHeader } from './PageHeader'
+import { SafeImage } from './SafeImage'
 
 const EMPTY_BRANCH: BranchInput = {
   name: '',
@@ -26,11 +28,13 @@ export function AdminBranchesScreen() {
   }), [activeFilter, page, search])
   const { data, loading, error, reload } = useApiResource(loader)
 
-  return <section className="admin-list-layout">
+  return <div className="app-page">
+    <PageHeader title="Sedes" description="Administrá las sedes reales del gimnasio. Las sedes desactivadas no aparecen en el sitio público.">
+      <button type="button" className="button button-primary" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
+    </PageHeader>
     <div className="admin-list-main">
-      <p className="page-intro">Administrá las sedes reales del gimnasio. Las sedes desactivadas no aparecen en el sitio público.</p>
-      <div className="toolbar admin-list-toolbar"><label className="search-shell"><Icon name="search"/><input aria-label="Buscar sedes" placeholder="Nombre, dirección o descripción" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label><select aria-label="Filtrar sedes por estado" value={activeFilter} onChange={(event) => { setPage(1); setActiveFilter(event.target.value as typeof activeFilter) }}><option value="all">Todas</option><option value="active">Activas</option><option value="inactive">Desactivadas</option></select><button className="button button-primary" onClick={() => setEditing('new')}><Icon name="plus"/> Nueva sede</button></div>
-      {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <><div className="branch-grid">{data.items.map((branch) => <article className="branch-card" key={branch.id}>{branch.imageUrl ? <img className="media-placeholder" src={branch.imageUrl} alt={`Sede ${branch.name}`}/> : <div className="media-placeholder"><Icon name="image"/></div>}<div className="branch-info"><div className="card-title-row"><h3>{branch.name}</h3><span className={`badge ${branch.isActive ? 'badge-info' : 'badge-disabled'}`}>{branch.isActive ? 'Activa' : 'Desactivada'}</span></div><p><Icon name="pin"/>{branch.address}</p><p><Icon name="clock"/>{branch.openingHours}</p><p><Icon name="phone"/>{branch.phone}</p><div className="table-actions"><button className="button button-secondary" onClick={() => setEditing(branch)}>Editar</button><button className="button button-secondary" onClick={() => void toggleStatus(branch)}>{branch.isActive ? 'Desactivar' : 'Reactivar'}</button></div></div></article>)}</div><div className="form-actions"><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></>}
+      <div className="toolbar admin-list-toolbar"><label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Nombre, dirección o descripción" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label><select aria-label="Filtrar sedes por estado" value={activeFilter} onChange={(event) => { setPage(1); setActiveFilter(event.target.value as typeof activeFilter) }}><option value="all">Todas</option><option value="active">Activas</option><option value="inactive">Desactivadas</option></select></div>
+      {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <><div className="branch-grid">{data.items.map((branch) => <article className="branch-card" key={branch.id}><SafeImage className="media-placeholder" src={branch.imageUrl} alt={`Sede ${branch.name}`}/><div className="branch-info"><div className="card-title-row"><h3>{branch.name}</h3><span className={`badge ${branch.isActive ? 'badge-info' : 'badge-disabled'}`}>{branch.isActive ? 'Activa' : 'Desactivada'}</span></div><p><Icon name="pin"/>{branch.address}</p><p><Icon name="clock"/>{branch.openingHours}</p><p><Icon name="phone"/>{branch.phone}</p><div className="table-actions"><button className="button button-secondary" onClick={() => setEditing(branch)}>Editar</button><button className="button button-secondary" onClick={() => void toggleStatus(branch)}>{branch.isActive ? 'Desactivar' : 'Reactivar'}</button></div></div></article>)}</div><div className="form-actions"><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></>}
     </div>
     {editing && (
       <BranchDialog
@@ -39,7 +43,7 @@ export function AdminBranchesScreen() {
         onSaved={() => { setEditing(null); void reload() }}
       />
     )}
-  </section>
+  </div>
 
   async function toggleStatus(branch: Branch) {
     const next = !branch.isActive
