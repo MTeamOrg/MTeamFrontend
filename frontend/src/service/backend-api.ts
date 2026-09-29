@@ -177,6 +177,19 @@ export interface PaymentReportItem extends Payment {
   member: { id: string; firstName: string; lastName: string; documentNumber: string; email: string }
 }
 
+export interface PaymentSummaryDay {
+  date: string
+  amount: string
+}
+
+export interface PaymentSummary {
+  from: string
+  to: string
+  paymentCount: number
+  totalAmount: string
+  days: PaymentSummaryDay[]
+}
+
 export interface PaymentPreview {
   member: { id: string; firstName: string; lastName: string; documentNumber: string; email: string }
   currentPrice: string
@@ -389,7 +402,7 @@ export const backendApi = {
     to?: string
   }) => apiRequest<Page<PaymentReportItem>>(`/payments${queryString(filters)}`),
   getPaymentsSummary: (from: string, to: string) =>
-    apiRequest<{ from: string; to: string; paymentCount: number; totalAmount: string }>(
+    apiRequest<PaymentSummary>(
       `/payments/summary${queryString({ from, to })}`,
     ),
   previewPayment: (body: {

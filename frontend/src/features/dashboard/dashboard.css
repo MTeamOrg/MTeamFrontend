@@ -18,10 +18,13 @@
 .pending-state strong { font-size: 14px; font-weight: 600; color: var(--black); }
 .pending-state p { margin: 0; max-width: 360px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
 .revenue-total { font-size: 20px; font-weight: 700; color: var(--pink); }
+.revenue-chart { display: grid; gap: 12px; }
 .revenue-bars { height: 160px; display: flex; align-items: flex-end; gap: 12px; }
 .revenue-bar-slot { flex: 1; height: 100%; display: flex; align-items: flex-end; }
 .revenue-bar { width: 100%; border-radius: 8px; background: var(--background); }
 .revenue-bar.is-today { background: var(--pink); }
+.revenue-dates { display: flex; gap: 12px; }
+.revenue-bar-date { flex: 1; color: var(--text-muted); font-size: 12px; line-height: 1.2; text-align: center; }
 
 .quick-actions { display: flex; flex-direction: column; gap: 14px; }
 .quick-actions .button { justify-content: flex-start; }

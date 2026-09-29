@@ -4,7 +4,7 @@ import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser, ty
 import { AdminDashboardScreen } from './AdminDashboardScreen'
 import { MemberDashboardScreen } from './MemberDashboardScreen'
 import { TrainerDashboardScreen } from './TrainerDashboardScreen'
-import { groupRevenueByDay, lastSevenDays } from './dashboard-data'
+import { lastSevenDays } from './dashboard-data'
 import adminSource from './AdminDashboardScreen.tsx?raw'
 import dataSource from './dashboard-data.ts?raw'
 
@@ -16,11 +16,14 @@ const payment = (id: string, accreditedAt: string, amount: string, status: 'ACCR
 
 function adminRoutes(overrides: Partial<typeof totals> = {}, payments = [payment('p1', '2026-09-07T13:00:00Z', '10000'), payment('p2', '2026-09-05T13:00:00Z', '5000')], pendingMedicalCertificates = 4): ApiRoute[] {
   const values = { ...totals, ...overrides }
+  const days = lastSevenDays('2026-09-07').map((date) => ({
+    date,
+    amount: String(payments.filter((item) => item.accreditedAt.slice(0, 10) === date).reduce((sum, item) => sum + Number(item.amount), 0)),
+  }))
   return [
     { path: '/users', handler: () => ({ body: { items: [], page: 1, limit: 1, total: values.users } }) },
     { path: '/members', handler: (url) => ({ body: { items: [], page: 1, limit: 1, total: values[url.searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'] } }) },
-    { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: payments.length, totalAmount: String(payments.reduce((sum, item) => sum + Number(item.amount), 0)) } }) },
-    { path: '/payments', handler: () => ({ body: { items: payments, page: 1, limit: 100, total: payments.length } }) },
+    { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: payments.length, totalAmount: String(payments.reduce((sum, item) => sum + Number(item.amount), 0)), days } }) },
     { path: '/medical-certificates', handler: () => ({ body: { items: [], page: 1, limit: 1, total: pendingMedicalCertificates } }) },
   ]
 }
@@ -72,10 +75,11 @@ describe('panel administrativo', () => {
     expect(bars[0]).toHaveAccessibleName(/^01\/09\/2026: \$\s0$/)
     expect(bars[6].querySelector('.revenue-bar')).toHaveClass('is-today')
     expect(bars.slice(0, 6).every((bar) => !bar.querySelector('.is-today'))).toBe(true)
-    const payments = requestsTo(fetchStub, 'GET', '/payments')[0].url.searchParams
-    expect(payments.get('status')).toBe('ACCREDITED')
-    expect(payments.get('from')).toBe('2026-09-01T00:00:00-03:00')
-    expect(payments.get('to')).toBe('2026-09-08T00:00:00-03:00')
+    expect(screen.getAllByText(/\/09$/)).toHaveLength(7)
+    const summary = requestsTo(fetchStub, 'GET', '/payments/summary')[0].url.searchParams
+    expect(summary.get('from')).toBe('2026-09-01T00:00:00-03:00')
+    expect(summary.get('to')).toBe('2026-09-08T00:00:00-03:00')
+    expect(requestsTo(fetchStub, 'GET', '/payments')).toHaveLength(0)
   })
 
   it('muestra cero sin inventar datos', async () => {
@@ -189,17 +193,10 @@ describe('panel administrativo', () => {
   })
 })
 
-describe('agregado de recaudación', () => {
-  it('agrupa por día de Buenos Aires y excluye anulados', () => {
+describe('período de recaudación', () => {
+  it('construye hoy y los seis días calendario anteriores', () => {
     const dates = lastSevenDays('2026-09-07')
     expect(dates).toEqual(['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06', '2026-09-07'])
-    const result = groupRevenueByDay([
-      { accreditedAt: '2026-09-07T02:30:00Z', amount: '100', status: 'ACCREDITED' },
-      { accreditedAt: '2026-09-07T03:30:00Z', amount: '200.50', status: 'ACCREDITED' },
-      { accreditedAt: '2026-09-07T12:00:00Z', amount: '999', status: 'VOIDED' },
-    ], dates)
-    expect(result.find((day) => day.date === '2026-09-06')?.amount).toBe(100)
-    expect(result.find((day) => day.date === '2026-09-07')?.amount).toBe(200.5)
   })
 })
 

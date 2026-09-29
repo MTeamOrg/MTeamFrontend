@@ -5,7 +5,7 @@ import { gymDate } from '../../service/date-time'
 import { useAuth } from '../authentication/use-auth'
 import { ErrorState, LoadingState } from '../workspace/ApiStates'
 import { ActionButton, DashboardCard, DashboardHeader, PendingState, QuickActions, StatusCard, type QuickAction, type StatusTone } from './DashboardParts'
-import { formatMoney, formatNumericDate, loadRevenueWeek, type RevenueWeek } from './dashboard-data'
+import { formatDayMonth, formatMoney, formatNumericDate, loadRevenueWeek, type RevenueWeek } from './dashboard-data'
 import './dashboard.css'
 
 const NO_API = 'El backend todavía no expone esta funcionalidad'
@@ -111,10 +111,15 @@ function RevenueCard({ loading, error, data, retry }: { loading: boolean; error:
     className="revenue-card"
     action={data && !loading && !error ? <strong className="revenue-total">{formatMoney(data.total)}</strong> : undefined}
   >
-    {loading ? <LoadingState message="Cargando recaudación…"/> : error || !data ? <ErrorState message={error || 'No se pudo cargar la recaudación.'} retry={retry}/> : <div className="revenue-bars" role="list" aria-label="Recaudación diaria">
-      {data.days.map((day, index) => <div key={day.date} className="revenue-bar-slot" role="listitem" aria-label={`${formatNumericDate(day.date)}: ${formatMoney(day.amount)}`}>
-        <span className={index === data.days.length - 1 ? 'revenue-bar is-today' : 'revenue-bar'} style={{ height: max > 0 ? `${Math.max((day.amount / max) * 100, 4)}%` : '4%' }}/>
-      </div>)}
+    {loading ? <LoadingState message="Cargando recaudación…"/> : error || !data ? <ErrorState message={error || 'No se pudo cargar la recaudación.'} retry={retry}/> : <div className="revenue-chart">
+      <div className="revenue-bars" role="list" aria-label="Recaudación diaria">
+        {data.days.map((day, index) => <div key={day.date} className="revenue-bar-slot" role="listitem" aria-label={`${formatNumericDate(day.date)}: ${formatMoney(day.amount)}`}>
+          <span className={index === data.days.length - 1 ? 'revenue-bar is-today' : 'revenue-bar'} style={{ height: max > 0 ? `${Math.max((day.amount / max) * 100, 4)}%` : '4%' }}/>
+        </div>)}
+      </div>
+      <div className="revenue-dates" aria-hidden="true">
+        {data.days.map((day) => <span key={day.date} className="revenue-bar-date">{formatDayMonth(day.date)}</span>)}
+      </div>
     </div>}
   </DashboardCard>
 }
