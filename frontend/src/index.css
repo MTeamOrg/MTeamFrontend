@@ -293,11 +293,6 @@
 .admin-dashboard-main,.admin-dashboard-side{display:grid;align-content:start;gap:20px;min-width:0}
 .admin-dashboard-main .surface-card,.admin-dashboard-side .surface-card{padding:20px}
 .revenue-card .dashboard-section-title>strong{color:var(--pink);font-size:20px}
-.revenue-chart{height:178px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:12px;padding-top:10px}
-.revenue-chart>div{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px}
-.revenue-chart>div>span{width:min(100%,36px);min-height:8px;border-radius:6px 6px 3px 3px;background:#eff0f1}
-.revenue-chart>div>span.today{background:var(--pink)}
-.revenue-chart small{color:#92979d;font-size:11px}
 .dashboard-accesses{padding:0!important;overflow:hidden}
 .dashboard-accesses>.dashboard-section-title{padding:20px 20px 12px;margin:0;border-bottom:1px solid #e2e3e5}
 .dashboard-access-row{min-height:68px;display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid #e2e3e5}
@@ -348,7 +343,6 @@
   .admin-dashboard-side{grid-template-columns:1fr}
   .admin-dashboard-side>.surface-card:first-child{grid-column:auto}
   .admin-dashboard-main .surface-card,.admin-dashboard-side .surface-card{padding:14px}
-  .revenue-chart{height:130px;gap:6px}.revenue-chart small{font-size:8px}
   .revenue-card .dashboard-section-title>strong{font-size:13px}
   .dashboard-accesses>.dashboard-section-title{padding:14px 14px 10px}
   .dashboard-access-row{gap:8px;padding:10px 12px;min-height:60px}
