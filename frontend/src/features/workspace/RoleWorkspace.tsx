@@ -15,6 +15,9 @@ import { MemberPaymentsScreen } from './MemberPaymentsScreen'
 import { AdminMedicalCertificatesScreen } from './AdminMedicalCertificatesScreen'
 import { AdminMedicalReviewScreen } from './AdminMedicalReviewScreen'
 import { MemberMedicalCertificateScreen } from './MemberMedicalCertificateScreen'
+import { EventsScreen } from '../communications/EventsScreen'
+import { NewsScreen } from '../communications/NewsScreen'
+import { NotificationsScreen } from '../communications/NotificationsScreen'
 import { ProfileScreen } from './ProfileScreen'
 import { TrainerDirectoryScreen } from './TrainerDirectoryScreen'
 import { WorkspaceLayout } from './WorkspaceLayout'
@@ -23,8 +26,6 @@ import { ROLE_BASE, resolveSection } from './navigation'
 const UNAVAILABLE: Record<string, { module: string; roles: UserRole[] }> = {
   acceso: { module: 'Acceso QR', roles: ['MEMBER', 'TRAINER'] },
   accesos: { module: 'Accesos', roles: ['ADMIN'] },
-  eventos: { module: 'Eventos', roles: ['MEMBER', 'TRAINER', 'ADMIN'] },
-  novedades: { module: 'Novedades', roles: ['MEMBER', 'TRAINER', 'ADMIN'] },
   notificaciones: { module: 'Notificaciones', roles: ['MEMBER', 'TRAINER'] },
 }
 
@@ -85,6 +86,9 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
     if (role === 'ADMIN' && segment === 'aptos') return nestedId
       ? <AdminMedicalReviewScreen id={nestedId}/>
       : <AdminMedicalCertificatesScreen/>
+    if (segment === 'eventos') return <EventsScreen isAdmin={role === 'ADMIN'}/>
+    if (segment === 'novedades') return <NewsScreen isAdmin={role === 'ADMIN'}/>
+    if (segment === 'notificaciones' && role !== 'ADMIN') return <NotificationsScreen/>
     const unavailable = UNAVAILABLE[segment]
     if (unavailable?.roles.includes(role)) return <UnavailableScreen title={title} module={unavailable.module}/>
     return <Navigate to={base} replace/>
