@@ -29,6 +29,7 @@ export function TrainerDirectoryScreen() {
                   <h3>{trainer.firstName} {trainer.lastName}</h3>
                   <span className="badge badge-info">{trainer.specialty}</span>
                   <p>{trainer.description}</p>
+                  {!!trainer.branches?.length && <p><strong>Sedes:</strong> {trainer.branches.map((branch) => branch.name).join(', ')}</p>}
                 </div>
               </article>)}
             </div>

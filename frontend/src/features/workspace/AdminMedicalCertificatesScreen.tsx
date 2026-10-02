@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type AdminMedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
 import { formatDate, formatDateTime } from '../../service/date-time'
@@ -26,8 +26,9 @@ function certificateMember(certificate: AdminMedicalCertificate) {
 const METRIC_STATUSES: MedicalCertificateStatus[] = ['PENDING', 'APPROVED', 'REJECTED']
 
 export function AdminMedicalCertificatesScreen() {
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<MedicalCertificateStatus | ''>('')
+  const [status, setStatus] = useState<MedicalCertificateStatus | ''>(() => (searchParams.get('status') as MedicalCertificateStatus | null) ?? '')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)

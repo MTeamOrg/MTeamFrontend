@@ -1,4 +1,5 @@
 import { useCallback, useState, type FormEvent, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { UserRole, UserStatus } from '../authentication/auth-types'
 import { useApiResource } from '../../hooks/use-api-resource'
 import {
@@ -53,9 +54,12 @@ const EMPTY_USER: CreateUserInput = {
 }
 
 export function AdminUsersScreen() {
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [role, setRole] = useState<UserRole | ''>('')
-  const [status, setStatus] = useState<UserStatus | ''>('')
+  const [role, setRole] = useState<UserRole | ''>(() => (searchParams.get('role') as UserRole | null) ?? '')
+  const [status, setStatus] = useState<UserStatus | ''>(() => (searchParams.get('status') as UserStatus | null) ?? '')
+  const [membershipStatus, setMembershipStatus] = useState<'' | 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'>(() => (searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED' | null) ?? '')
+  const [initialPeriod, setInitialPeriod] = useState(() => searchParams.get('initialPeriod') === 'true')
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedId, setSelectedId] = useState('')
@@ -64,10 +68,12 @@ export function AdminUsersScreen() {
       search: search.trim() || undefined,
       role: role || undefined,
       status: status || undefined,
+      membershipStatus: membershipStatus || undefined,
+      initialPeriod: initialPeriod || undefined,
       page,
       limit: 20,
     }),
-    [page, role, search, status],
+    [initialPeriod, membershipStatus, page, role, search, status],
   )
   const { data, loading, error, reload } = useApiResource(loader)
 
@@ -94,6 +100,13 @@ export function AdminUsersScreen() {
           <option value="ACTIVE">Activas</option>
           <option value="INACTIVE">Desactivadas</option>
         </select>
+        <select aria-label="Filtrar por estado de cuota" value={membershipStatus} onChange={(event) => resetPage(() => setMembershipStatus(event.target.value as typeof membershipStatus))}>
+          <option value="">Todos los estados de cuota</option>
+          <option value="CURRENT">Al día</option>
+          <option value="EXPIRING_SOON">Próximas a vencer</option>
+          <option value="EXPIRED">Vencidas</option>
+        </select>
+        <label className="checkbox"><input type="checkbox" checked={initialPeriod} onChange={(event) => resetPage(() => setInitialPeriod(event.target.checked))}/>Período inicial de 20 días</label>
       </div>
       {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay usuarios que coincidan con los filtros."/> : <>
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Usuario</th><th>Documento</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead><tbody>{data.items.map((user) => <tr key={user.id}><td>{user.firstName} {user.lastName}</td><td>{user.documentNumber}</td><td>{user.email}</td><td>{ROLE_LABEL[user.role]}</td><td><span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></td><td><button className="text-link" onClick={() => setSelectedId(user.id)}>Ver detalle</button></td></tr>)}</tbody></table></div>
@@ -181,6 +194,12 @@ function UserDetail({ user, onUpdated }: { user: AdminUserDetail; onUpdated: (us
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [savingBranches, setSavingBranches] = useState(false)
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>(() => user.trainerBranches.map((branch) => branch.id))
+  const branchLoader = useCallback(() => user.role === 'TRAINER'
+    ? backendApi.listAdminBranches({ isActive: true, page: 1, limit: 100 })
+    : Promise.resolve({ items: [], page: 1, limit: 100, total: 0 }), [user.role])
+  const branches = useApiResource(branchLoader)
 
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -223,7 +242,23 @@ function UserDetail({ user, onUpdated }: { user: AdminUserDetail; onUpdated: (us
     }
   }
 
-  return <div><p><strong>{ROLE_LABEL[user.role]}</strong> · <span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></p><p>Documento: {user.documentNumber} · Alta: {formatDate(user.createdAt)}</p><form onSubmit={save}><div className="dialog-fields"><Input label="Correo electrónico" type="email" value={email} maxLength={255} onChange={setEmail}/><Input label="Teléfono" type="tel" value={phone} maxLength={30} onChange={setPhone}/></div><div className="dialog-actions"><button type="button" className="button button-secondary" onClick={() => void toggleStatus()}>{user.status === 'ACTIVE' ? 'Desactivar cuenta' : 'Reactivar cuenta'}</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar datos'}</button></div></form><h3 className="detail-section-heading">Contraseña temporal</h3><div className="form-actions"><input aria-label="Nueva contraseña temporal" type="password" minLength={8} maxLength={72} value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)}/><button className="button button-secondary" disabled={temporaryPassword.length < 8} onClick={() => void resetPassword()}>Restablecer</button></div>{user.membership && <p>Cuota: {user.membership.status === 'ACTIVE' ? 'vigente' : 'vencida'} hasta {formatDate(user.membership.expiresAt)}</p>}{user.trainerProfile && <p>{user.trainerProfile.specialty} · {user.trainerProfile.description}</p>}{user.payments.length > 0 && <><h3 className="detail-section-heading">Pagos recientes</h3>{user.payments.slice(0, 5).map((payment) => <p key={payment.id}>{formatDateTime(payment.accreditedAt)} · {money(payment.amount)} · {payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</p>)}</>}<AuditHistory userId={user.id}/>{notice && <p className="success-message" role="status">{notice}</p>}{error && <p className="error-message" role="alert">{error}</p>}</div>
+  async function saveTrainerBranches() {
+    setSavingBranches(true)
+    setError('')
+    setNotice('')
+    try {
+      const updated = await backendApi.updateTrainerBranches(user.id, selectedBranchIds)
+      setSelectedBranchIds(updated.trainerBranches.map((branch) => branch.id))
+      onUpdated(updated)
+      setNotice('Sedes del entrenador actualizadas correctamente.')
+    } catch (value) {
+      setError(value instanceof Error ? value.message : 'No se pudieron actualizar las sedes del entrenador.')
+    } finally {
+      setSavingBranches(false)
+    }
+  }
+
+  return <div><p><strong>{ROLE_LABEL[user.role]}</strong> · <span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></p><p>Documento: {user.documentNumber} · Alta: {formatDate(user.createdAt)}</p><form onSubmit={save}><div className="dialog-fields"><Input label="Correo electrónico" type="email" value={email} maxLength={255} onChange={setEmail}/><Input label="Teléfono" type="tel" value={phone} maxLength={30} onChange={setPhone}/></div><div className="dialog-actions"><button type="button" className="button button-secondary" onClick={() => void toggleStatus()}>{user.status === 'ACTIVE' ? 'Desactivar cuenta' : 'Reactivar cuenta'}</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar datos'}</button></div></form><h3 className="detail-section-heading">Contraseña temporal</h3><div className="form-actions"><input aria-label="Nueva contraseña temporal" type="password" minLength={8} maxLength={72} value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)}/><button className="button button-secondary" disabled={temporaryPassword.length < 8} onClick={() => void resetPassword()}>Restablecer</button></div>{user.membership && <p>Cuota: {user.membership.status === 'ACTIVE' ? 'vigente' : 'vencida'} hasta {formatDate(user.membership.expiresAt)}</p>}{user.trainerProfile && <><p>{user.trainerProfile.specialty} · {user.trainerProfile.description}</p><section className="trainer-branch-assignment"><h3 className="detail-section-heading">Sedes del entrenador</h3>{branches.loading ? <LoadingState message="Cargando sedes…"/> : branches.error ? <ErrorState message={branches.error} retry={() => void branches.reload()}/> : <><div className="trainer-branch-options">{branches.data?.items.map((branch) => <label key={branch.id} className="checkbox"><input type="checkbox" checked={selectedBranchIds.includes(branch.id)} onChange={(event) => setSelectedBranchIds((current) => event.target.checked ? [...current, branch.id] : current.filter((id) => id !== branch.id))}/>{branch.name}</label>)}</div><button type="button" className="button button-secondary" disabled={savingBranches} onClick={() => void saveTrainerBranches()}>{savingBranches ? 'Guardando…' : 'Guardar sedes'}</button></>}</section><p><strong>Sedes asignadas:</strong> {user.trainerBranches.length ? user.trainerBranches.map((branch) => branch.name).join(', ') : 'Sin sedes asignadas'}</p></>}{user.payments.length > 0 && <><h3 className="detail-section-heading">Pagos recientes</h3>{user.payments.slice(0, 5).map((payment) => <p key={payment.id}>{formatDateTime(payment.accreditedAt)} · {money(payment.amount)} · {payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</p>)}</>}<AuditHistory userId={user.id}/>{notice && <p className="success-message" role="status">{notice}</p>}{error && <p className="error-message" role="alert">{error}</p>}</div>
 }
 
 function AuditHistory({ userId }: { userId: string }) {

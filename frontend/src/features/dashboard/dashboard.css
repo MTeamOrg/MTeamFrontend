@@ -4,6 +4,7 @@
 .dashboard-pill { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: var(--pink-tint); color: var(--pink); font-size: 11px; font-weight: 600; letter-spacing: 0.66px; }
 .dashboard-header h1 { margin: 0; font-size: 40px; line-height: 1.2; font-weight: 700; color: var(--black); }
 .dashboard-header p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--text-secondary); }
+.admin-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex-wrap: wrap; }
 
 /* A1: wide left zone + 400px right zone, shared by the revenue/actions and access/initial-period rows */
 .admin-panel-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; column-gap: 20px; row-gap: 28px; }
@@ -44,6 +45,7 @@
 }
 
 @media (max-width: 700px) {
+  .admin-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .dashboard-header { gap: 4px; }
   .dashboard-header h1 { font-size: 25px; }
   .dashboard-header p { font-size: 13px; }

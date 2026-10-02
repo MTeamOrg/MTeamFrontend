@@ -1,10 +1,11 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import type { UserRole } from '../authentication/auth-types'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type OwnProfile } from '../../service/backend-api'
 import { formatDate } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
 import { PageHeader } from './PageHeader'
+import { SafeImage } from './SafeImage'
 
 export function ProfileScreen({ role, onPasswordChange }: { role: UserRole; onPasswordChange: () => void }) {
   const loader = useCallback(() => backendApi.getOwnProfile(), [])
@@ -27,6 +28,7 @@ function ProfileForm({ profile, role, onPasswordChange, onUpdated }: { profile: 
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [photoSaving, setPhotoSaving] = useState(false)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -51,7 +53,33 @@ function ProfileForm({ profile, role, onPasswordChange, onUpdated }: { profile: 
     }
   }
 
-  return <section className="surface-card profile-card"><div className="profile-head"><span className="profile-avatar">{profile.firstName[0]}{profile.lastName[0]}</span><div><h2>{profile.firstName} {profile.lastName}</h2><p>{role === 'TRAINER' ? 'Entrenador' : role === 'ADMIN' ? 'Administrador' : 'Socio M-TEAM'}</p></div></div><form onSubmit={submit}><div className="profile-fields"><Field label="Nombre y apellido" value={`${profile.firstName} ${profile.lastName}`} readOnly/><Field label="Documento" value={profile.documentNumber} readOnly/><Field label="Fecha de nacimiento" value={formatDate(profile.birthDate)} readOnly/><Field label="Correo electrónico" value={email} onChange={setEmail}/><Field label="Teléfono" value={phone} onChange={setPhone}/>{role === 'MEMBER' && <><Field label="Contacto de emergencia" value={emergencyName} onChange={setEmergencyName}/><Field label="Teléfono de emergencia" value={emergencyPhone} onChange={setEmergencyPhone}/></>}{role === 'TRAINER' && <><Field label="Especialidad" value={profile.trainerProfile?.specialty ?? 'Sin informar'} readOnly/><Field label="Descripción" value={profile.trainerProfile?.description ?? 'Sin informar'} readOnly/></>}</div>{notice && <p className="success-message" role="status">{notice}</p>}{error && <p className="error-message" role="alert">{error}</p>}<div className="profile-actions"><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button><button type="button" className="button button-secondary" onClick={onPasswordChange}>Cambiar contraseña</button></div></form></section>
+  async function changePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setNotice('')
+    setError('')
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setError('La foto debe estar en formato JPG o PNG.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La foto no puede superar los 5 MB.')
+      return
+    }
+    setPhotoSaving(true)
+    try {
+      const updated = await backendApi.updateOwnPhoto(file)
+      onUpdated(updated)
+      setNotice('Foto de perfil actualizada correctamente.')
+    } catch (value) {
+      setError(value instanceof Error ? value.message : 'No se pudo actualizar la foto de perfil.')
+    } finally {
+      setPhotoSaving(false)
+    }
+  }
+
+  return <section className="surface-card profile-card"><div className="profile-head"><div className="profile-avatar-wrap">{profile.photoUrl ? <SafeImage className="profile-avatar-image" src={profile.photoUrl} alt={`Foto de ${profile.firstName} ${profile.lastName}`} fallbackIcon="user"/> : <span className="profile-avatar">{profile.firstName[0]}{profile.lastName[0]}</span>}<label className="button button-secondary profile-photo-button" htmlFor="profile-photo">{photoSaving ? 'Subiendo…' : profile.photoUrl ? 'Cambiar foto' : 'Cargar foto'}</label><input id="profile-photo" className="sr-only" type="file" accept="image/jpeg,image/png" onChange={changePhoto} disabled={photoSaving}/></div><div><h2>{profile.firstName} {profile.lastName}</h2><p>{role === 'TRAINER' ? 'Entrenador' : role === 'ADMIN' ? 'Administrador' : 'Socio M-TEAM'}</p><small className="field-hint">JPG o PNG · máximo 5 MB</small></div></div><form onSubmit={submit}><div className="profile-fields"><Field label="Nombre y apellido" value={`${profile.firstName} ${profile.lastName}`} readOnly/><Field label="Documento" value={profile.documentNumber} readOnly/><Field label="Fecha de nacimiento" value={formatDate(profile.birthDate)} readOnly/><Field label="Correo electrónico" value={email} onChange={setEmail}/><Field label="Teléfono" value={phone} onChange={setPhone}/>{role === 'MEMBER' && <><Field label="Contacto de emergencia" value={emergencyName} onChange={setEmergencyName}/><Field label="Teléfono de emergencia" value={emergencyPhone} onChange={setEmergencyPhone}/></>}{role === 'TRAINER' && <><Field label="Especialidad" value={profile.trainerProfile?.specialty ?? 'Sin informar'} readOnly/><Field label="Descripción" value={profile.trainerProfile?.description ?? 'Sin informar'} readOnly/></>}</div>{notice && <p className="success-message" role="status">{notice}</p>}{error && <p className="error-message" role="alert">{error}</p>}<div className="profile-actions"><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button><button type="button" className="button button-secondary" onClick={onPasswordChange}>Cambiar contraseña</button></div></form></section>
 }
 
 function Field({ label, value, onChange, readOnly = false }: { label: string; value: string; onChange?: (value: string) => void; readOnly?: boolean }) {

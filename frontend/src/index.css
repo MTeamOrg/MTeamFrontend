@@ -560,3 +560,11 @@
   .medical-history-row{gap:8px;padding:12px 14px}
   .medical-file-actions{width:100%;margin-left:58px}
 }
+
+.profile-avatar-wrap{display:grid;grid-template-columns:62px auto;align-items:center;gap:10px}
+.profile-avatar-image{width:62px;height:62px;display:block;object-fit:cover;border-radius:50%;background:#fce8ed;color:var(--pink)}
+.profile-avatar-image.media-fallback{display:grid;place-items:center}
+.profile-photo-button{min-height:30px!important;padding:0 10px!important;font-size:10px!important}
+.trainer-branch-assignment{display:grid;gap:10px;padding:14px 0;border-top:1px solid #eceef0;border-bottom:1px solid #eceef0}
+.trainer-branch-options{display:grid;gap:8px}
+@media(max-width:700px){.profile-head{align-items:flex-start}.profile-avatar-wrap{grid-template-columns:54px 1fr}.profile-avatar-image,.profile-avatar{width:54px;height:54px}.profile-photo-button{grid-column:1/-1}}

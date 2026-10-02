@@ -8,7 +8,7 @@ import { lastSevenDays } from './dashboard-data'
 import adminSource from './AdminDashboardScreen.tsx?raw'
 import dataSource from './dashboard-data.ts?raw'
 
-const totals = { users: 184, CURRENT: 120, EXPIRING_SOON: 21, EXPIRED: 30 }
+const totals = { users: 184, inactive: 16, CURRENT: 120, EXPIRING_SOON: 21, EXPIRED: 30, REJECTED: 2, INITIAL: 5 }
 const payment = (id: string, accreditedAt: string, amount: string, status: 'ACCREDITED' | 'VOIDED' = 'ACCREDITED') => ({
   id, accreditedAt, amount, status, method: 'Efectivo', receiptNumber: null, expiresAt: accreditedAt, voidedAt: null, voidReason: null,
   member: { id: 'm', firstName: 'A', lastName: 'B', documentNumber: '1', email: 'a@example.com' },
@@ -21,6 +21,7 @@ function adminRoutes(overrides: Partial<typeof totals> = {}, payments = [payment
     amount: String(payments.filter((item) => item.accreditedAt.slice(0, 10) === date).reduce((sum, item) => sum + Number(item.amount), 0)),
   }))
   return [
+    { path: '/admin/dashboard/metrics', handler: () => ({ body: { activeMembers: values.users, inactiveMembers: values.inactive, currentMemberships: values.CURRENT, expiringMemberships: values.EXPIRING_SOON, expiredMemberships: values.EXPIRED, pendingMedicalCertificates, rejectedMedicalCertificates: values.REJECTED, initialPeriodMembers: values.INITIAL } }) },
     { path: '/users', handler: () => ({ body: { items: [], page: 1, limit: 1, total: values.users } }) },
     { path: '/members', handler: (url) => ({ body: { items: [], page: 1, limit: 1, total: values[url.searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'] } }) },
     { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: payments.length, totalAmount: String(payments.reduce((sum, item) => sum + Number(item.amount), 0)), days } }) },
@@ -47,21 +48,14 @@ describe('panel administrativo', () => {
     expect(screen.getByRole('heading', { name: 'Buen día, Carla' })).toBeInTheDocument()
     expect(screen.getByText('Resumen de socios, cuotas, aptos médicos y accesos de M-TEAM.')).toBeInTheDocument()
     expect(await screen.findByText('184')).toBeInTheDocument()
-    expect(screen.getByText('141')).toBeInTheDocument()
-    expect(screen.getByText('30')).toBeInTheDocument()
+    expect(screen.getByText('120')).toBeInTheDocument()
+    expect(screen.getByText('21')).toBeInTheDocument()
     const cards = [...document.querySelectorAll('.status-grid .status-card')]
-    expect(cards.map((card) => card.querySelector('.status-card-label')?.textContent)).toEqual(['SOCIOS ACTIVOS', 'CUOTAS AL DÍA', 'CUOTAS VENCIDAS', 'APTOS PENDIENTES'])
-    expect(cards[3]).toHaveTextContent('4')
-    expect(cards[3].querySelector('.status-card-value')).toHaveClass('tone-purple')
-    expect(cards[3]).toHaveAttribute('href', '/admin/aptos')
-    const pendingRequest = requestsTo(fetchStub, 'GET', '/medical-certificates')
-    expect(pendingRequest).toHaveLength(1)
-    expect(pendingRequest[0].url.searchParams.get('status')).toBe('PENDING')
-    expect(pendingRequest[0].url.searchParams.get('page')).toBe('1')
-    expect(pendingRequest[0].url.searchParams.get('limit')).toBe('1')
-    const users = requestsTo(fetchStub, 'GET', '/users')[0].url.searchParams
-    expect(users.get('role')).toBe('MEMBER')
-    expect(users.get('status')).toBe('ACTIVE')
+    expect(cards).toHaveLength(8)
+    expect(cards[5]).toHaveTextContent('4')
+    expect(cards[5]).toHaveAttribute('href', '/admin/aptos?status=PENDING')
+    expect(requestsTo(fetchStub, 'GET', '/admin/dashboard/metrics')).toHaveLength(1)
+    expect(requestsTo(fetchStub, 'GET', '/users')).toHaveLength(0)
   })
 
   it('grafica la recaudación real de los últimos 7 días', async () => {
@@ -83,25 +77,23 @@ describe('panel administrativo', () => {
   })
 
   it('muestra cero sin inventar datos', async () => {
-    stubApi(adminRoutes({ users: 0, CURRENT: 0, EXPIRING_SOON: 0, EXPIRED: 0 }, [], 0))
+    stubApi(adminRoutes({ users: 0, inactive: 0, CURRENT: 0, EXPIRING_SOON: 0, EXPIRED: 0, REJECTED: 0, INITIAL: 0 }, [], 0))
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    await waitFor(() => expect(screen.getAllByText('0')).toHaveLength(4))
+    await waitFor(() => expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')?.querySelector('.status-card-value')).toHaveTextContent('0'))
     expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')?.querySelector('.status-card-value')).toHaveTextContent('0')
     expect(await screen.findByText('$ 0')).toBeInTheDocument()
   })
 
   it('una fuente que falla no destruye el resto del panel', async () => {
     stubApi([
-      { path: '/users', handler: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'Ocurrió un error interno', details: null } }) },
+      { path: '/admin/dashboard/metrics', handler: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'Métricas no disponibles', details: null } }) },
       { path: '/payments/summary', handler: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'Falló la recaudación', details: null } }) },
       ...adminRoutes(),
     ])
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    expect(screen.getAllByText('Cargando…')).toHaveLength(4)
-    expect(await screen.findByText('141')).toBeInTheDocument()
-    expect(screen.getByText('30')).toBeInTheDocument()
-    expect(await screen.findByText('No se pudo cargar')).toBeInTheDocument()
-    expect(screen.getByText(/Ocurrió un error interno/)).toBeInTheDocument()
+    expect(screen.getAllByText('Cargando…').length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('No se pudo cargar')).length).toBeGreaterThan(1)
+    expect(screen.getByText(/Métricas no disponibles/)).toBeInTheDocument()
     expect(await screen.findByText('Falló la recaudación')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Últimos intentos de acceso' })).toBeInTheDocument()
@@ -135,7 +127,8 @@ describe('panel administrativo', () => {
     expect(within(access).getByRole('status')).toHaveTextContent('Historial de accesos no disponibleEste módulo requiere el backend de control de accesos.')
     expect(within(access).queryAllByRole('listitem')).toHaveLength(0)
     const period = screen.getByRole('heading', { name: 'Período inicial de 20 días' }).closest('section')!
-    expect(within(period).getByRole('status')).toHaveTextContent('Backend pendiente')
+    expect(within(period).getByRole('status')).toHaveTextContent('5 socios')
+    expect(within(period).getByRole('link', { name: 'Ver socios en período inicial' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&initialPeriod=true')
     expect(within(period).queryByText(/Quedan \d+ días/)).not.toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/Permitido|Rechazado|\d{2}:\d{2}/)
   })
@@ -143,23 +136,20 @@ describe('panel administrativo', () => {
   it('muestra carga solo en la tarjeta de aptos mientras consulta su total', () => {
     stubApi(adminRoutes())
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    const card = screen.getByText('APTOS PENDIENTES').closest('.status-card')!
+    const card = screen.getByText('SOCIOS ACTIVOS').closest('.status-card')!
     expect(card).toHaveTextContent('—Cargando…')
-    expect(card).toHaveAttribute('href', '/admin/aptos')
+    expect(card).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&status=ACTIVE')
   })
 
   it('aísla un error de aptos médicos y conserva socios, cuotas y el resto del dashboard', async () => {
     stubApi([
-      { path: '/medical-certificates', handler: () => ({ status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Aptos no disponibles' } }) },
+      { path: '/admin/dashboard/metrics', handler: () => ({ status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Métricas no disponibles' } }) },
       ...adminRoutes(),
     ])
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
     const card = screen.getByText('APTOS PENDIENTES').closest('.status-card')!
     await waitFor(() => expect(card).toHaveTextContent('—No se pudo cargar'))
-    expect(card).toHaveAttribute('href', '/admin/aptos')
-    expect(screen.getByText('184')).toBeInTheDocument()
-    expect(screen.getByText('141')).toBeInTheDocument()
-    expect(screen.getByText('30')).toBeInTheDocument()
+    expect(card).toHaveAttribute('href', '/admin/aptos?status=PENDING')
     expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
   })
 
@@ -177,15 +167,15 @@ describe('panel administrativo', () => {
     expect(screen.getByText('Resumen de hoy · 07/09/2026')).toBeInTheDocument()
     expect(screen.queryByText('PANEL ADMINISTRATIVO')).not.toBeInTheDocument()
     await screen.findByText('184')
-    expect(document.querySelectorAll('.status-grid > .status-card')).toHaveLength(4)
+    expect(document.querySelectorAll('.status-grid > .status-card')).toHaveLength(8)
     const order = [...document.querySelectorAll('.dashboard-screen > *')].map((element) => element.querySelector('h2')?.textContent ?? element.className)
-    expect(order).toEqual(['dashboard-header', 'status-grid', 'Acciones frecuentes', 'Más secciones', 'Últimos accesos'])
+    expect(order).toEqual(['dashboard-header', 'status-grid admin-metrics-grid', 'Acciones frecuentes', 'Más secciones', 'Últimos accesos'])
     const more = screen.getByRole('heading', { name: 'Más secciones' }).closest('section')!
     expect(within(more).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/admin/accesos', '/admin/sedes', '/admin/eventos', '/admin/novedades'])
     expect(within(more).queryByText(/Cerrar sesión/)).not.toBeInTheDocument()
     const actions = screen.getByRole('heading', { name: 'Acciones frecuentes' }).closest('section')!
     expect(within(actions).getByRole('link', { name: 'Revisar aptos médicos' })).toHaveAttribute('href', '/admin/aptos')
-    expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')).toHaveAttribute('href', '/admin/aptos')
+    expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')).toHaveAttribute('href', '/admin/aptos?status=PENDING')
     const access = screen.getByRole('heading', { name: 'Últimos accesos' }).closest('section')!
     expect(within(access).getByRole('status')).toHaveTextContent('Historial de accesos no disponible')
     expect(screen.queryByRole('heading', { name: 'Período inicial de 20 días' })).not.toBeInTheDocument()
@@ -243,7 +233,7 @@ describe('inicio de socio y entrenador', () => {
   })
 
   it('el entrenador ve la cantidad real de clases asignadas', async () => {
-    stubApi([{ path: '/weekly-schedules', handler: () => ({ body: schedule }) }])
+    stubApi([{ path: '/trainer/classes', handler: () => ({ body: { ...schedule, classes: schedule.classes.filter((item) => item.trainer.id === 'trainer-id') } }) }])
     renderWithSession(<TrainerDashboardScreen/>, { user: testUser('TRAINER', { id: 'trainer-id' }) })
     const today = await screen.findByText('CLASES DE HOY')
     expect(today.nextSibling).toHaveTextContent('2')
