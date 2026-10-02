@@ -10,6 +10,7 @@ import { WeeklyScheduleScreen } from '../schedule/WeeklyScheduleScreen'
 import { AdminBranchesScreen } from './AdminBranchesScreen'
 import { AdminPaymentsScreen } from './AdminPaymentsScreen'
 import { AdminUsersScreen } from './AdminUsersScreen'
+import { UserDetailScreen } from './UserDetailScreen'
 import { UnavailableScreen } from './ApiStates'
 import { MemberPaymentsScreen } from './MemberPaymentsScreen'
 import { AdminMedicalCertificatesScreen } from './AdminMedicalCertificatesScreen'
@@ -39,7 +40,8 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
   const segment = pathSegments[0] ?? ''
   const nestedId = pathSegments[1]
   const { active, title } = resolveSection(role, segment)
-  const screenTitle = role === 'ADMIN' && segment === 'aptos' && nestedId ? 'Revisar apto médico' : title
+  const isAdminUserDetail = role === 'ADMIN' && segment === 'usuarios' && Boolean(nestedId)
+  const screenTitle = isAdminUserDetail ? 'Detalle de usuario' : role === 'ADMIN' && segment === 'aptos' && nestedId ? 'Revisar apto médico' : title
 
   useEffect(() => {
     const showForbidden = () => setPermissionNotice('No tenés permisos suficientes para realizar esa operación.')
@@ -60,8 +62,8 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
     user={session.user}
     active={active}
     title={screenTitle}
-    mobileBackHref={role === 'ADMIN' && segment === 'aptos' && nestedId ? '/admin/aptos' : undefined}
-    mobileTitle={role === 'ADMIN' && segment === 'aptos' && nestedId ? 'Revisar apto' : undefined}
+    mobileBackHref={isAdminUserDetail ? `/admin/usuarios${location.search}` : role === 'ADMIN' && segment === 'aptos' && nestedId ? '/admin/aptos' : undefined}
+    mobileTitle={isAdminUserDetail ? 'Detalle de usuario' : role === 'ADMIN' && segment === 'aptos' && nestedId ? 'Revisar apto' : undefined}
     notice={permissionNotice}
     onDismissNotice={() => setPermissionNotice('')}
     onLogout={() => void handleLogout()}
@@ -80,7 +82,7 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
     if (role === 'MEMBER' && segment === 'pagos') return <MemberPaymentsScreen/>
     if (role === 'MEMBER' && segment === 'apto-medico') return <MemberMedicalCertificateScreen/>
     if (role === 'MEMBER' && segment === 'entrenadores') return <TrainerDirectoryScreen/>
-    if (role === 'ADMIN' && segment === 'usuarios') return <AdminUsersScreen/>
+    if (role === 'ADMIN' && segment === 'usuarios') return nestedId ? <UserDetailScreen id={nestedId}/> : <AdminUsersScreen/>
     if (role === 'ADMIN' && segment === 'pagos') return <AdminPaymentsScreen/>
     if (role === 'ADMIN' && segment === 'sedes') return <AdminBranchesScreen/>
     if (role === 'ADMIN' && segment === 'aptos') return nestedId
