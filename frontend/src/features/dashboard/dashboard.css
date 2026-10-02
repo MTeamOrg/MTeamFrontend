@@ -4,6 +4,26 @@
 .dashboard-pill { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: var(--pink-tint); color: var(--pink); font-size: 11px; font-weight: 600; letter-spacing: 0.66px; }
 .dashboard-header h1 { margin: 0; font-size: 40px; line-height: 1.2; font-weight: 700; color: var(--black); }
 .dashboard-header p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--text-secondary); }
+.member-dashboard { gap: 28px; }
+.member-status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.member-status-grid .status-card { min-height: 164px; }
+.member-dashboard-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.member-dashboard-actions .button { min-width: 184px; }
+.member-branches-section { display: grid; gap: 18px; }
+.member-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.member-section-heading h2 { margin: 0; font-size: 28px; line-height: 1.3; }
+.member-section-heading p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+.member-branch-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.member-branch-card { overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+.member-branch-image { width: 100%; height: 184px; display: grid; place-items: center; object-fit: cover; background: var(--background); color: var(--disabled); }
+.member-branch-image svg { width: 36px; height: 36px; }
+.member-branch-content { display: grid; gap: 11px; padding: 22px; }
+.member-branch-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.member-branch-title-row h3 { margin: 0; font-size: 24px; line-height: 1.25; }
+.member-branch-content p { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--text-secondary); font-size: 16px; line-height: 1.45; }
+.member-branch-content p svg { flex: none; color: var(--text-muted); }
+.member-branch-directions { width: 100%; margin-top: 4px; }
+.member-empty-copy { margin: 0; padding: 20px; color: var(--text-secondary); text-align: center; }
 .admin-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex-wrap: wrap; }
 
 /* A1: wide left zone + 400px right zone, shared by the revenue/actions and access/initial-period rows */
@@ -42,9 +62,23 @@
 
 @media (max-width: 1100px) {
   .admin-panel-grid { grid-template-columns: minmax(0, 1fr); }
+  .member-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 700px) {
+  .member-dashboard { gap: 18px; }
+  .member-status-grid { gap: 12px; }
+  .member-status-grid .status-card { min-height: 144px; }
+  .member-dashboard-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .member-dashboard-actions .button { width: 100%; }
+  .member-section-heading { display: block; }
+  .member-section-heading h2 { font-size: 28px; }
+  .member-section-heading p { margin-top: 6px; font-size: 13px; }
+  .member-branch-grid { grid-template-columns: 1fr; gap: 14px; }
+  .member-branch-image { height: 176px; }
+  .member-branch-content { padding: 18px; }
+  .member-branch-title-row h3 { font-size: 24px; }
+  .member-branch-content p { font-size: 15px; }
   .admin-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .dashboard-header { gap: 4px; }
   .dashboard-header h1 { font-size: 25px; }

@@ -1,0 +1,79 @@
+.profile-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:24px;align-items:start}
+.profile-primary,.profile-secondary{display:grid;gap:20px;min-width:0}
+.profile-section{display:grid;gap:18px}
+.profile-section h2{margin:0;font-size:22px;line-height:1.3;font-weight:600}
+.profile-section h3{margin:0;font-size:16px;line-height:1.35;font-weight:600}
+.profile-read-grid,.profile-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px}
+.profile-read-field{display:grid;gap:7px;min-width:0}
+.profile-read-field span,.profile-help,.profile-section p,.profile-detail-list dt,.profile-section-meta,.profile-payment-main span,.profile-payment-main small,.profile-quota-metric>div>span,.profile-quota-metric small{color:var(--text-secondary);font-size:13px;line-height:1.45}
+.profile-read-field strong{min-height:44px;display:flex;align-items:center;padding:0 14px;border:1px solid var(--input-border);border-radius:8px;background:var(--background);font-size:14px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-help{margin:0;color:var(--text-muted);font-size:12px}
+.profile-emergency-block{display:grid;gap:16px;padding-top:20px;border-top:1px solid var(--border)}
+.profile-form-actions{display:flex;justify-content:flex-end;gap:12px;padding-top:4px}
+.profile-identity-section{justify-items:center;text-align:center;padding:28px 24px}
+.profile-identity-avatar{width:112px;height:112px;display:grid;place-items:center;border-radius:50%;background:var(--purple);color:#fff;font-size:32px;font-weight:600;overflow:hidden}
+.profile-identity-avatar .profile-photo{width:100%;height:100%;object-fit:cover}
+.profile-identity-section h2{font-size:20px}
+.profile-identity-section .member-status{margin-top:-8px}
+.profile-photo-action{width:100%;margin-top:2px}
+.profile-identity-section .field-hint{margin-top:-10px}
+.profile-identity-section .error-message{width:100%;text-align:left}
+.profile-security-section p{margin:0}
+.profile-security-section .button,.profile-medical-section .button{width:100%}
+.profile-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.profile-section-title h2{display:flex;align-items:center;gap:8px}
+.profile-detail-list{display:grid;gap:10px;margin:0}
+.profile-detail-list>div{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.profile-detail-list dd{margin:0;color:var(--black);font-size:14px;font-weight:500;text-align:right}
+.profile-quota-section{grid-column:1}
+.profile-quota-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.profile-quota-metric{display:flex;gap:10px;min-width:0;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--white)}
+.profile-quota-icon,.profile-payment-icon{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:50%;background:var(--blue-tint);color:var(--blue)}
+.profile-quota-metric>div{display:grid;gap:4px;min-width:0}
+.profile-quota-metric>div>span{font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.profile-quota-metric strong{font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.profile-quota-metric small{font-size:11px}
+.profile-payments-section{grid-column:1}
+.profile-payment-list{display:grid}
+.profile-payment-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:14px;padding:16px 0;border-top:1px solid var(--border)}
+.profile-payment-main{display:grid;gap:3px;min-width:0}
+.profile-payment-main strong{font-size:14px}
+.profile-payment-main span,.profile-payment-main small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.profile-payment-amount{font-size:15px;white-space:nowrap}
+.profile-empty-copy{margin:0;padding:20px 0;text-align:center}
+.profile-mobile-medical-button{display:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+@media(max-width:1100px){
+  .profile-layout{grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:18px}
+  .profile-quota-grid{grid-template-columns:1fr}
+}
+
+@media(max-width:700px){
+  .profile-layout{display:flex;flex-direction:column;gap:14px}
+  .profile-primary,.profile-secondary{display:contents}
+  .profile-section{gap:14px;padding:16px}
+  .profile-identity-section{order:1;padding:20px 16px}
+  .profile-personal-section{order:2}
+  .profile-contact-section{order:3}
+  .profile-quota-section{order:4}
+  .profile-payments-section{order:5}
+  .profile-security-section{order:6}
+  .profile-medical-section{order:7}
+  .profile-section h2{font-size:19px}
+  .profile-read-grid,.profile-edit-grid{grid-template-columns:1fr;gap:12px}
+  .profile-read-field{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:2px 0}
+  .profile-read-field strong{min-height:0;padding:0;border:0;background:transparent;font-size:15px;text-align:right}
+  .profile-help{font-size:11px}
+  .profile-form-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .profile-form-actions .button{padding:0 10px;font-size:12px}
+  .profile-identity-avatar{width:92px;height:92px;font-size:28px}
+  .profile-identity-section h2{font-size:20px}
+  .profile-emergency-block{gap:12px;padding-top:16px}
+  .profile-quota-grid{grid-template-columns:1fr;gap:8px}
+  .profile-quota-metric{padding:12px}
+  .profile-payment-row{grid-template-columns:auto minmax(0,1fr);gap:10px}
+  .profile-payment-amount{grid-column:2;grid-row:2;justify-self:start}
+  .profile-payment-row>.badge{grid-column:2;grid-row:3;justify-self:start}
+  .profile-mobile-medical-button{display:flex}
+}
