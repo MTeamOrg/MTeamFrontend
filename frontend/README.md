@@ -30,7 +30,7 @@ Rutas disponibles:
 - `/crear-cuenta`
 - `/iniciar-sesion`
 - `/cambiar-contrasena`
-- `/inicio` (pantalla temporal protegida hasta implementar los dashboards)
+- `/inicio` (redirige al inicio protegido según el rol)
 
 ## Integración disponible
 
@@ -42,10 +42,13 @@ La integración usa las rutas efectivamente implementadas en el backend para:
 - valor e historial de la cuota;
 - acreditación, consulta y anulación de pagos;
 - sedes públicas y administración de sedes;
-- directorio público de entrenadores.
+- directorio público de entrenadores;
+- cronograma semanal, copia de semanas y administración de clases;
+- carga, consulta, revisión y acceso temporal a certificados médicos.
 
-El cronograma semanal y su copia no se conectan en esta rama. Los módulos de
-dashboard, aptos médicos, acceso QR, eventos, novedades y notificaciones se
-muestran como pendientes porque sus APIs todavía no forman parte del alcance de
-integración acordado. No se usan datos simulados como reemplazo cuando falta un
-endpoint o el backend no está disponible.
+Los dashboards consumen las métricas disponibles y mantienen estados de carga,
+error o no disponibilidad cuando falta información agregada. Los módulos de
+acceso QR, eventos, novedades, notificaciones, historial de accesos y período
+inicial del panel administrativo se muestran como pendientes porque sus APIs
+todavía no forman parte del alcance de integración acordado. No se usan datos
+simulados como reemplazo cuando falta un endpoint o el backend no está disponible.
