@@ -217,19 +217,22 @@ describe('inicio de socio y entrenador', () => {
       { path: '/members/me/membership', handler: () => ({ body: { currentPrice: '25000', lastPaymentAt: '2026-09-01T12:00:00Z', expiresAt: '2026-10-01T12:00:00Z', daysRemaining: 24, status: 'CURRENT' } }) },
       { path: '/members/me/payments', handler: () => ({ body: { items: [payment('p1', '2026-09-01T12:00:00Z', '25000')], page: 1, limit: 3, total: 1 } }) },
       { path: '/members/me/medical-certificates', handler: () => ({ body: { items: [{ id: 'mc1', memberId: 'member-id', status: 'APPROVED', uploadedAt: '2026-09-01T12:00:00Z', reviewedAt: '2026-09-02T12:00:00Z', reviewComment: null, member: { id: 'member-id', firstName: 'Sofía', lastName: 'Prueba', documentNumber: '1', email: 'member@example.com' }, reviewedBy: null }], page: 1, limit: 20, total: 1, initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false } } }) },
+      { path: '/branches', handler: () => ({ body: { items: [{ id: 'branch-1', name: 'Sede Centro', imageUrl: '', address: 'Calle 1', openingHours: '08:00 a 22:00', phone: '111111', description: 'Sede de prueba', isActive: true, latitude: null, longitude: null }], page: 1, limit: 100, total: 1 } }) },
       { path: '/weekly-schedules', handler: () => ({ body: schedule }) },
     ])
     renderWithSession(<MemberDashboardScreen/>, { user: testUser('MEMBER', { firstName: 'Sofía' }) })
     expect(await screen.findByText('Al día')).toBeInTheDocument()
-    expect(screen.getByText('24 días restantes')).toBeInTheDocument()
-    expect(screen.getAllByText('$ 25.000')).toHaveLength(2)
-    expect(screen.getByText('Funcional')).toBeInTheDocument()
+    expect(screen.getByText(/Vence el .*24 días/)).toBeInTheDocument()
+    expect(screen.getByText('Aprobado')).toBeInTheDocument()
+    expect(screen.getByText('$ 25.000')).toBeInTheDocument()
+    expect(screen.getByText('Nuestras sedes')).toBeInTheDocument()
+    expect(screen.getByText('Sede Centro')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver mis clases' })).toHaveAttribute('href', '/socio/clases')
+    expect(screen.getByRole('link', { name: 'Mi apto médico' })).toHaveAttribute('href', '/socio/apto-medico')
+    expect(screen.getByRole('link', { name: 'Cómo llegar' })).toHaveAttribute('href', expect.stringContaining('Calle%201'))
+    expect(screen.queryByText('Funcional')).not.toBeInTheDocument()
     expect(screen.queryByText('Madrugada')).not.toBeInTheDocument()
     expect(screen.getByText('Aprobado')).toBeInTheDocument()
-    expect(screen.getByText('Apto vigente')).toBeInTheDocument()
-    expect(screen.getByText('Aprobado').closest('a')).toHaveAttribute('href', '/socio/apto-medico')
-    expect(screen.getByRole('link', { name: 'Ver historial' })).toHaveAttribute('href', '/socio/pagos')
-    expect(screen.getByRole('link', { name: 'Conocé a los entrenadores' })).toHaveAttribute('href', '/socio/entrenadores')
   })
 
   it('el entrenador ve la cantidad real de clases asignadas', async () => {
