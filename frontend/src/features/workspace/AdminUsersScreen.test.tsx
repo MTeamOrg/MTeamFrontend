@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser } from '../../test/test-utils'
@@ -31,7 +31,7 @@ function renderWorkspace(route: string) {
 }
 
 describe('detalle de usuarios del administrador', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
   it('navega desde el listado, conserva los filtros y muestra datos reales del socio', async () => {
     stubApi([
@@ -67,6 +67,18 @@ describe('detalle de usuarios del administrador', () => {
     expect(document.querySelector('.admin-users-filter-fields')).toHaveClass('is-open')
     fireEvent.change(screen.getByLabelText('Filtrar por rol'), { target: { value: 'TRAINER' } })
     await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/users').some(({ url }) => url.searchParams.get('role') === 'TRAINER')).toBe(true))
+  })
+
+  it('mantiene la cabecera móvil, la búsqueda completa y el acceso al detalle', async () => {
+    setMobileViewport(true)
+    stubApi([{ path: '/users', handler: () => ({ body: { items: [{ id: 'user-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com', role: 'MEMBER', status: 'ACTIVE' }], page: 1, limit: 20, total: 1 } }) }])
+    renderWorkspace('/admin/usuarios')
+
+    expect((await screen.findAllByRole('heading', { name: 'Usuarios' })).length).toBeGreaterThan(0)
+    expect(document.querySelector('.admin-users-mobile-create')).toBeInTheDocument()
+    expect(document.querySelector('.admin-users-toolbar .search-shell input')).toBeInTheDocument()
+    expect(document.querySelector('.admin-users-filter-toggle')).toBeInTheDocument()
+    expect(document.querySelector('.admin-user-mobile-link[href*="/admin/usuarios/user-1"]')).toBeInTheDocument()
   })
 
   it('mantiene estados de error del detalle y permite reintentar', async () => {
