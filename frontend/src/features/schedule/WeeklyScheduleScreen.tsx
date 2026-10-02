@@ -3,7 +3,6 @@ import { useApiResource } from '../../hooks/use-api-resource'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { backendApi, type ScheduleClass } from '../../service/backend-api'
 import { addDays, gymDate, mondayOfGymWeek } from '../../service/date-time'
-import { useAuth } from '../authentication/use-auth'
 import { ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
@@ -46,7 +45,6 @@ function initialDate(weekStartsOn: string) {
 }
 
 export function WeeklyScheduleScreen({ variant }: { variant: ScheduleVariant }) {
-  const { session } = useAuth()
   const isMobile = useIsMobile()
   const isAdmin = variant === 'admin'
   const [weekStartsOn, setWeekStartsOn] = useState(() => mondayOfGymWeek())
@@ -59,11 +57,11 @@ export function WeeklyScheduleScreen({ variant }: { variant: ScheduleVariant }) 
 
   const scheduleLoader = useCallback(async () => {
     const [current, next] = await Promise.all([
-      backendApi.getWeeklySchedule(weekStartsOn),
+      variant === 'trainer' ? backendApi.getTrainerSchedule(weekStartsOn) : backendApi.getWeeklySchedule(weekStartsOn),
       isAdmin ? backendApi.getWeeklySchedule(nextWeekStartsOn) : Promise.resolve(null),
     ])
     return { current, next }
-  }, [isAdmin, nextWeekStartsOn, weekStartsOn])
+  }, [isAdmin, nextWeekStartsOn, variant, weekStartsOn])
   const schedule = useApiResource(scheduleLoader)
 
   const referenceLoader = useCallback(async () => {
@@ -75,10 +73,8 @@ export function WeeklyScheduleScreen({ variant }: { variant: ScheduleVariant }) 
   }, [isAdmin])
   const reference = useApiResource(referenceLoader)
 
-  const userId = session?.user.id
   const classes = (schedule.data?.current.classes ?? []).filter((scheduledClass) =>
-    (!branchId || scheduledClass.branch.id === branchId)
-    && (variant !== 'trainer' || scheduledClass.trainer?.id === userId))
+    !branchId || scheduledClass.branch.id === branchId)
   const days = groupWeek(weekStartsOn, classes)
 
   const copy = COPY[variant]

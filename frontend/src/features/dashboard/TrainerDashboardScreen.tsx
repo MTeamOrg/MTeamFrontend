@@ -15,13 +15,12 @@ import './dashboard.css'
 export function TrainerDashboardScreen() {
   const { session } = useAuth()
   const isMobile = useIsMobile()
-  const trainerId = session?.user.id
   const loader = useCallback(async () => {
-    const schedule = await backendApi.getWeeklySchedule()
-    const mine = schedule.classes.filter((scheduledClass) => scheduledClass.trainer?.id === trainerId)
+    const schedule = await backendApi.getTrainerSchedule()
+    const mine = schedule.classes
     const today = gymDate()
     return { week: mine, today: mine.filter((scheduledClass) => scheduledClass.day === today) }
-  }, [trainerId])
+  }, [])
   const data = useApiResource(loader)
   const header = <DashboardHeader
     greeting={`Buen día, ${session?.user.firstName ?? ''}`}

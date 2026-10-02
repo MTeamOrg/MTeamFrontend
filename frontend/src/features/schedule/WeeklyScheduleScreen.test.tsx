@@ -37,6 +37,16 @@ function routes({ current = WEEK, next = { id: null, weekStartsOn: '2026-09-14',
         return { body: { id: null, weekStartsOn: week, classes: [] } }
       },
     },
+    {
+      path: '/trainer/classes',
+      handler: (url) => {
+        const week = url.searchParams.get('weekStartsOn')
+        const trainerWeek = (value: WeeklySchedule): WeeklySchedule => ({ ...value, classes: value.classes.filter((item) => item.trainer?.id === TRAINER.id) })
+        if (week === '2026-09-14') return { body: trainerWeek(next) }
+        if (week === '2026-09-07') return { body: trainerWeek(current) }
+        return { body: { id: null, weekStartsOn: week, classes: [] } }
+      },
+    },
     { path: '/branches', handler: () => ({ body: page([CENTRO, NORTE]) }) },
     { path: '/trainers', handler: () => ({ body: page([{ ...TRAINER, photoUrl: null, specialty: 'Funcional', description: 'x' }]) }) },
   ]

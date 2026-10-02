@@ -82,6 +82,17 @@ export interface OwnProfile {
   trainerProfile: { specialty: string; description: string } | null
 }
 
+export interface AdminDashboardMetrics {
+  activeMembers: number
+  inactiveMembers: number
+  currentMemberships: number
+  expiringMemberships: number
+  expiredMemberships: number
+  pendingMedicalCertificates: number
+  rejectedMedicalCertificates: number
+  initialPeriodMembers: number
+}
+
 export interface UserListItem {
   id: string
   firstName: string
@@ -236,6 +247,7 @@ export interface Trainer extends PersonRef {
   photoUrl: string | null
   specialty: string
   description: string
+  branches?: Array<{ id: string; name: string; address: string }>
 }
 
 export interface ScheduleClass {
@@ -298,11 +310,18 @@ export const backendApi = {
       emergencyContactPhone?: string
     },
   ) => apiRequest<OwnProfile>('/users/me', { method: 'PATCH', body }),
+  updateOwnPhoto: (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return apiRequest<OwnProfile>('/users/me/photo', { method: 'PUT', body })
+  },
 
   listUsers: (filters: {
     search?: string
     role?: UserRole
     status?: UserStatus
+    membershipStatus?: MembershipStatus
+    initialPeriod?: boolean
     page?: number
     limit?: number
   }) => apiRequest<Page<UserListItem>>(`/users${queryString(filters)}`),
@@ -323,6 +342,13 @@ export const backendApi = {
     }),
   listUserAuditLogs: (id: string, page = 1, limit = 20) =>
     apiRequest<Page<UserAuditLog>>(`/users/${id}/audit-logs${queryString({ page, limit })}`),
+  updateTrainerBranches: (id: string, branchIds: string[]) =>
+    apiRequest<AdminUserDetail>(`/users/${id}/trainer-branches`, {
+      method: 'PUT',
+      body: { branchIds },
+    }),
+  getAdminDashboardMetrics: () =>
+    apiRequest<AdminDashboardMetrics>('/admin/dashboard/metrics'),
 
   listMembers: (filters: {
     search?: string
@@ -445,6 +471,8 @@ export const backendApi = {
     apiRequest<Page<Trainer>>(`/trainers${queryString({ page, limit })}`, {
       authenticated: false,
     }),
+  getTrainerSchedule: (weekStartsOn?: string) =>
+    apiRequest<WeeklySchedule>(`/trainer/classes${queryString({ weekStartsOn })}`),
 
   getWeeklySchedule: (weekStartsOn?: string) =>
     apiRequest<WeeklySchedule>(`/weekly-schedules${queryString({ weekStartsOn })}`, {
