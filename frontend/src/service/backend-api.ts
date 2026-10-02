@@ -12,6 +12,51 @@ export interface Page<T> {
 export type MembershipStatus = 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'
 export type PaymentStatus = 'ACCREDITED' | 'VOIDED'
 export type MedicalCertificateStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'CANCELLED'
+export type EventDisplayStatus = 'UPCOMING' | 'FINISHED' | 'CANCELLED'
+export type PublicationAudience = 'ALL' | 'MEMBERS' | 'TRAINERS'
+export type PublicationStatus = 'DRAFT' | 'PUBLISHED' | 'INACTIVE'
+export type NotificationType =
+  | 'MEMBERSHIP_PRICE_CHANGED'
+  | 'MEMBERSHIP_EXPIRING'
+  | 'MEMBERSHIP_EXPIRED'
+  | 'MEDICAL_CERTIFICATE_REVIEWED'
+  | 'CLASS_CHANGED'
+  | 'EVENT_CANCELLED'
+  | 'GENERAL'
+
+export interface Event {
+  id: string
+  title: string
+  description: string
+  startsAt: string
+  location: string
+  imageUrl: string
+  status: EventStatus
+  displayStatus: EventDisplayStatus
+  createdById: string
+}
+
+export interface NewsPost {
+  id: string
+  title: string
+  content: string
+  imageUrl: string | null
+  audience: PublicationAudience
+  status: PublicationStatus
+  publishedAt: string | null
+  createdById: string
+}
+
+export interface Notification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  type: NotificationType
+  createdAt: string
+  readAt: string | null
+}
 
 export interface MedicalCertificateMember {
   id: string
@@ -349,6 +394,48 @@ export const backendApi = {
     }),
   getAdminDashboardMetrics: () =>
     apiRequest<AdminDashboardMetrics>('/admin/dashboard/metrics'),
+
+  listEvents: (filters: { search?: string; status?: EventStatus; page?: number; limit?: number } = {}) =>
+    apiRequest<Page<Event>>(`/events${queryString(filters)}`),
+  getEvent: (id: string) => apiRequest<Event>(`/events/${id}`),
+  createEvent: (body: {
+    title: string
+    description: string
+    startsAt: string
+    location: string
+    imageUrl: string
+    status?: 'DRAFT' | 'PUBLISHED'
+  }) => apiRequest<Event>('/events', { method: 'POST', body }),
+  updateEvent: (id: string, body: Partial<Pick<Event, 'title' | 'description' | 'startsAt' | 'location' | 'imageUrl'>>) =>
+    apiRequest<Event>(`/events/${id}`, { method: 'PATCH', body }),
+  updateEventStatus: (id: string, status: 'PUBLISHED' | 'CANCELLED') =>
+    apiRequest<Event>(`/events/${id}/status`, { method: 'PATCH', body: { status } }),
+  listNewsPosts: (filters: {
+    search?: string
+    audience?: PublicationAudience
+    status?: PublicationStatus
+    page?: number
+    limit?: number
+  } = {}) => apiRequest<Page<NewsPost>>(`/news-posts${queryString(filters)}`),
+  getNewsPost: (id: string) => apiRequest<NewsPost>(`/news-posts/${id}`),
+  createNewsPost: (body: {
+    title: string
+    content: string
+    imageUrl?: string | null
+    audience: PublicationAudience
+    status?: 'DRAFT' | 'PUBLISHED'
+  }) => apiRequest<NewsPost>('/news-posts', { method: 'POST', body }),
+  updateNewsPost: (id: string, body: Partial<Pick<NewsPost, 'title' | 'content' | 'imageUrl' | 'audience'>>) =>
+    apiRequest<NewsPost>(`/news-posts/${id}`, { method: 'PATCH', body }),
+  updateNewsPostStatus: (id: string, status: 'PUBLISHED' | 'INACTIVE') =>
+    apiRequest<NewsPost>(`/news-posts/${id}/status`, { method: 'PATCH', body: { status } }),
+  listNotifications: (filters: { page?: number; limit?: number; isRead?: boolean } = {}) =>
+    apiRequest<Page<Notification>>(`/notifications${queryString(filters)}`),
+  getNotification: (id: string) => apiRequest<Notification>(`/notifications/${id}`),
+  markNotificationAsRead: (id: string) =>
+    apiRequest<void>(`/notifications/${id}/read-status`, { method: 'PATCH' }),
+  markAllNotificationsAsRead: () =>
+    apiRequest<void>('/notifications/read-status', { method: 'PATCH' }),
 
   listMembers: (filters: {
     search?: string

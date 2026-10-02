@@ -45,7 +45,7 @@ describe('shell autenticado', () => {
     expect(within(sidebar).getByRole('link', { name: 'Novedades' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByText('Lara Prueba')).toBeInTheDocument()
     expect(screen.getByText('Administrador')).toBeInTheDocument()
-    expect(screen.getByText('Novedades no disponible')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Novedades' })).toHaveLength(2)
     expect(document.querySelector('.breadcrumbs')).toBeNull()
   })
 
