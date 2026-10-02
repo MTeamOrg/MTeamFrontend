@@ -11,6 +11,7 @@ import { Icon } from './Icon'
 import { MedicalCertificateFileButton } from './MedicalCertificateFileButton'
 import { PageHeader } from './PageHeader'
 import { SafeImage } from './SafeImage'
+import { StatusCard } from './StatusCard'
 
 const ROLE_LABEL = {
   MEMBER: 'Socio',
@@ -72,7 +73,7 @@ export function UserDetailScreen({ id }: { id: string }) {
   }
 
   const header = data ? <PageHeader title={`${data.firstName} ${data.lastName}`} description={`${ROLE_LABEL[data.role]} · Documento ${data.documentNumber}`}>
-    <div className="user-detail-actions">
+    <div className="user-detail-actions user-detail-desktop-actions">
       {data.role === 'MEMBER' && <Link className="button button-primary" to="/admin/pagos"><Icon name="plus" size={18}/>Registrar pago</Link>}
       <button type="button" className="button button-secondary" onClick={() => setPasswordOpen(true)}><Icon name="lock" size={18}/>Restablecer contraseña</button>
       <button type="button" className="button button-secondary" onClick={() => setEditorOpen(true)}><Icon name="edit" size={18}/>Editar datos</button>
@@ -84,34 +85,28 @@ export function UserDetailScreen({ id }: { id: string }) {
   if (error || !data) return <div className="app-page user-detail-screen">{header}<Link className="user-detail-back" to={backHref}><Icon name="back" size={18}/>Volver a usuarios</Link><section className="surface-card"><ErrorState message={error || 'No se encontró el usuario.'} retry={() => void reload()}/></section></div>
 
   const latestCertificate = data.medicalCertificates[0]
-  const accreditedPayments = data.payments.filter((payment) => payment.status === 'ACCREDITED')
-  const lastAccreditedPayment = accreditedPayments[0]
-
   return <div className="app-page user-detail-screen">
     {header}
     <Link className="user-detail-back" to={backHref}><Icon name="back" size={18}/>Volver a usuarios</Link>
     {actionMessage && <p className="success-message" role="status">{actionMessage}</p>}
     {actionError && <p className="error-message" role="alert">{actionError}</p>}
-    <section className="surface-card user-detail-identity" aria-label="Resumen del usuario">
-      <div className="user-detail-avatar">{data.photoUrl ? <SafeImage className="user-detail-photo" src={data.photoUrl} alt={`Foto de ${data.firstName} ${data.lastName}`} fallbackIcon="user"/> : <span>{data.firstName[0]}{data.lastName[0]}</span>}</div>
-      <div className="user-detail-identity-copy"><span className="eyebrow">{ROLE_LABEL[data.role]}</span><h2>{data.firstName} {data.lastName}</h2><p>Alta: {formatDate(data.createdAt)} · Cuenta {data.status === 'ACTIVE' ? 'activa' : 'desactivada'}</p></div>
-      <span className={`badge ${data.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{data.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span>
-    </section>
+    <div className="user-detail-mobile-summary">
+      <IdentityCard user={data}/>
+      <StatusSummary user={data}/>
+      <MobileActions user={data} onEdit={() => setEditorOpen(true)} onToggle={() => void toggleStatus()}/>
+    </div>
+    <div className="user-detail-status-desktop"><StatusSummary user={data}/></div>
     <div className="user-detail-grid">
       <main className="user-detail-main">
+        <PaymentsCard payments={data.payments}/>
+        <AuditHistory userId={data.id}/>
+      </main>
+      <aside className="user-detail-aside user-detail-desktop-aside">
+        <IdentityCard user={data}/>
         <PersonalCard user={data}/>
-        {data.role === 'MEMBER' && <>
-          <MembershipCard user={data} lastPayment={lastAccreditedPayment}/>
-          <PaymentsCard payments={data.payments}/>
-          <MedicalCard certificates={data.medicalCertificates}/>
-        </>}
+        <MedicalCard certificates={latestCertificate ? [latestCertificate] : []}/>
         {data.role === 'TRAINER' && <TrainerCard user={data}/>}
         {data.role === 'ADMIN' && <section className="surface-card user-detail-note"><h2>Información administrativa</h2><p>La cuenta tiene permisos de administrador según el rol informado por el backend.</p></section>}
-        {data.role !== 'MEMBER' && latestCertificate && <MedicalCard certificates={data.medicalCertificates}/>}
-      </main>
-      <aside className="user-detail-aside">
-        <AccountCard user={data}/>
-        <AuditHistory userId={data.id}/>
       </aside>
     </div>
     {editorOpen && <UserEditorDialog user={data} onClose={() => setEditorOpen(false)} onUpdated={(updated) => handleUpdated(updated, 'Datos actualizados correctamente.')}/>}
@@ -119,20 +114,43 @@ export function UserDetailScreen({ id }: { id: string }) {
   </div>
 }
 
+function IdentityCard({ user }: { user: AdminUserDetail }) {
+  return <section className="surface-card user-detail-identity" aria-label="Resumen del usuario">
+    <div className="user-detail-avatar">{user.photoUrl ? <SafeImage className="user-detail-photo" src={user.photoUrl} alt={`Foto de ${user.firstName} ${user.lastName}`} fallbackIcon="user"/> : <span>{user.firstName[0]}{user.lastName[0]}</span>}</div>
+    <div className="user-detail-identity-copy"><span className="eyebrow">{ROLE_LABEL[user.role]}</span><h2>{user.firstName} {user.lastName}</h2><p>Alta: {formatDate(user.createdAt)} · Cuenta {user.status === 'ACTIVE' ? 'activa' : 'desactivada'}</p></div>
+    <span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span>
+  </section>
+}
+
+function StatusSummary({ user }: { user: AdminUserDetail }) {
+  const latestCertificate = user.medicalCertificates[0]
+  const accreditedPayments = user.payments.filter((payment) => payment.status === 'ACCREDITED')
+  const membershipValue = user.membership ? user.membership.status === 'ACTIVE' ? 'Al día' : 'Vencida' : user.status === 'ACTIVE' ? 'Activa' : 'Inactiva'
+  const membershipTone = user.membership?.status === 'EXPIRED' || user.status === 'INACTIVE' ? 'pink' : 'blue'
+  const medicalValue = latestCertificate ? CERTIFICATE_LABEL[latestCertificate.status] ?? latestCertificate.status : 'Sin cargar'
+  const medicalTone = latestCertificate?.status === 'REJECTED' ? 'pink' : latestCertificate?.status === 'APPROVED' ? 'blue' : 'black'
+  return <div className="status-grid user-detail-status-grid">
+    <StatusCard label="Estado de cuenta" value={membershipValue} tone={membershipTone} sub={user.membership ? `Vence el ${formatDate(user.membership.expiresAt)}` : 'Sin cuota acreditada'}/>
+    <StatusCard label="Apto médico" value={medicalValue} tone={medicalTone} sub={latestCertificate ? `Revisado el ${formatDate(latestCertificate.reviewedAt ?? latestCertificate.uploadedAt)}` : 'No disponible'}/>
+    <StatusCard label="Pagos acreditados" value={`${accreditedPayments.length} pagos`} tone="black" sub={accreditedPayments[0] ? `Último: ${formatDate(accreditedPayments[0].accreditedAt)}` : 'Sin pagos acreditados'}/>
+    <StatusCard label="Último acceso" value="No disponible" tone="black" sub="Dato no disponible en la API"/>
+  </div>
+}
+
+function MobileActions({ user, onEdit, onToggle }: { user: AdminUserDetail; onEdit: () => void; onToggle: () => void }) {
+  return <div className="user-detail-mobile-actions">
+    {user.role === 'MEMBER' && <Link className="button button-primary" to="/admin/pagos"><Icon name="plus" size={18}/>Registrar pago</Link>}
+    <button type="button" className="button button-secondary" onClick={onEdit}><Icon name="edit" size={18}/>Editar datos</button>
+    <button type="button" className="button button-danger" onClick={onToggle}><Icon name={user.status === 'ACTIVE' ? 'close' : 'check'} size={18}/>{user.status === 'ACTIVE' ? 'Desactivar' : 'Reactivar'}</button>
+  </div>
+}
+
 function PersonalCard({ user }: { user: AdminUserDetail }) {
   return <section className="surface-card user-detail-card" aria-labelledby="personal-data-title"><div className="user-detail-card-heading"><h2 id="personal-data-title">Datos personales</h2><Icon name="user" size={20}/></div><dl className="user-detail-list"><InfoRow label="Documento" value={user.documentNumber}/><InfoRow label="Fecha de nacimiento" value={formatDate(user.birthDate)}/><InfoRow label="Correo" value={user.email}/><InfoRow label="Teléfono" value={user.phone}/>{user.memberProfile && <><InfoRow label="Contacto de emergencia" value={user.memberProfile.emergencyContactName || 'Sin registrar'}/><InfoRow label="Teléfono de emergencia" value={user.memberProfile.emergencyContactPhone || 'Sin registrar'}/></>}</dl></section>
 }
 
-function AccountCard({ user }: { user: AdminUserDetail }) {
-  return <section className="surface-card user-detail-card" aria-labelledby="account-data-title"><div className="user-detail-card-heading"><h2 id="account-data-title">Estado de cuenta</h2><Icon name="check" size={20}/></div><dl className="user-detail-list"><InfoRow label="Rol" value={ROLE_LABEL[user.role]}/><InfoRow label="Estado" value={user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}/><InfoRow label="Alta" value={formatDate(user.createdAt)}/><InfoRow label="Cambio de contraseña" value={user.isPasswordChangeRequired ? 'Pendiente' : 'Al día'}/></dl></section>
-}
-
-function MembershipCard({ user, lastPayment }: { user: AdminUserDetail; lastPayment?: AdminUserDetail['payments'][number] }) {
-  return <section className="surface-card user-detail-card" aria-labelledby="membership-title"><div className="user-detail-card-heading"><h2 id="membership-title">Cuota</h2><Icon name="wallet" size={20}/></div>{user.membership ? <dl className="user-detail-list"><InfoRow label="Estado" value={user.membership.status === 'ACTIVE' ? 'Al día' : 'Vencida'} valueClass={user.membership.status === 'ACTIVE' ? 'value-blue' : 'value-pink'}/><InfoRow label="Vencimiento" value={formatDate(user.membership.expiresAt)}/><InfoRow label="Último pago" value={lastPayment ? formatDate(lastPayment.accreditedAt) : 'Sin pagos acreditados'}/></dl> : <EmptyState message="No hay una cuota acreditada para este usuario."/>}</section>
-}
-
 function PaymentsCard({ payments }: { payments: AdminUserDetail['payments'] }) {
-  return <section className="surface-card user-detail-card user-detail-list-card" aria-labelledby="payments-title"><div className="user-detail-card-heading"><h2 id="payments-title">Historial de pagos</h2><span className="badge badge-neutral">{payments.length} registros</span></div>{payments.length ? <div className="user-detail-payment-list">{payments.slice(0, 8).map((payment) => <div className="user-detail-payment-row" key={payment.id}><span className="user-detail-payment-icon"><Icon name="wallet" size={17}/></span><div><strong>{formatDateTime(payment.accreditedAt)}</strong><small>{payment.method}{payment.receiptNumber ? ` · Comprobante ${payment.receiptNumber}` : ''}</small></div><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></div>)}</div> : <EmptyState message="No hay pagos registrados."/>}</section>
+  return <section className="surface-card user-detail-card user-detail-list-card" aria-labelledby="payments-title"><div className="user-detail-card-heading"><h2 id="payments-title">Historial de pagos</h2></div>{payments.length ? <div className="user-detail-payment-list">{payments.slice(0, 8).map((payment) => <div className="user-detail-payment-row" key={payment.id}><span className="user-detail-payment-icon"><Icon name="wallet" size={17}/></span><div><strong>{formatDateTime(payment.accreditedAt)}</strong><small>{payment.method}{payment.receiptNumber ? ` · Comprobante ${payment.receiptNumber}` : ''}</small></div><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></div>)}</div> : <EmptyState message="No hay pagos registrados."/>}</section>
 }
 
 function MedicalCard({ certificates }: { certificates: AdminUserDetail['medicalCertificates'] }) {
@@ -146,7 +164,7 @@ function TrainerCard({ user }: { user: AdminUserDetail }) {
 function AuditHistory({ userId }: { userId: string }) {
   const loader = useCallback(() => backendApi.listUserAuditLogs(userId, 1, 10), [userId])
   const { data, loading, error, reload } = useApiResource(loader)
-  return <section className="surface-card user-detail-card user-detail-list-card" aria-labelledby="audit-title"><div className="user-detail-card-heading"><h2 id="audit-title">Historial de acciones</h2><Icon name="clock" size={20}/></div>{loading ? <LoadingState message="Cargando historial…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay acciones registradas."/> : <div className="user-detail-audit-list">{data.items.map((item) => <div className="user-detail-audit-row" key={item.id}><strong>{ACTION_LABEL[item.action] ?? item.action}</strong><span>{formatDateTime(item.occurredAt)}</span><small>{item.performedBy.firstName} {item.performedBy.lastName}{item.reason ? ` · ${item.reason}` : ''}</small></div>)}</div>}</section>
+  return <section className="surface-card user-detail-card user-detail-list-card" aria-labelledby="audit-title"><div className="user-detail-card-heading"><h2 id="audit-title"><span className="desktop-only">Historial de acciones sobre la cuenta</span><span className="mobile-only">Acciones sobre la cuenta</span></h2><Icon name="clock" size={20}/></div>{loading ? <LoadingState message="Cargando historial…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay acciones registradas."/> : <div className="user-detail-audit-list">{data.items.map((item) => <div className="user-detail-audit-row" key={item.id}><strong>{ACTION_LABEL[item.action] ?? item.action}</strong><span>{formatDateTime(item.occurredAt)}</span><small>{item.performedBy.firstName} {item.performedBy.lastName}{item.reason ? ` · ${item.reason}` : ''}</small></div>)}</div>}</section>
 }
 
 function UserEditorDialog({ user, onClose, onUpdated }: { user: AdminUserDetail; onClose: () => void; onUpdated: (user: AdminUserDetail) => void }) {

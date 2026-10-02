@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderWithSession, stubApi, testUser } from '../../test/test-utils'
+import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser } from '../../test/test-utils'
 import { RoleWorkspace } from './RoleWorkspace'
 
 const userDetail = {
@@ -41,15 +41,32 @@ describe('detalle de usuarios del administrador', () => {
     ])
     renderWorkspace('/admin/usuarios?role=MEMBER&status=ACTIVE&page=2')
 
-    fireEvent.click((await screen.findAllByRole('link', { name: 'Ver detalle de Juan Manuel Pérez' }))[0])
+    fireEvent.click((await screen.findAllByRole('link', { name: 'Ver detalle de Juan Manuel Pérez' }, { timeout: 5000 }))[0])
 
     expect((await screen.findAllByRole('heading', { name: 'Juan Manuel Pérez' })).length).toBeGreaterThan(0)
     expect(screen.getByText('Historial de pagos')).toBeInTheDocument()
-    expect(screen.getByText('Apto médico')).toBeInTheDocument()
+    expect(screen.getAllByText('Apto médico').length).toBeGreaterThan(0)
     expect(await screen.findByText('No hay acciones registradas.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Volver a usuarios' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&status=ACTIVE&page=2')
-    expect(screen.getByRole('button', { name: 'Editar datos' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Editar datos' }).length).toBeGreaterThan(0)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Editar datos' })[0])
+    expect(await screen.findByRole('dialog', { name: 'Editar datos' })).toBeInTheDocument()
+  })
+
+  it('usa filtros compactos en celular sin alterar la consulta del listado', async () => {
+    setMobileViewport(true)
+    const fetchStub = stubApi([{ path: '/users', handler: (url) => ({ body: { items: [{ id: 'user-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com', role: 'MEMBER', status: 'ACTIVE' }], page: Number(url.searchParams.get('page') ?? 1), limit: 20, total: 1 } }) }])
+    renderWorkspace('/admin/usuarios')
+
+    const filterToggle = await screen.findByRole('button', { name: 'Mostrar filtros' }, { timeout: 5000 })
+    expect(filterToggle).toHaveAttribute('aria-expanded', 'false')
+    expect(document.querySelector('.admin-users-filter-fields')).not.toHaveClass('is-open')
+    fireEvent.click(filterToggle)
+    expect(filterToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(document.querySelector('.admin-users-filter-fields')).toHaveClass('is-open')
+    fireEvent.change(screen.getByLabelText('Filtrar por rol'), { target: { value: 'TRAINER' } })
+    await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/users').some(({ url }) => url.searchParams.get('role') === 'TRAINER')).toBe(true))
   })
 
   it('mantiene estados de error del detalle y permite reintentar', async () => {
