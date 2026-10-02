@@ -33,6 +33,7 @@ export function MemberDashboardScreen() {
   const { session } = useAuth()
   const isMobile = useIsMobile()
   const home = useApiResource(loadMemberHome)
+  const medical = useApiResource(() => backendApi.getOwnMedicalCertificates())
   const firstName = session?.user.firstName ?? ''
   const header = <DashboardHeader
     greeting={`Buen día, ${firstName}`}
@@ -44,13 +45,26 @@ export function MemberDashboardScreen() {
 
   const { membership, payments, upcoming } = home.data
   const status = MEMBERSHIP[membership.status]
+  const medicalStatus = medical.data?.current
+    ? {
+      APPROVED: { label: 'Aprobado', sub: 'Apto vigente' },
+      PENDING: { label: 'Pendiente', sub: 'En revisión' },
+      REJECTED: { label: 'Rechazado', sub: 'Revisá el certificado' },
+    }[medical.data.current.status]
+    : null
+  const medicalValue = medical.loading || medical.error ? '—' : medicalStatus?.label ?? 'Sin cargar'
+  const medicalSub = medical.loading
+    ? 'Cargando…'
+    : medical.error
+      ? 'No disponible'
+      : medicalStatus?.sub ?? 'Subí tu certificado'
   return <div className="app-page dashboard-screen">
     {header}
     <div className="status-grid">
       <StatusCard label="ESTADO DE CUOTA" value={status.label} tone={status.tone} sub={membership.expiresAt ? `${membership.daysRemaining} días restantes` : undefined}/>
       <StatusCard label="VENCIMIENTO" value={membership.expiresAt ? formatDate(membership.expiresAt) : 'Sin pagos'} tone="black"/>
       <StatusCard label="VALOR VIGENTE" value={formatMoney(membership.currentPrice)} tone="blue"/>
-      <StatusCard label="APTO MÉDICO" value="—" tone="purple" sub="Backend pendiente"/>
+      <StatusCard label="APTO MÉDICO" value={medicalValue} tone="purple" sub={medicalSub} to="/socio/apto-medico"/>
     </div>
     <div className="dashboard-columns">
       <DashboardCard title="Próximas clases" action={<Link className="text-link" to="/socio/clases">Ver cronograma</Link>}>

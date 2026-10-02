@@ -226,6 +226,7 @@ describe('inicio de socio y entrenador', () => {
     stubApi([
       { path: '/members/me/membership', handler: () => ({ body: { currentPrice: '25000', lastPaymentAt: '2026-09-01T12:00:00Z', expiresAt: '2026-10-01T12:00:00Z', daysRemaining: 24, status: 'CURRENT' } }) },
       { path: '/members/me/payments', handler: () => ({ body: { items: [payment('p1', '2026-09-01T12:00:00Z', '25000')], page: 1, limit: 3, total: 1 } }) },
+      { path: '/members/me/medical-certificates', handler: () => ({ body: { items: [{ id: 'mc1', memberId: 'member-id', status: 'APPROVED', uploadedAt: '2026-09-01T12:00:00Z', reviewedAt: '2026-09-02T12:00:00Z', reviewComment: null, member: { id: 'member-id', firstName: 'Sofía', lastName: 'Prueba', documentNumber: '1', email: 'member@example.com' }, reviewedBy: null }], page: 1, limit: 20, total: 1, initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false } } }) },
       { path: '/weekly-schedules', handler: () => ({ body: schedule }) },
     ])
     renderWithSession(<MemberDashboardScreen/>, { user: testUser('MEMBER', { firstName: 'Sofía' }) })
@@ -234,6 +235,9 @@ describe('inicio de socio y entrenador', () => {
     expect(screen.getAllByText('$ 25.000')).toHaveLength(2)
     expect(screen.getByText('Funcional')).toBeInTheDocument()
     expect(screen.queryByText('Madrugada')).not.toBeInTheDocument()
+    expect(screen.getByText('Aprobado')).toBeInTheDocument()
+    expect(screen.getByText('Apto vigente')).toBeInTheDocument()
+    expect(screen.getByText('Aprobado').closest('a')).toHaveAttribute('href', '/socio/apto-medico')
     expect(screen.getByRole('link', { name: 'Ver historial' })).toHaveAttribute('href', '/socio/pagos')
     expect(screen.getByRole('link', { name: 'Conocé a los entrenadores' })).toHaveAttribute('href', '/socio/entrenadores')
   })
