@@ -9,6 +9,12 @@ import adminSource from './AdminDashboardScreen.tsx?raw'
 import dataSource from './dashboard-data.ts?raw'
 
 const totals = { users: 184, inactive: 16, CURRENT: 120, EXPIRING_SOON: 21, EXPIRED: 30, REJECTED: 2, INITIAL: 5 }
+const accessAttempts = [
+  { id: 'a1', userId: 'u1', roleAtAttempt: 'MEMBER', branchId: 'b1', accessPointId: 'p1', result: 'ALLOWED', denialReason: null, attemptedAt: '2026-09-07T14:24:00-03:00', user: { id: 'u1', firstName: 'Juan Manuel', lastName: 'Pérez' }, branch: { id: 'b1', name: 'Belgrano' } },
+  { id: 'a2', userId: 'u2', roleAtAttempt: 'MEMBER', branchId: 'b1', accessPointId: 'p1', result: 'DENIED', denialReason: 'EXPIRED_MEMBERSHIP', attemptedAt: '2026-09-07T13:19:00-03:00', user: { id: 'u2', firstName: 'Micaela', lastName: 'Rossi' }, branch: { id: 'b1', name: 'Belgrano' } },
+  { id: 'a3', userId: 'u3', roleAtAttempt: 'MEMBER', branchId: 'b2', accessPointId: 'p2', result: 'ALLOWED', denialReason: null, attemptedAt: '2026-09-07T12:52:00-03:00', user: { id: 'u3', firstName: 'Carla', lastName: 'Giménez' }, branch: { id: 'b2', name: 'Palermo' } },
+  { id: 'a4', userId: 'u4', roleAtAttempt: 'MEMBER', branchId: 'b2', accessPointId: 'p2', result: 'DENIED', denialReason: 'MEDICAL_CERTIFICATE_REQUIRED', attemptedAt: '2026-09-07T11:40:00-03:00', user: { id: 'u4', firstName: 'Lucas', lastName: 'Torres' }, branch: { id: 'b2', name: 'Palermo' } },
+]
 const payment = (id: string, accreditedAt: string, amount: string, status: 'ACCREDITED' | 'VOIDED' = 'ACCREDITED') => ({
   id, accreditedAt, amount, status, method: 'Efectivo', receiptNumber: null, expiresAt: accreditedAt, voidedAt: null, voidReason: null,
   member: { id: 'm', firstName: 'A', lastName: 'B', documentNumber: '1', email: 'a@example.com' },
@@ -26,6 +32,8 @@ function adminRoutes(overrides: Partial<typeof totals> = {}, payments = [payment
     { path: '/members', handler: (url) => ({ body: { items: [], page: 1, limit: 1, total: values[url.searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'] } }) },
     { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: payments.length, totalAmount: String(payments.reduce((sum, item) => sum + Number(item.amount), 0)), days } }) },
     { path: '/medical-certificates', handler: () => ({ body: { items: [], page: 1, limit: 1, total: pendingMedicalCertificates } }) },
+    { path: '/access-attempts', handler: () => ({ body: { items: accessAttempts, page: 1, limit: 4, total: accessAttempts.length } }) },
+    { path: '/weekly-schedules', handler: (url) => ({ body: url.searchParams.get('weekStartsOn') === '2026-09-14' ? { id: null, weekStartsOn: '2026-09-14', classes: [] } : { id: 'schedule-current', weekStartsOn: '2026-09-07', classes: [] } }) },
   ]
 }
 
@@ -47,15 +55,16 @@ describe('panel administrativo', () => {
     expect(screen.getByText('PANEL ADMINISTRATIVO')).toHaveClass('dashboard-pill')
     expect(screen.getByRole('heading', { name: 'Buen día, Carla' })).toBeInTheDocument()
     expect(screen.getByText('Resumen de socios, cuotas, aptos médicos y accesos de M-TEAM.')).toBeInTheDocument()
-    expect(await screen.findByText('184')).toBeInTheDocument()
-    expect(screen.getByText('120')).toBeInTheDocument()
-    expect(screen.getByText('21')).toBeInTheDocument()
+    expect(await screen.findByText('184 socios')).toBeInTheDocument()
+    expect(screen.getByText('120 socios')).toBeInTheDocument()
+    expect(screen.getByText('21 próximas a vencer')).toBeInTheDocument()
     const cards = [...document.querySelectorAll('.status-grid .status-card')]
-    expect(cards).toHaveLength(8)
-    expect(cards[5]).toHaveTextContent('4')
-    expect(cards[5]).toHaveAttribute('href', '/admin/aptos?status=PENDING')
+    expect(cards).toHaveLength(4)
+    expect(cards[3]).toHaveTextContent('4 aptos')
+    expect(cards[3]).toHaveAttribute('href', '/admin/aptos?status=PENDING')
     expect(requestsTo(fetchStub, 'GET', '/admin/dashboard/metrics')).toHaveLength(1)
     expect(requestsTo(fetchStub, 'GET', '/users')).toHaveLength(0)
+    expect(await screen.findByText('Juan Manuel Pérez')).toBeInTheDocument()
   })
 
   it('grafica la recaudación real de los últimos 7 días', async () => {
@@ -93,11 +102,11 @@ describe('panel administrativo', () => {
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
     expect(screen.getAllByText('Cargando…').length).toBeGreaterThan(0)
     expect((await screen.findAllByText('No se pudo cargar')).length).toBeGreaterThan(1)
-    expect(screen.getByText(/Métricas no disponibles/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Métricas no disponibles/).length).toBeGreaterThan(0)
     expect(await screen.findByText('Falló la recaudación')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Últimos intentos de acceso' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Reintentar' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Reintentar' }).length).toBeGreaterThan(1)
   })
 
   it('las acciones sin backend quedan deshabilitadas y las reales navegan', async () => {
@@ -107,30 +116,26 @@ describe('panel administrativo', () => {
     expect(within(actions).getByRole('link', { name: 'Registrar un pago' })).toHaveAttribute('href', '/admin/pagos')
     expect(within(actions).getByRole('link', { name: 'Registrar un pago' })).toHaveClass('button-primary')
     expect(within(actions).getByRole('link', { name: 'Crear una cuenta' })).toHaveAttribute('href', '/admin/usuarios')
-    expect(within(actions).getByRole('link', { name: 'Revisar aptos médicos' })).toHaveAttribute('href', '/admin/aptos')
+    expect(within(actions).getByRole('link', { name: /Revisar aptos médicos/ })).toHaveAttribute('href', '/admin/aptos')
     expect(within(actions).getByRole('button', { name: 'Publicar una novedad' })).toBeDisabled()
-    await screen.findByText('184')
+    await screen.findByText('184 socios')
   })
 
-  it('completa la fila inferior de A1 con estados neutrales y sin actividad ficticia', async () => {
+  it('completa las columnas de A1 con accesos, período inicial y cronograma reales', async () => {
     stubApi(adminRoutes())
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    await screen.findByText('184')
+    await screen.findByText('184 socios')
     const grid = document.querySelector('.admin-panel-grid')!
-    expect([...grid.children].map((child) => child.querySelector('h2')?.textContent)).toEqual([
-      'Recaudación de los últimos 7 días',
-      'Acciones frecuentes',
-      'Últimos intentos de acceso',
-      'Período inicial de 20 días',
-    ])
+    expect([...grid.children[0].querySelectorAll('h2')].map((heading) => heading.textContent)).toEqual(['Recaudación de los últimos 7 días', 'Últimos intentos de acceso'])
+    expect([...grid.children[1].querySelectorAll('h2')].map((heading) => heading.textContent)).toEqual(['Acciones frecuentes', 'Período inicial de 20 días', 'Cronograma semanal'])
     const access = screen.getByRole('heading', { name: 'Últimos intentos de acceso' }).closest('section')!
-    expect(within(access).getByRole('status')).toHaveTextContent('Historial de accesos no disponibleEste módulo requiere el backend de control de accesos.')
-    expect(within(access).queryAllByRole('listitem')).toHaveLength(0)
+    expect(within(access).getByText('Juan Manuel Pérez')).toBeInTheDocument()
+    expect(within(access).getAllByText('Permitido').length).toBeGreaterThan(0)
     const period = screen.getByRole('heading', { name: 'Período inicial de 20 días' }).closest('section')!
     expect(within(period).getByRole('status')).toHaveTextContent('5 socios')
     expect(within(period).getByRole('link', { name: 'Ver socios en período inicial' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&initialPeriod=true')
-    expect(within(period).queryByText(/Quedan \d+ días/)).not.toBeInTheDocument()
-    expect(document.body.textContent).not.toMatch(/Permitido|Rechazado|\d{2}:\d{2}/)
+    expect(screen.getByText(/La semana del/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Generar desde la semana anterior' })).toBeInTheDocument()
   })
 
   it('muestra carga solo en la tarjeta de aptos mientras consulta su total', () => {
@@ -166,18 +171,18 @@ describe('panel administrativo', () => {
     expect(screen.getByRole('heading', { name: 'Buen día, Carla' })).toBeInTheDocument()
     expect(screen.getByText('Resumen de hoy · 07/09/2026')).toBeInTheDocument()
     expect(screen.queryByText('PANEL ADMINISTRATIVO')).not.toBeInTheDocument()
-    await screen.findByText('184')
-    expect(document.querySelectorAll('.status-grid > .status-card')).toHaveLength(8)
+    await screen.findByText('184 socios')
+    expect(document.querySelectorAll('.status-grid > .status-card')).toHaveLength(4)
     const order = [...document.querySelectorAll('.dashboard-screen > *')].map((element) => element.querySelector('h2')?.textContent ?? element.className)
     expect(order).toEqual(['dashboard-header', 'status-grid admin-metrics-grid', 'Acciones frecuentes', 'Más secciones', 'Últimos accesos'])
     const more = screen.getByRole('heading', { name: 'Más secciones' }).closest('section')!
     expect(within(more).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/admin/accesos', '/admin/sedes', '/admin/eventos', '/admin/novedades'])
     expect(within(more).queryByText(/Cerrar sesión/)).not.toBeInTheDocument()
     const actions = screen.getByRole('heading', { name: 'Acciones frecuentes' }).closest('section')!
-    expect(within(actions).getByRole('link', { name: 'Revisar aptos médicos' })).toHaveAttribute('href', '/admin/aptos')
+    expect(within(actions).getByRole('link', { name: /Revisar aptos médicos/ })).toHaveAttribute('href', '/admin/aptos')
     expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')).toHaveAttribute('href', '/admin/aptos?status=PENDING')
     const access = screen.getByRole('heading', { name: 'Últimos accesos' }).closest('section')!
-    expect(within(access).getByRole('status')).toHaveTextContent('Historial de accesos no disponible')
+    expect(within(access).getByText('Juan Manuel Pérez')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Período inicial de 20 días' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Recaudación de los últimos 7 días' })).not.toBeInTheDocument()
   })
