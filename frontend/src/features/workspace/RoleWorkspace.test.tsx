@@ -58,6 +58,12 @@ describe('shell autenticado', () => {
     expect(document.querySelector('.app-topbar')!.querySelectorAll('button, a')).toHaveLength(0)
   })
 
+  it('muestra volver al panel desde sedes en celular', () => {
+    setMobileViewport(true)
+    renderWorkspace('/admin/sedes', 'ADMIN')
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
+  })
+
   it('el panel admin mobile muestra la topbar "Panel" sin botón de cerrar sesión', async () => {
     setMobileViewport(true)
     stubApi([
