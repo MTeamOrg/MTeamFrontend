@@ -58,6 +58,12 @@ describe('shell autenticado', () => {
     expect(document.querySelector('.app-topbar')!.querySelectorAll('button, a')).toHaveLength(0)
   })
 
+  it('muestra volver al panel desde sedes en celular', () => {
+    setMobileViewport(true)
+    renderWorkspace('/admin/sedes', 'ADMIN')
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
+  })
+
   it('el panel admin mobile muestra la topbar "Panel" sin botón de cerrar sesión', async () => {
     setMobileViewport(true)
     stubApi([
@@ -69,7 +75,7 @@ describe('shell autenticado', () => {
     expect(within(topbar as HTMLElement).getByRole('heading', { name: 'Panel' })).toBeInTheDocument()
     expect(topbar.querySelectorAll('button, a')).toHaveLength(0)
     expect(within(screen.getByRole('navigation', { name: 'Navegación inferior' })).getByRole('link', { name: 'Panel' })).toHaveAttribute('aria-current', 'page')
-    expect(await screen.findByText('Historial de accesos no disponible')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Últimos accesos' })).toBeInTheDocument()
   })
 
   it('socio y entrenador usan el orden de la navegación lateral en las pestañas mobile', () => {

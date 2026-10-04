@@ -138,6 +138,20 @@ export interface AdminDashboardMetrics {
   initialPeriodMembers: number
 }
 
+export interface AccessAttempt {
+  id: string
+  userId: string
+  roleAtAttempt: UserRole
+  branchId: string | null
+  accessPointId: string | null
+  result: 'ALLOWED' | 'DENIED'
+  denialReason: string | null
+  attemptedAt: string
+  user?: PersonRef
+  branch?: EntityRef | null
+  accessPoint?: EntityRef | null
+}
+
 export interface UserListItem {
   id: string
   firstName: string
@@ -394,6 +408,8 @@ export const backendApi = {
     }),
   getAdminDashboardMetrics: () =>
     apiRequest<AdminDashboardMetrics>('/admin/dashboard/metrics'),
+  listAccessAttempts: (filters: { page?: number; limit?: number; from?: string; to?: string; result?: 'ALLOWED' | 'DENIED' } = {}) =>
+    apiRequest<Page<AccessAttempt>>(`/access-attempts${queryString(filters)}`),
 
   listEvents: (filters: { search?: string; status?: EventStatus; page?: number; limit?: number } = {}) =>
     apiRequest<Page<Event>>(`/events${queryString(filters)}`),

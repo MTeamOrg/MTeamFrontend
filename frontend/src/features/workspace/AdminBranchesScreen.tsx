@@ -4,7 +4,6 @@ import { backendApi, type Branch, type BranchInput } from '../../service/backend
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
-import { SafeImage } from './SafeImage'
 
 const EMPTY_BRANCH: BranchInput = {
   name: '',
@@ -15,11 +14,14 @@ const EMPTY_BRANCH: BranchInput = {
   description: '',
 }
 
+type BranchFilter = 'all' | 'active' | 'inactive'
+
 export function AdminBranchesScreen() {
   const [search, setSearch] = useState('')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [activeFilter, setActiveFilter] = useState<BranchFilter>('all')
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<Branch | 'new' | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const loader = useCallback(() => backendApi.listAdminBranches({
     search: search.trim() || undefined,
     isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
@@ -28,20 +30,47 @@ export function AdminBranchesScreen() {
   }), [activeFilter, page, search])
   const { data, loading, error, reload } = useApiResource(loader)
 
-  return <div className="app-page">
+  return <div className="app-page admin-branches-screen">
     <PageHeader title="Sedes" description="Administrá las sedes reales del gimnasio. Las sedes desactivadas no aparecen en el sitio público.">
-      <button type="button" className="button button-primary" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
+      <button type="button" className="button button-primary admin-branches-desktop-create" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
     </PageHeader>
+    <button type="button" className="button button-primary admin-branches-mobile-create" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
     <div className="admin-list-main">
-      <div className="toolbar admin-list-toolbar"><label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Nombre, dirección o descripción" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label><select aria-label="Filtrar sedes por estado" value={activeFilter} onChange={(event) => { setPage(1); setActiveFilter(event.target.value as typeof activeFilter) }}><option value="all">Todas</option><option value="active">Activas</option><option value="inactive">Desactivadas</option></select></div>
-      {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <><div className="branch-grid">{data.items.map((branch) => <article className="branch-card" key={branch.id}><SafeImage className="media-placeholder" src={branch.imageUrl} alt={`Sede ${branch.name}`}/><div className="branch-info"><div className="card-title-row"><h3>{branch.name}</h3><span className={`badge ${branch.isActive ? 'badge-info' : 'badge-disabled'}`}>{branch.isActive ? 'Activa' : 'Desactivada'}</span></div><p><Icon name="pin"/>{branch.address}</p><p><Icon name="clock"/>{branch.openingHours}</p><p><Icon name="phone"/>{branch.phone}</p><div className="table-actions"><button className="button button-secondary" onClick={() => setEditing(branch)}>Editar</button><button className="button button-secondary" onClick={() => void toggleStatus(branch)}>{branch.isActive ? 'Desactivar' : 'Reactivar'}</button></div></div></article>)}</div><div className="form-actions"><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></>}
+      <div className="toolbar admin-list-toolbar admin-branches-toolbar">
+        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Buscar por nombre o dirección" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label>
+        <button type="button" className="admin-branches-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
+        <div className={`admin-branches-filter-fields${filtersOpen ? ' is-open' : ''}`}>
+          <select aria-label="Filtrar sedes por estado" value={activeFilter} onChange={(event) => { setPage(1); setActiveFilter(event.target.value as BranchFilter) }}>
+            <option value="all">Estado: todas</option>
+            <option value="active">Activas</option>
+            <option value="inactive">Desactivadas</option>
+          </select>
+        </div>
+      </div>
+      {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <>
+        <div className="admin-branches-table-wrap">
+          <table className="admin-branches-table">
+            <thead><tr><th scope="col">Sede</th><th scope="col">Dirección</th><th scope="col">Horarios</th><th scope="col">Teléfono</th><th scope="col">Estado</th><th scope="col"><span className="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody>{data.items.map((branch) => <tr key={branch.id}>
+              <td className="admin-branch-name">{branch.name}</td>
+              <td>{branch.address}</td>
+              <td>{branch.openingHours}</td>
+              <td>{branch.phone}</td>
+              <td><BranchStatusBadge isActive={branch.isActive}/></td>
+              <td><BranchActions branch={branch} onEdit={() => setEditing(branch)} onToggle={() => void toggleStatus(branch)}/></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        <div className="admin-branches-mobile-list">{data.items.map((branch) => <article className="admin-branch-mobile-card" key={branch.id}>
+          <div className="admin-branch-mobile-title"><h2>{branch.name}</h2><BranchStatusBadge isActive={branch.isActive}/></div>
+          <p><Icon name="pin" size={16}/><span>{branch.address} · {branch.openingHours}</span></p>
+          <BranchActions branch={branch} onEdit={() => setEditing(branch)} onToggle={() => void toggleStatus(branch)}/>
+        </article>)}</div>
+        <div className="form-actions admin-branches-pagination"><button type="button" className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button type="button" className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div>
+      </>}
     </div>
     {editing && (
-      <BranchDialog
-        branch={editing === 'new' ? null : editing}
-        onClose={() => setEditing(null)}
-        onSaved={() => { setEditing(null); void reload() }}
-      />
+      <BranchDialog branch={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); void reload() }}/>
     )}
   </div>
 
@@ -55,6 +84,14 @@ export function AdminBranchesScreen() {
       window.alert(value instanceof Error ? value.message : 'No se pudo actualizar la sede.')
     }
   }
+}
+
+function BranchStatusBadge({ isActive }: { isActive?: boolean }) {
+  return <span className={`badge ${isActive ? 'badge-info' : 'badge-disabled'}`}>{isActive ? 'Activa' : 'Desactivada'}</span>
+}
+
+function BranchActions({ branch, onEdit, onToggle }: { branch: Branch; onEdit: () => void; onToggle: () => void }) {
+  return <div className="admin-branch-actions"><button type="button" className="button button-secondary" onClick={onEdit}>Editar</button><button type="button" className="button button-secondary" onClick={onToggle}>{branch.isActive ? 'Desactivar' : 'Reactivar'}</button></div>
 }
 
 function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onClose: () => void; onSaved: () => void }) {
@@ -90,7 +127,7 @@ function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onC
     }
   }
 
-  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={branch ? 'Editar sede' : 'Nueva sede'}><button className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{branch ? 'Editar sede' : 'Nueva sede'}</h2><form onSubmit={submit}><div className="dialog-fields"><Input label="Nombre" value={form.name} onChange={(value) => change('name', value)}/><Input label="Dirección" value={form.address} onChange={(value) => change('address', value)}/><Input label="Horarios" value={form.openingHours} onChange={(value) => change('openingHours', value)}/><Input label="Teléfono" value={form.phone} onChange={(value) => change('phone', value)}/><Input label="URL de imagen" type="url" value={form.imageUrl} onChange={(value) => change('imageUrl', value)}/><Input label="Descripción" value={form.description} onChange={(value) => change('description', value)}/><Input label="Latitud" type="number" required={false} value={form.latitude?.toString() ?? ''} onChange={(value) => change('latitude', value)}/><Input label="Longitud" type="number" required={false} value={form.longitude?.toString() ?? ''} onChange={(value) => change('longitude', value)}/></div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar sede'}</button></div></form></section></div>
+  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={branch ? 'Editar sede' : 'Nueva sede'}><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{branch ? 'Editar sede' : 'Nueva sede'}</h2><form onSubmit={(event) => void submit(event)}><div className="dialog-fields"><Input label="Nombre" value={form.name} onChange={(value) => change('name', value)}/><Input label="Dirección" value={form.address} onChange={(value) => change('address', value)}/><Input label="Horarios" value={form.openingHours} onChange={(value) => change('openingHours', value)}/><Input label="Teléfono" value={form.phone} onChange={(value) => change('phone', value)}/><Input label="URL de imagen" type="url" value={form.imageUrl} onChange={(value) => change('imageUrl', value)}/><Input label="Descripción" value={form.description} onChange={(value) => change('description', value)}/><Input label="Latitud" type="number" required={false} value={form.latitude?.toString() ?? ''} onChange={(value) => change('latitude', value)}/><Input label="Longitud" type="number" required={false} value={form.longitude?.toString() ?? ''} onChange={(value) => change('longitude', value)}/></div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar sede'}</button></div></form></section></div>
 }
 
 function Input({ label, value, onChange, type = 'text', required = true }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
