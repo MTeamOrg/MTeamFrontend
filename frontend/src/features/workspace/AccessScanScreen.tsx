@@ -17,39 +17,53 @@ const denialMessages: Record<string, string> = {
 export function AccessScanScreen({ role }: { role: Extract<UserRole, 'MEMBER' | 'TRAINER'> }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<IScannerControls | null>(null)
+  const processingRef = useRef(false)
   const [scanning, setScanning] = useState(false)
   const [loading, setLoading] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const [result, setResult] = useState<AccessAttemptResult | null>(null)
   const [requestError, setRequestError] = useState('')
 
-  useEffect(() => () => controlsRef.current?.stop(), [])
+  useEffect(() => {
+    if (!scanning || result) return
+    let isCurrentScan = true
+    const reader = new BrowserMultiFormatReader()
+    void reader.decodeFromVideoDevice(undefined, videoRef.current!, async (decoded, _error, controls) => {
+      if (!decoded || processingRef.current) return
+      processingRef.current = true
+      controls.stop()
+      controlsRef.current = null
+      setScanning(false)
+      setLoading(true)
+      try {
+        setResult(await backendApi.createAccessAttempt(decoded.getText()))
+      } catch (value) {
+        setRequestError(value instanceof Error ? value.message : 'No se pudo registrar el intento. Intentá nuevamente.')
+      } finally {
+        processingRef.current = false
+        setLoading(false)
+      }
+    }).then((controls) => {
+      if (!isCurrentScan) controls.stop()
+      else controlsRef.current = controls
+    }).catch(() => {
+      if (!isCurrentScan) return
+      setScanning(false)
+      setCameraError('No pudimos acceder a la cámara. Permití su uso en el navegador y volvé a intentar el escaneo.')
+    })
+    return () => {
+      isCurrentScan = false
+      controlsRef.current?.stop()
+      controlsRef.current = null
+    }
+  }, [result, scanning])
 
-  async function scanAgain() {
+  function scanAgain() {
+    processingRef.current = false
     setResult(null)
     setRequestError('')
     setCameraError('')
     setScanning(true)
-    try {
-      const reader = new BrowserMultiFormatReader()
-      controlsRef.current = await reader.decodeFromVideoDevice(undefined, videoRef.current!, async (decoded, _error, controls) => {
-        if (!decoded || loading) return
-        controls.stop()
-        controlsRef.current = null
-        setScanning(false)
-        setLoading(true)
-        try {
-          setResult(await backendApi.createAccessAttempt(decoded.getText()))
-        } catch (value) {
-          setRequestError(value instanceof Error ? value.message : 'No se pudo registrar el intento. Intentá nuevamente.')
-        } finally {
-          setLoading(false)
-        }
-      })
-    } catch {
-      setScanning(false)
-      setCameraError('No pudimos acceder a la cámara. Permití su uso en el navegador y volvé a intentar el escaneo.')
-    }
   }
 
   function stopScanning() {
