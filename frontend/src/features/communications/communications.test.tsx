@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderWithSession, stubApi, testUser } from '../../test/test-utils'
 import { EventsScreen } from './EventsScreen'
@@ -10,6 +10,7 @@ const news = { id: 'news-1', title: 'Feriado', content: 'La sede permanecerá ce
 const notification = { id: 'notification-1', userId: 'member-id', title: 'Apto médico aprobado', message: 'Tu apto fue aprobado.', type: 'MEDICAL_CERTIFICATE_REVIEWED' as const, createdAt: '2030-09-01T12:00:00.000Z', readAt: null }
 
 afterEach(() => {
+  cleanup()
   vi.unstubAllGlobals()
 })
 
@@ -31,12 +32,35 @@ describe('communications screens', () => {
     await waitFor(() => expect(fetchStub).toHaveBeenCalledWith(expect.stringContaining('/events'), expect.objectContaining({ method: 'POST' })))
   })
 
-  it('shows the audience and publication state of a news post', async () => {
+  it('shows the consultation view for members and trainers without administrative actions', async () => {
+    stubApi([{ path: '/events', handler: () => ({ body: { items: [event], page: 1, limit: 50, total: 1 } }) }])
+    renderWithSession(<EventsScreen />, { user: testUser('MEMBER') })
+    expect(await screen.findByText('Torneo interno')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Nuevo evento|Editar|Publicar|Cancelar/ })).not.toBeInTheDocument()
+    cleanup()
+    renderWithSession(<EventsScreen />, { user: testUser('TRAINER') })
+    expect(await screen.findByText('Torneo interno')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Nuevo evento|Editar|Publicar|Cancelar/ })).not.toBeInTheDocument()
+  })
+
+  it('shows published news content without audience or publication controls', async () => {
     stubApi([{ path: '/news-posts', handler: () => ({ body: { items: [news], page: 1, limit: 12, total: 1 } }) }])
     renderWithSession(<NewsScreen/>, { user: testUser('MEMBER') })
     expect(await screen.findByText('Feriado')).toBeInTheDocument()
-    expect(screen.getByText('Socios')).toBeInTheDocument()
-    expect(screen.getByText('Publicada')).toBeInTheDocument()
+    expect(screen.getByText('La sede permanecerá cerrada.')).toBeInTheDocument()
+    expect(screen.queryByText('Socios')).not.toBeInTheDocument()
+    expect(screen.queryByText('Publicada')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Nueva novedad|Editar|Publicar|Desactivar/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps clear empty and error states for consultation views', async () => {
+    stubApi([{ path: '/events', handler: () => ({ body: { items: [], page: 1, limit: 50, total: 0 } }) }])
+    renderWithSession(<EventsScreen />, { user: testUser('MEMBER') })
+    expect(await screen.findByText('No hay eventos disponibles para este filtro.')).toBeInTheDocument()
+    cleanup()
+    stubApi([{ path: '/news-posts', handler: () => ({ status: 503, body: { code: 'UNAVAILABLE', message: 'Comunicaciones no disponibles' } }) }])
+    renderWithSession(<NewsScreen />, { user: testUser('TRAINER') })
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron cargar los datos')
   })
 
   it('renders the administrative news editor with audience choices', async () => {

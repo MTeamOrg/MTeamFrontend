@@ -4,6 +4,7 @@ import { useApiResource } from '../../hooks/use-api-resource'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
+import { NewsViewer } from './NewsViewer'
 import './communications.css'
 
 const EMPTY_FORM = { title: '', content: '', audience: 'ALL' as PublicationAudience }
@@ -12,6 +13,11 @@ function audienceLabel(audience: PublicationAudience) { return audience === 'ALL
 function formatPublishedDate(value: string | null) { if (!value) return '—'; const parts = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric' }).formatToParts(new Date(value)); const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? ''; return `${get('day')}/${get('month')}/${get('year')}` }
 
 export function NewsScreen({ isAdmin = false }: { isAdmin?: boolean }) {
+  return isAdmin ? <AdminNewsScreen /> : <NewsViewer />
+}
+
+function AdminNewsScreen() {
+  const isAdmin = true
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [audience, setAudience] = useState<PublicationAudience | ''>('')

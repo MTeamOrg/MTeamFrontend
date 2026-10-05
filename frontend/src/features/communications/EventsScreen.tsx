@@ -5,6 +5,7 @@ import { useApiResource } from '../../hooks/use-api-resource'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
+import { EventsViewer } from './EventsViewer'
 import './communications.css'
 
 const EMPTY_FORM = { title: '', description: '', startsAt: '', location: '', imageUrl: '' }
@@ -34,6 +35,11 @@ function eventStatusClass(event: Event) {
 }
 
 export function EventsScreen({ isAdmin = false }: { isAdmin?: boolean }) {
+  return isAdmin ? <AdminEventsScreen /> : <EventsViewer />
+}
+
+function AdminEventsScreen() {
+  const isAdmin = true
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<EventStatus | ''>('')
