@@ -55,7 +55,7 @@ describe('shell autenticado', () => {
     const tabbar = screen.getByRole('navigation', { name: 'Navegación inferior' })
     expect(within(tabbar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Panel', 'Usuarios', 'Pagos', 'Aptos', 'Clases'])
     expect(document.querySelector('.app-topbar-title')).toHaveTextContent('Eventos')
-    expect(document.querySelector('.app-topbar')!.querySelectorAll('button, a')).toHaveLength(0)
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
   })
 
   it('muestra volver al panel desde sedes en celular', () => {

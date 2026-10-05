@@ -39,6 +39,15 @@ describe('communications screens', () => {
     expect(screen.getByText('Publicada')).toBeInTheDocument()
   })
 
+  it('renders the administrative news editor with audience choices', async () => {
+    stubApi([{ path: '/news-posts', handler: () => ({ body: { items: [news], page: 1, limit: 20, total: 1 } }) }])
+    renderWithSession(<NewsScreen isAdmin/>, { user: testUser('ADMIN') })
+    expect(await screen.findByText('Feriado')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Nueva novedad' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar borrador' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Entrenadores' })).toBeInTheDocument()
+  })
+
   it('marks only an unread notification as read', async () => {
     const fetchStub = stubApi([
       { path: '/notifications', handler: () => ({ body: { items: [notification], page: 1, limit: 20, total: 1 } }) },

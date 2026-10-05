@@ -62,7 +62,7 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
     user={session.user}
     active={active}
     title={screenTitle}
-    mobileBackHref={isAdminUserDetail ? `/admin/usuarios${location.search}` : role === 'ADMIN' && segment === 'aptos' && nestedId ? '/admin/aptos' : role === 'ADMIN' && segment === 'sedes' ? '/admin' : undefined}
+    mobileBackHref={isAdminUserDetail ? `/admin/usuarios${location.search}` : role === 'ADMIN' && segment === 'aptos' && nestedId ? '/admin/aptos' : role === 'ADMIN' && ['sedes', 'eventos', 'novedades'].includes(segment) ? '/admin' : undefined}
     mobileTitle={isAdminUserDetail ? 'Detalle de usuario' : role === 'ADMIN' && segment === 'aptos' && nestedId ? 'Revisar apto' : undefined}
     notice={permissionNotice}
     onDismissNotice={() => setPermissionNotice('')}
