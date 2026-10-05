@@ -205,6 +205,25 @@
 .access-result-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
 .scanner-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scanner-viewport.scanning>svg,.scanner-viewport.scanning>small{display:none}
+.scanner-viewport:not(.scanning) .scanner-video{display:none}
+.access-outcome{min-height:calc(100vh - 120px);display:grid;place-items:center;padding:24px;background:#e3f1f9}
+.access-outcome.denied{background:#fbe6ec}
+.access-outcome-card{width:min(100%,560px);display:grid;justify-items:center;text-align:center;gap:16px}
+.access-outcome-icon{width:88px;height:88px;display:grid;place-items:center;border-radius:50%;background:#fff;color:var(--blue)}
+.access-outcome.denied .access-outcome-icon{color:var(--pink)}
+.access-outcome-card h1{margin:0;color:var(--blue);font-size:30px}
+.access-outcome.denied .access-outcome-card h1{color:var(--pink)}
+.access-outcome-card>p{max-width:440px;margin:0;color:#555a60;line-height:1.55}
+.access-outcome-card dl{width:100%;display:grid;gap:10px;margin:0;padding:18px;border-radius:14px;background:#fff;text-align:left}
+.access-outcome-card dl div{display:flex;justify-content:space-between;gap:16px}
+.access-outcome-card dt{color:#777c82}
+.access-outcome-card dd{margin:0;text-align:right}
+.access-outcome-card .button{width:100%;justify-content:center}
+.access-history-filters{flex-wrap:wrap}
+.access-history-filters .search-shell{min-width:min(260px,100%)}
+.access-history-filters select,.access-date-filter input{height:40px;padding:0 10px;border:1px solid #d9dadd;border-radius:8px;background:#fff}
+.access-date-filter{display:flex;align-items:center;gap:6px;color:#777c82;font-size:11px}
+@media(max-width:700px){.access-outcome{min-height:calc(100vh - 160px);padding:20px}.access-outcome-card h1{font-size:25px}.access-history-filters{align-items:stretch}.access-history-filters .search-shell,.access-history-filters select{width:100%;max-width:none}.access-date-filter{justify-content:space-between}}
 @media(max-width:700px){
   .maps-grid{grid-template-columns:1fr;gap:12px;margin:16px 0}
   .branch-map{height:180px;border-radius:12px}
