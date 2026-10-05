@@ -21,12 +21,12 @@ import { NewsScreen } from '../communications/NewsScreen'
 import { NotificationsScreen } from '../communications/NotificationsScreen'
 import { ProfileScreen } from './ProfileScreen'
 import { TrainerDirectoryScreen } from './TrainerDirectoryScreen'
+import { AccessScanScreen } from './AccessScanScreen'
+import { AdminAccessAttemptsScreen } from './AdminAccessAttemptsScreen'
 import { WorkspaceLayout } from './WorkspaceLayout'
 import { ROLE_BASE, resolveSection } from './navigation'
 
 const UNAVAILABLE: Record<string, { module: string; roles: UserRole[] }> = {
-  acceso: { module: 'Acceso QR', roles: ['MEMBER', 'TRAINER'] },
-  accesos: { module: 'Accesos', roles: ['ADMIN'] },
   notificaciones: { module: 'Notificaciones', roles: ['MEMBER', 'TRAINER'] },
 }
 
@@ -90,6 +90,8 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
       : <AdminMedicalCertificatesScreen/>
     if (segment === 'eventos') return <EventsScreen isAdmin={role === 'ADMIN'}/>
     if (segment === 'novedades') return <NewsScreen isAdmin={role === 'ADMIN'}/>
+    if (segment === 'acceso' && (role === 'MEMBER' || role === 'TRAINER')) return <AccessScanScreen role={role}/>
+    if (role === 'ADMIN' && segment === 'accesos') return <AdminAccessAttemptsScreen/>
     if (segment === 'notificaciones' && role !== 'ADMIN') return <NotificationsScreen/>
     const unavailable = UNAVAILABLE[segment]
     if (unavailable?.roles.includes(role)) return <UnavailableScreen title={title} module={unavailable.module}/>

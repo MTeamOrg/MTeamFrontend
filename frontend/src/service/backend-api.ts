@@ -152,6 +152,12 @@ export interface AccessAttempt {
   accessPoint?: EntityRef | null
 }
 
+export interface AccessAttemptResult extends AccessAttempt {
+  user?: PersonRef & { documentNumber: string }
+  branch: EntityRef | null
+  accessPoint: EntityRef | null
+}
+
 export interface UserListItem {
   id: string
   firstName: string
@@ -408,8 +414,10 @@ export const backendApi = {
     }),
   getAdminDashboardMetrics: () =>
     apiRequest<AdminDashboardMetrics>('/admin/dashboard/metrics'),
-  listAccessAttempts: (filters: { page?: number; limit?: number; from?: string; to?: string; result?: 'ALLOWED' | 'DENIED' } = {}) =>
-    apiRequest<Page<AccessAttempt>>(`/access-attempts${queryString(filters)}`),
+  createAccessAttempt: (qrToken: string) =>
+    apiRequest<AccessAttemptResult>('/access-attempts', { method: 'POST', body: { qrToken } }),
+  listAccessAttempts: (filters: { page?: number; limit?: number; from?: string; to?: string; userId?: string; branchId?: string; search?: string; role?: UserRole; result?: 'ALLOWED' | 'DENIED' } = {}) =>
+    apiRequest<Page<AccessAttemptResult>>(`/access-attempts${queryString(filters)}`),
 
   listEvents: (filters: { search?: string; status?: EventStatus; page?: number; limit?: number } = {}) =>
     apiRequest<Page<Event>>(`/events${queryString(filters)}`),
