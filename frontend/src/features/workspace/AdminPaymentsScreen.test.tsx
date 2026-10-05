@@ -24,14 +24,15 @@ describe('pagos y cuota del administrador', () => {
   it('muestra las métricas, la tabla y los paneles definidos en Figma', async () => {
     stubPaymentsApi()
     renderWithSession(<AdminPaymentsScreen />, { user: testUser('ADMIN') })
-    expect(await screen.findByText('VALOR VIGENTE')).toBeInTheDocument()
+    expect((await screen.findAllByText('VALOR VIGENTE')).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Pagos y cuota' })).toBeInTheDocument()
-    expect(screen.getByText('RECAUDADO HOY')).toBeInTheDocument()
+    expect((await screen.findAllByText('RECAUDADO HOY')).length).toBeGreaterThan(0)
     expect(screen.getByText('SOCIOS SIN PAGO')).toBeInTheDocument()
     expect(screen.getByText('Juan Manuel Pérez')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Cambiar el valor de la cuota' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Historial de valores' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Estado de las cuotas' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Estado de las cuotas' })).toHaveLength(2)
+    expect(screen.getByRole('heading', { name: 'Últimos pagos' })).toBeInTheDocument()
   })
 
   it('previsualiza y acredita un pago desde el modal', async () => {
@@ -39,8 +40,7 @@ describe('pagos y cuota del administrador', () => {
     renderWithSession(<AdminPaymentsScreen />, { user: testUser('ADMIN') })
     fireEvent.click(await screen.findByRole('button', { name: 'Registrar pago' }))
     expect(screen.getByRole('heading', { name: 'Registrar y acreditar un pago' })).toBeInTheDocument()
-    const memberFields = await screen.findAllByLabelText('Socio')
-    fireEvent.change(memberFields.at(-1) as HTMLSelectElement, { target: { value: 'member-1' } })
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Socio' }), { target: { value: 'member-1' } })
     fireEvent.click(screen.getByRole('button', { name: 'Revisar y acreditar' }))
     expect(await screen.findByText('Nuevo vencimiento')).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Confirmar y acreditar' })).toBeInTheDocument()

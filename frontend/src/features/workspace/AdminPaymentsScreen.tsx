@@ -11,6 +11,9 @@ const money = (value: string | number | null | undefined) => value == null
   ? 'Sin configurar'
   : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(value))
 const gymInstant = (date: string) => `${date}T00:00:00-03:00`
+const mobilePaymentDate = (date: string) => new Intl.DateTimeFormat('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+}).format(new Date(date))
 
 export function AdminPaymentsScreen() {
   const today = gymDate()
@@ -44,23 +47,52 @@ export function AdminPaymentsScreen() {
 
   return <div className="app-page admin-payments-screen">
     {header}
-    <div className="status-grid payment-stats">
+    <div className="status-grid payment-stats payment-desktop-stats">
       <StatusCard label="VALOR VIGENTE" value={money(data.currentPrice?.amount)} tone="pink" sub={data.currentPrice ? `Desde el ${formatDate(data.currentPrice.effectiveFrom)}` : 'Todavía no configurado'} />
       <StatusCard label="RECAUDADO HOY" value={money(data.todaySummary.totalAmount)} tone="black" sub={`${data.todaySummary.paymentCount} pagos acreditados`} />
       <StatusCard label="RECAUDADO EN EL MES" value={money(data.monthSummary.totalAmount)} tone="black" sub={new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(new Date(`${today}T12:00:00Z`))} />
       <StatusCard label="SOCIOS SIN PAGO" value={`${data.metrics.expiredMemberships} socios`} tone="pink" sub="Cuota vencida o sin registrar" />
     </div>
+
+    <section className="payment-mobile-summary">
+      <div className="payment-mobile-stats">
+        <StatusCard label="VALOR VIGENTE" value={money(data.currentPrice?.amount)} tone="pink" sub={data.currentPrice ? `Desde el ${formatDate(data.currentPrice.effectiveFrom)}` : 'Todavía no configurado'} />
+        <StatusCard label="RECAUDADO HOY" value={money(data.todaySummary.totalAmount)} tone="black" sub={`${data.todaySummary.paymentCount} pagos`} />
+      </div>
+      <button type="button" className="button button-primary payment-mobile-register" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button>
+      <section className="surface-card payment-mobile-membership">
+        <h2>Estado de las cuotas</h2>
+        <div className="membership-state-list">
+          <p><span>Al día</span><strong className="state-count state-count-blue">{data.metrics.currentMemberships}</strong></p>
+          <p><span>Próximas a vencer</span><strong className="state-count state-count-purple">{data.metrics.expiringMemberships}</strong></p>
+          <p><span>Vencidas</span><strong className="state-count state-count-pink">{data.metrics.expiredMemberships}</strong></p>
+        </div>
+      </section>
+      <section className="payment-mobile-history">
+        <h2>Últimos pagos</h2>
+        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <article className="payment-mobile-card" key={payment.id}>
+          <span className="payment-mobile-icon"><Icon name="wallet" size={16} /></span>
+          <div className="payment-mobile-detail"><strong>{payment.member.firstName} {payment.member.lastName} · {mobilePaymentDate(payment.accreditedAt)}</strong><span>{payment.method} · {payment.status === 'VOIDED' ? 'anulado' : `vence ${formatDate(payment.expiresAt)}`}</span></div>
+          <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></div>
+          {payment.status === 'ACCREDITED' && <button type="button" className="payment-mobile-void" aria-label={`Anular pago de ${payment.member.firstName} ${payment.member.lastName}`} onClick={() => void voidPayment(payment.id)}>Anular</button>}
+        </article>)}</div>}
+      </section>
+    </section>
+
+    <div className="toolbar payment-filter-toolbar">
+      <label className="search-shell"><Icon name="search" /><input aria-label="Buscar por socio o documento" placeholder="Buscar por socio o documento" value={search} onChange={(event) => setFilter(() => setSearch(event.target.value))} /></label>
+      <select aria-label="Filtrar por medio" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}><option value="">Medio: todos</option><option value="Efectivo">Efectivo</option><option value="Débito">Débito</option><option value="Transferencia">Transferencia</option></select>
+      <select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Estado: todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select>
+      <label className="payment-date-filter" title="Fecha inicial"><span className="visually-hidden">Desde</span><Icon name="calendar" size={18} /><input aria-label="Desde" type="date" value={from} max={to} onChange={(event) => setFilter(() => setFrom(event.target.value))} /></label>
+      <button type="button" className="button button-primary payment-register-button" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar pago</button>
+    </div>
+
     <div className="admin-payments-layout">
       <section className="payment-list-panel">
-        <div className="toolbar payment-filter-toolbar">
-          <label className="search-shell"><Icon name="search" /><input aria-label="Buscar por socio o documento" placeholder="Buscar por socio o documento" value={search} onChange={(event) => setFilter(() => setSearch(event.target.value))} /></label>
-          <select aria-label="Filtrar por medio" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}><option value="">Medio: todos</option><option value="Efectivo">Efectivo</option><option value="Débito">Débito</option><option value="Transferencia">Transferencia</option></select>
-          <select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Estado: todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select>
-          <label className="payment-date-filter" title="Fecha inicial"><span className="visually-hidden">Desde</span><Icon name="calendar" size={18} /><input aria-label="Desde" type="date" value={from} max={to} onChange={(event) => setFilter(() => setFrom(event.target.value))} /></label>
-          <button type="button" className="button button-primary payment-register-button" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar pago</button>
+        <div className="payment-desktop-history">
+          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th><span className="visually-hidden">Acción</span></th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}</td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.method}</td><td>{formatDate(payment.expiresAt)}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td>{payment.status === 'ACCREDITED' && <button className="text-link" onClick={() => void voidPayment(payment.id)}>Anular</button>}</td></tr>)}</tbody></table></div>}
+          <div className="table-pagination payment-pagination"><span>Página {page}</span><div><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
         </div>
-        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th><span className="visually-hidden">Acción</span></th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}</td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.method}</td><td>{formatDate(payment.expiresAt)}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td>{payment.status === 'ACCREDITED' && <button className="text-link" onClick={() => void voidPayment(payment.id)}>Anular</button>}</td></tr>)}</tbody></table></div>}
-        <div className="table-pagination payment-pagination"><span>Página {page}</span><div><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
       </section>
       <aside className="admin-payment-side">
         <PriceForm current={data.currentPrice?.amount ?? null} activeMembers={data.metrics.activeMembers} onSaved={() => void reload()} />

@@ -186,14 +186,17 @@ body { background: var(--background); color: var(--black); }
 .admin-payments-screen .payment-stats { margin: 0; }
 .admin-payments-screen .status-card { min-height: 124px; }
 .admin-payments-screen .status-card-sub { display: flex; align-items: center; min-height: 18px; }
-.admin-payments-screen .admin-payments-layout { grid-template-columns: minmax(0, 656px) minmax(320px, 400px); gap: 24px; }
+.admin-payments-screen .admin-payments-layout { display: grid; grid-template-columns: minmax(0, 1.64fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 .admin-payments-screen .payment-list-panel { padding: 0; min-width: 0; background: transparent; }
-.admin-payments-screen .payment-filter-toolbar { display: grid; grid-template-columns: minmax(210px, 1fr) 160px 166px 48px auto; gap: 12px; margin: 0 0 20px; flex-wrap: nowrap; }
+.admin-payments-screen .payment-filter-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 145px 150px 48px 168px; gap: 12px; width: 100%; margin: 0; flex-wrap: nowrap; }
 .admin-payments-screen .payment-filter-toolbar .search-shell { min-width: 0; height: 44px; }
 .admin-payments-screen .payment-filter-toolbar > select { width: 100%; height: 44px; font-size: 14px; }
 .payment-date-filter { width: 48px; height: 44px; display: grid; place-items: center; position: relative; overflow: hidden; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); cursor: pointer; }
 .payment-date-filter input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
 .payment-register-button { white-space: nowrap; }
+.admin-payments-screen .payment-register-button { position: static; z-index: auto; width: auto; border-radius: 8px; font-size: 14px; }
+.payment-mobile-summary, .payment-mobile-register, .payment-mobile-history { display: none; }
+.payment-desktop-stats { display: flex; }
 .payment-table-wrap { border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
 .payment-table th { height: 44px; padding: 0 20px; background: #f7f8f8; text-transform: uppercase; letter-spacing: .6px; }
 .payment-table td { height: 59px; padding: 0 20px; }
@@ -238,24 +241,45 @@ body { background: var(--background); color: var(--black); }
 .payment-operation-summary .payment-new-expiration strong { color: var(--pink); font-size: 18px; }
 .payment-dialog-actions { margin: 0; padding: 16px 24px 20px; }
 
-@media (max-width: 1220px) {
+@media (max-width: 1359px) {
   .admin-payments-screen .admin-payments-layout { grid-template-columns: 1fr; }
   .admin-payments-screen .admin-payment-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-payments-screen .payment-price-card { grid-column: 1 / -1; }
+  .admin-payments-screen .payment-filter-toolbar { grid-template-columns: minmax(180px, 1fr) minmax(120px, .55fr) minmax(120px, .55fr) 48px; }
+  .admin-payments-screen .payment-register-button { grid-column: 1 / -1; justify-self: end; }
+}
+
+@media (max-width: 900px) and (min-width: 701px) {
+  .admin-payments-screen .payment-filter-toolbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
+  .admin-payments-screen .payment-filter-toolbar .search-shell { grid-column: 1 / -1; }
 }
 
 @media (max-width: 700px) {
   .admin-payments-screen { gap: 14px; }
   .admin-payments-screen > .page-header { display: none; }
-  .admin-payments-screen .payment-stats { display: flex; overflow-x: auto; padding-bottom: 4px; }
-  .admin-payments-screen .status-card { min-width: 170px; min-height: 98px; }
-  .admin-payments-screen .payment-filter-toolbar { grid-template-columns: 1fr 1fr 44px; gap: 8px; }
-  .admin-payments-screen .payment-filter-toolbar .search-shell { grid-column: 1 / -1; }
-  .admin-payments-screen .payment-filter-toolbar > select { max-width: none; }
-  .payment-register-button { position: fixed; right: 18px; bottom: 82px; z-index: 6; width: 48px; padding: 0; border-radius: 50%; font-size: 0; }
-  .payment-table th, .payment-table td { padding: 0 12px; }
-  .admin-payments-screen .admin-payment-side { grid-template-columns: 1fr; }
-  .admin-payments-screen .payment-price-card { grid-column: auto; }
+  .admin-payments-screen .payment-desktop-stats, .admin-payments-screen .payment-filter-toolbar, .admin-payments-screen .admin-payments-layout { display: none; }
+  .payment-mobile-summary { display: grid; gap: 14px; min-width: 0; }
+  .payment-mobile-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .payment-mobile-stats .status-card { min-width: 0; min-height: 86px; gap: 6px; padding: 14px; border-radius: 14px; }
+  .payment-mobile-stats .status-card-label { font-size: 10px; letter-spacing: .6px; }
+  .payment-mobile-stats .status-card-value { font-size: 16px; }
+  .payment-mobile-stats .status-card-sub { min-height: 0; font-size: 11px; }
+  .payment-mobile-register { display: flex; width: 100%; min-height: 44px; }
+  .payment-mobile-membership { display: grid; gap: 10px; padding: 16px !important; }
+  .payment-mobile-membership h2, .payment-mobile-history h2 { margin: 0; color: var(--black); font-size: 14px; line-height: 1.4; font-weight: 600; }
+  .payment-mobile-membership .membership-state-list { gap: 10px; }
+  .payment-mobile-membership .membership-state-list p { min-height: 24px; font-size: 13px; }
+  .payment-mobile-history { display: grid; gap: 12px; min-width: 0; }
+  .payment-mobile-list { display: grid; gap: 12px; min-width: 0; }
+  .payment-mobile-card { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--white); box-shadow: var(--card-shadow); }
+  .payment-mobile-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--background); color: var(--text-muted); }
+  .payment-mobile-detail, .payment-mobile-value { display: grid; gap: 4px; min-width: 0; }
+  .payment-mobile-detail strong { overflow: hidden; color: var(--black); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .payment-mobile-detail > span { overflow: hidden; color: var(--text-secondary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+  .payment-mobile-value { justify-items: end; }
+  .payment-mobile-value > strong { color: var(--black); font-size: 13px; white-space: nowrap; }
+  .payment-mobile-value .badge { padding: 5px 8px; font-size: 10px; white-space: nowrap; }
+  .payment-mobile-void { grid-column: 2 / -1; justify-self: end; padding: 0; border: 0; background: transparent; color: var(--pink); font-size: 11px; cursor: pointer; }
   .workspace-dialog.payment-dialog { border-radius: 16px 16px 0 0; }
   .payment-dialog-header { padding: 18px; }
   .payment-dialog-header p { font-size: 12px; }
