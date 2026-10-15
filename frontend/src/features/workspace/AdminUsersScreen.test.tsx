@@ -75,6 +75,7 @@ describe('detalle de usuarios del administrador', () => {
     renderWorkspace('/admin/usuarios')
 
     expect((await screen.findAllByRole('heading', { name: 'Usuarios' })).length).toBeGreaterThan(0)
+    expect((await screen.findAllByRole('link', { name: /Ver detalle de Juan Manuel/ })).length).toBeGreaterThan(0)
     expect(document.querySelector('.admin-users-mobile-create')).toBeInTheDocument()
     expect(document.querySelector('.admin-users-toolbar .search-shell input')).toBeInTheDocument()
     expect(document.querySelector('.admin-users-filter-toggle')).toBeInTheDocument()
