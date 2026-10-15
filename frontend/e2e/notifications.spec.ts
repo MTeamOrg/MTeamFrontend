@@ -58,11 +58,13 @@ test('el socio consulta notificaciones y marca una como leída', async ({ page }
     }
 
     if (request.method() === 'GET' && path.endsWith('/notifications')) {
-      notificationsQuery = requestUrl.searchParams
+      const unreadOnly = requestUrl.searchParams.get('isRead') === 'false'
+      if (!unreadOnly) notificationsQuery = requestUrl.searchParams
+      const items = unreadOnly ? notifications.filter((notification) => !notification.readAt) : notifications
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ items: notifications, page: 1, limit: 20, total: notifications.length }),
+        body: JSON.stringify({ items, page: 1, limit: unreadOnly ? 1 : 20, total: items.length }),
       })
       return
     }

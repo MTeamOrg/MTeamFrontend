@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderWithSession, stubApi, testUser } from '../../test/test-utils'
+import { renderWithSession, requestsTo, stubApi, testUser } from '../../test/test-utils'
 import { EventsScreen } from './EventsScreen'
 import { NewsScreen } from './NewsScreen'
 import { NotificationsScreen } from './NotificationsScreen'
@@ -50,6 +50,29 @@ describe('communications screens', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Marcar como leída' }))
     await waitFor(() => expect(fetchStub).toHaveBeenCalledWith(expect.stringContaining('/notifications/notification-1/read-status'), expect.objectContaining({ method: 'PATCH' })))
   })
+
+  it('enables mark all when unread notifications are outside the visible page', async () => {
+    let unreadTotal = 1
+    const fetchStub = stubApi([
+      { path: '/notifications', handler: (url) => {
+        if (url.searchParams.get('isRead') === 'false') {
+          return { body: { items: unreadTotal ? [notification] : [], page: 1, limit: 1, total: unreadTotal } }
+        }
+        return { body: { items: [{ ...notification, readAt: '2030-09-02T12:00:00Z' }], page: 1, limit: 20, total: 21 } }
+      } },
+      { method: 'PATCH', path: '/notifications/read-status', handler: () => { unreadTotal = 0; return { status: 204 } } },
+    ])
+    renderWithSession(<NotificationsScreen/>, { user: testUser('MEMBER') })
+
+    const markAll = await screen.findByRole('button', { name: 'Marcar todas como leídas' })
+    await waitFor(() => expect(markAll).toBeEnabled())
+    expect(screen.getByText('Leída')).toBeInTheDocument()
+    expect(requestsTo(fetchStub, 'GET', '/notifications').some(({ url }) => url.searchParams.get('isRead') === 'false' && url.searchParams.get('limit') === '1')).toBe(true)
+
+    fireEvent.click(markAll)
+    await waitFor(() => expect(fetchStub).toHaveBeenCalledWith(expect.stringContaining('/notifications/read-status'), expect.objectContaining({ method: 'PATCH' })))
+    await waitFor(() => expect(markAll).toBeDisabled())
+  })
 })
 
 
@@ -57,7 +80,9 @@ describe.each(['MEMBER', 'TRAINER'] as const)('shared notifications inbox for %s
   it('shows reading states and preserves the API newest-first order and history', async () => {
     let isRead = false
     stubApi([
-      { path: '/notifications', handler: () => ({ body: { items: [{ ...notification, readAt: isRead ? '2030-09-02T12:00:00Z' : null }, { ...notification, id: 'older', title: 'Aviso anterior', createdAt: '2030-08-01T12:00:00Z', readAt: '2030-08-02T12:00:00Z' }], page: 1, limit: 20, total: 2 } }) },
+      { path: '/notifications', handler: (url) => url.searchParams.get('isRead') === 'false'
+        ? { body: { items: isRead ? [] : [notification], page: 1, limit: 1, total: isRead ? 0 : 1 } }
+        : { body: { items: [{ ...notification, readAt: isRead ? '2030-09-02T12:00:00Z' : null }, { ...notification, id: 'older', title: 'Aviso anterior', createdAt: '2030-08-01T12:00:00Z', readAt: '2030-08-02T12:00:00Z' }], page: 1, limit: 20, total: 2 } } },
       { method: 'PATCH', path: '/notifications/notification-1/read-status', handler: () => { isRead = true; return { status: 204 } } },
     ])
     renderWithSession(<NotificationsScreen/>, { user: testUser(role) })
