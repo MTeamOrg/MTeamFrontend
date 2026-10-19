@@ -96,7 +96,7 @@
 @media (max-width: 700px) {
   .trainer-profile-page .page-header { display: none; }
   .trainer-profile-page .profile-section { width: 100%; min-width: 0; }
-  .trainer-profile-page .trainer-professional-section { display: none; }
+  .trainer-profile-page .trainer-professional-section { display: grid; order: 0; }
   .trainer-profile-page .profile-identity-section { order: 1; }
   .trainer-profile-page .profile-contact-section { order: 2; }
   .trainer-profile-page .trainer-branches-section { order: 3; }
@@ -106,3 +106,6 @@
   .trainer-profile-page .profile-read-field strong { padding: 0; min-width: 0; max-width: 65%; }
   .trainer-profile-page .profile-read-field > span { flex-shrink: 0; }
 }
+
+.trainer-professional-fields { display: grid; gap: 16px; min-width: 0; padding: 0; margin: 0; border: 0; }
+.trainer-professional-fields textarea { width: 100%; min-width: 0; resize: vertical; font: inherit; }

@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser } from '../../test/test-utils'
 import { ProfileScreen } from './ProfileScreen'
+import { backendApi, type OwnProfile } from '../../service/backend-api'
 
 const user = testUser('TRAINER')
 const profile = { ...user, documentNumber: '123', birthDate: '1990-01-01', phone: '1100000000', photoUrl: null, memberProfile: null, trainerProfile: { specialty: 'Entrenamiento funcional', description: 'Preparación física personalizada.' } }
@@ -66,4 +67,76 @@ it('finds the authenticated trainer beyond the first directory page', async () =
   const fetchStub = stubApi([{ path: '/trainers', handler: (url) => ({ body: url.searchParams.get('page') === '1' ? { ...directory, items: [directory.items[1]], limit: 1 } : { ...directory, items: [directory.items[0]], limit: 1 } }) }, ...routes]); renderProfile()
   await waitFor(() => expect(screen.getByText('Sede asignada')).toBeInTheDocument())
   expect(requestsTo(fetchStub, 'GET', '/trainers')).toHaveLength(2)
+})
+
+it.each([false, true])('saves professional fields using the server response (mobile: %s)', async (isMobile) => {
+  setMobileViewport(isMobile)
+  const updated = { ...profile, trainerProfile: { specialty: 'Respuesta del servidor', description: 'Descripción persistida' } }
+  const fetchStub = stubApi([{ method: 'PATCH', path: '/users/me', handler: () => ({ body: updated }) }, ...routes])
+  renderProfile()
+  fireEvent.click(await screen.findByRole('button', { name: 'Editar perfil profesional' }))
+  const form = screen.getByRole('form', { name: 'Editar perfil profesional' })
+  fireEvent.change(within(form).getByLabelText('Especialidad'), { target: { value: ' Nueva especialidad ' } })
+  fireEvent.change(within(form).getByLabelText('Descripción'), { target: { value: ' Nueva descripción ' } })
+  fireEvent.click(within(form).getByRole('button', { name: 'Guardar cambios' }))
+  expect(await screen.findByText('Perfil profesional actualizado correctamente.')).toBeInTheDocument()
+  expect(screen.getByText('Descripción persistida')).toBeInTheDocument()
+  expect(requestsTo(fetchStub, 'PATCH', '/users/me')[0].body).toEqual({ specialty: 'Nueva especialidad', description: 'Nueva descripción' })
+})
+it('cancels professional edits without a request and resets the draft', async () => {
+  const fetchStub = stubApi(routes); renderProfile()
+  fireEvent.click(await screen.findByRole('button', { name: 'Editar perfil profesional' }))
+  fireEvent.change(screen.getByLabelText('Especialidad'), { target: { value: 'Borrador' } })
+  fireEvent.click(within(screen.getByRole('form', { name: 'Editar perfil profesional' })).getByRole('button', { name: 'Cancelar' }))
+  expect(requestsTo(fetchStub, 'PATCH', '/users/me')).toHaveLength(0)
+  fireEvent.click(screen.getByRole('button', { name: 'Editar perfil profesional' }))
+  expect(screen.getByLabelText('Especialidad')).toHaveValue(profile.trainerProfile.specialty)
+})
+it('keeps the draft on server validation errors and validates whitespace', async () => {
+  const fetchStub = stubApi([{ method: 'PATCH', path: '/users/me', handler: () => ({ status: 400, body: { message: 'Especialidad inválida' } }) }, ...routes]); renderProfile()
+  fireEvent.click(await screen.findByRole('button', { name: 'Editar perfil profesional' }))
+  const form = screen.getByRole('form', { name: 'Editar perfil profesional' })
+  expect(screen.getByLabelText('Especialidad')).toHaveAttribute('maxlength', '150')
+  fireEvent.change(screen.getByLabelText('Especialidad'), { target: { value: ' ' } })
+  fireEvent.submit(form)
+  expect(await screen.findByRole('alert')).toHaveTextContent('Completá')
+  expect(requestsTo(fetchStub, 'PATCH', '/users/me')).toHaveLength(0)
+  fireEvent.change(screen.getByLabelText('Especialidad'), { target: { value: 'Borrador' } })
+  fireEvent.submit(form)
+  expect(await screen.findByText('Especialidad inválida')).toBeInTheDocument()
+  expect(screen.getByLabelText('Especialidad')).toHaveValue('Borrador')
+  expect(screen.getByText(profile.trainerProfile.specialty)).toBeInTheDocument()
+})
+
+it.each(['MEMBER', 'ADMIN'] as const)('does not expose professional editing for %s', async (role) => {
+  stubApi([
+    { path: '/users/me', handler: () => ({ body: { ...profile, role } }) },
+    { path: '/members/me/membership', handler: () => ({ body: {} }) },
+    { path: '/members/me/payments', handler: () => ({ body: { items: [], total: 0 } }) },
+    { path: '/members/me/medical-certificates', handler: () => ({ body: { items: [], total: 0, page: 1, limit: 20, initialMedicalCertificatePeriod: { isActive: false } } }) },
+  ])
+  renderWithSession(<ProfileScreen role={role} onPasswordChange={vi.fn()} onLogout={vi.fn()}/>, { user: testUser(role) })
+  await screen.findByLabelText('Correo electrónico')
+  expect(screen.queryByRole('button', { name: 'Editar perfil profesional' })).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Especialidad')).not.toBeInTheDocument()
+})
+
+it('disables editing while the real update is pending', async () => {
+  stubApi(routes)
+  let resolveUpdate!: (value: OwnProfile) => void
+  const update = vi.spyOn(backendApi, 'updateOwnProfile').mockImplementation(() => new Promise((resolve) => { resolveUpdate = resolve }))
+  try {
+    renderProfile()
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar perfil profesional' }))
+    const form = screen.getByRole('form', { name: 'Editar perfil profesional' })
+    fireEvent.submit(form)
+    expect(form).toHaveAttribute('aria-busy', 'true')
+    expect(within(form).getByRole('button', { name: /Guardando/ })).toBeDisabled()
+    expect(within(form).getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+    expect(screen.getByLabelText('Especialidad')).toBeDisabled()
+    resolveUpdate(profile)
+    expect(await screen.findByText('Perfil profesional actualizado correctamente.')).toBeInTheDocument()
+  } finally {
+    update.mockRestore()
+  }
 })

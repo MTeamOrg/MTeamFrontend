@@ -376,6 +376,8 @@ export const backendApi = {
   getOwnProfile: () => apiRequest<OwnProfile>('/users/me'),
   updateOwnProfile: (
     body: Partial<Pick<OwnProfile, 'email' | 'phone'>> & {
+      specialty?: string
+      description?: string
       emergencyContactName?: string
       emergencyContactPhone?: string
     },
