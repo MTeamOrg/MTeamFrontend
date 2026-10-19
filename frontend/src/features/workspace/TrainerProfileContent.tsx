@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useState } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { backendApi, type OwnProfile } from '../../service/backend-api'
@@ -17,7 +17,16 @@ export function TrainerProfileContent({ profile, onUpdated, onPasswordChange }: 
   const [isEditing, setIsEditing] = useState(false)
   return <div className="profile-layout trainer-profile-layout">
     <div className="profile-primary">
-      <TrainerProfessionalCard profile={profile} onUpdated={onUpdated}/>
+      <section className="surface-card profile-section trainer-professional-section" aria-labelledby="professional-title">
+        <h2 id="professional-title">Perfil profesional</h2>
+        <div className="profile-read-grid">
+          <ProfileField label="Nombre" value={profile.firstName}/>
+          <ProfileField label="Apellido" value={profile.lastName}/>
+          <ProfileField label="Especialidad" value={profile.trainerProfile?.specialty}/>
+          <ProfileField label="Descripción" value={profile.trainerProfile?.description}/>
+        </div>
+        <p className="profile-help">El perfil profesional y las sedes los modifica la administración.</p>
+      </section>
       {!isMobile || isEditing
         ? <ContactDataCard profile={profile} role="TRAINER" onUpdated={onUpdated} onCancel={() => setIsEditing(false)}/>
         : <section className="surface-card profile-section profile-contact-section" aria-labelledby="contact-title">
@@ -59,66 +68,5 @@ function TrainerBranchesCard({ userId }: { userId: string }) {
               <div><h3>{branch.name}</h3><p>{branch.address || 'Dirección no informada'}</p></div><span className="badge badge-info">Activa</span>
             </li>)}</ul>}
     <p className="profile-help">Las sedes las asigna un administrador. Solo se muestran las sedes activas disponibles en el directorio.</p>
-  </section>
-}
-
-function TrainerProfessionalCard({ profile, onUpdated }: Pick<TrainerProfileContentProps, 'profile' | 'onUpdated'>) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [specialty, setSpecialty] = useState('')
-  const [description, setDescription] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-
-  function startEditing() {
-    setSpecialty(profile.trainerProfile?.specialty ?? '')
-    setDescription(profile.trainerProfile?.description ?? '')
-    setError('')
-    setNotice('')
-    setIsEditing(true)
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault()
-    if (!specialty.trim() || !description.trim()) {
-      setError('Completá la especialidad y la descripción.')
-      return
-    }
-    setIsSaving(true)
-    setError('')
-    try {
-      const updated = await backendApi.updateOwnProfile({ specialty: specialty.trim(), description: description.trim() })
-      onUpdated(updated)
-      setIsEditing(false)
-      setNotice('Perfil profesional actualizado correctamente.')
-    } catch (value) {
-      setError(value instanceof Error ? value.message : 'No se pudo guardar el perfil profesional.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  return <section className="surface-card profile-section trainer-professional-section" aria-labelledby="professional-title">
-    <h2 id="professional-title">Perfil profesional</h2>
-    {isEditing ? <form onSubmit={submit} aria-label="Editar perfil profesional" aria-busy={isSaving}>
-      <fieldset className="trainer-professional-fields" disabled={isSaving}>
-        <label className="read-field"><span>Especialidad</span><input required maxLength={150} value={specialty} onChange={(event) => setSpecialty(event.target.value)}/></label>
-        <label className="read-field"><span>Descripción</span><textarea required rows={5} value={description} onChange={(event) => setDescription(event.target.value)}/></label>
-        <div className="profile-form-actions">
-          <button type="button" className="button button-secondary" onClick={() => { setIsEditing(false); setError('') }}>Cancelar</button>
-          <button className="button button-primary">{isSaving ? 'Guardando…' : 'Guardar cambios'}</button>
-        </div>
-      </fieldset>
-    </form> : <>
-      <div className="profile-read-grid">
-        <ProfileField label="Nombre" value={profile.firstName}/>
-        <ProfileField label="Apellido" value={profile.lastName}/>
-        <ProfileField label="Especialidad" value={profile.trainerProfile?.specialty}/>
-        <ProfileField label="Descripción" value={profile.trainerProfile?.description}/>
-      </div>
-      <button type="button" className="button button-secondary" onClick={startEditing}><Icon name="edit" size={18}/>Editar perfil profesional</button>
-    </>}
-    {notice && <p className="success-message" role="status">{notice}</p>}
-    {error && <p className="error-message" role="alert">{error}</p>}
   </section>
 }
