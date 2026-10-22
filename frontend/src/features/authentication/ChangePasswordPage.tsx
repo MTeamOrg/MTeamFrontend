@@ -41,8 +41,8 @@ export function ChangePasswordPage({ optional = false }: { optional?: boolean })
         <PasswordField label="Contraseña actual" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" required />
         <PasswordField label="Nueva contraseña" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} required />
         <PasswordField label="Confirmar nueva contraseña" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" minLength={8} required />
-        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Guardar contraseña'}</button>
-        <button className="secondary-button" type="button" onClick={() => void logout()}>Cerrar sesión</button>
+        <button className="button button-primary primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Guardar contraseña'}</button>
+        <button className="button button-secondary secondary-button" type="button" onClick={() => void logout()}>Cerrar sesión</button>
       </form>
     </AuthLayout>
   )

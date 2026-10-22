@@ -24,7 +24,7 @@ function LastAccessCard({ userId }: { userId: string }) {
   return <article className="status-card user-last-access-card" aria-label="Último acceso" aria-busy={isLoading}>
     <span className="status-card-label">Último acceso</span>
     {isLoading ? <span className="status-card-sub" role="status">Cargando acceso…</span>
-      : error ? <><span className="status-card-sub" role="alert">No se pudo consultar el último acceso.</span><button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></>
+      : error ? <><span className="status-card-sub" role="alert">No se pudo consultar el último acceso.</span><button type="button" className="button button-secondary" onClick={() => void reload()}>Reintentar</button></>
         : data ? <><strong className="status-card-value tone-black"><time dateTime={data.attemptedAt} title={timestamp}>{compactTimestamp}</time></strong>{location && <span className="status-card-sub">{location}</span>}</>
           : <span className="status-card-sub">Sin accesos registrados</span>}
   </article>

@@ -90,14 +90,14 @@ export function AdminNewsScreen() {
       <button type="submit" className="button button-secondary" disabled={isSaving || isUpdatingStatus}>{isSaving ? 'Guardando…' : editing && editing.status !== 'DRAFT' ? 'Guardar cambios' : 'Guardar borrador'}</button>
       {editing?.status !== 'PUBLISHED' && <button type="submit" value="publish" className="button button-primary" disabled={isSaving || isUpdatingStatus}>Publicar</button>}
     </div>
-    {(editing || isMobile) && <button type="button" className="text-link admin-news-cancel" disabled={isSaving} onClick={cancelForm}>Cancelar</button>}
+    {(editing || isMobile) && <button type="button" className="button button-secondary admin-news-cancel" disabled={isSaving} onClick={cancelForm}>Cancelar</button>}
   </form>
 
   function postActions(post: NewsPost) {
     return <details className="admin-news-actions"><summary aria-label={`Acciones de ${post.title}`}><Icon name="more" size={20}/></summary><div>
-      <button type="button" disabled={isSaving || isUpdatingStatus} onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); startEdit(post) }}>Editar</button>
-      {post.status !== 'PUBLISHED' && <button type="button" disabled={isSaving || isUpdatingStatus} onClick={() => void changeStatus(post, 'PUBLISHED')}>Publicar</button>}
-      {post.status === 'PUBLISHED' && <button type="button" disabled={isSaving || isUpdatingStatus} onClick={() => void changeStatus(post, 'INACTIVE')}>Desactivar</button>}
+      <button type="button" className="button button-secondary" disabled={isSaving || isUpdatingStatus} onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); startEdit(post) }}>Editar</button>
+      {post.status !== 'PUBLISHED' && <button type="button" className="button button-primary" disabled={isSaving || isUpdatingStatus} onClick={() => void changeStatus(post, 'PUBLISHED')}>Publicar</button>}
+      {post.status === 'PUBLISHED' && <button type="button" className="button button-danger" disabled={isSaving || isUpdatingStatus} onClick={() => void changeStatus(post, 'INACTIVE')}>Desactivar</button>}
     </div></details>
   }
 
@@ -109,15 +109,15 @@ export function AdminNewsScreen() {
     <div className="admin-news-layout"><section className="admin-news-list" aria-label="Publicaciones">
       <div className="admin-news-toolbar" onKeyDown={(event) => { if (event.key === 'Escape') { setIsFilterOpen(false); filterButton.current?.focus() } }}>
         <label className="admin-news-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar novedad</span><input type="search" maxLength={100} placeholder="Buscar novedad" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
-        <button ref={filterButton} type="button" className="admin-news-filter-button" aria-label="Filtrar novedades" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
+        <button ref={filterButton} type="button" className="icon-action button-secondary admin-news-filter-button" aria-label="Filtrar novedades" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
         {(!isMobile || isFilterOpen) && <div id={filterId} className="admin-news-filters">
           <label><span className="visually-hidden">Filtrar por audiencia</span><select value={audience} onChange={(event) => { setAudience(event.target.value as PublicationAudience | ''); setPage(1) }}><option value="">Audiencia: todas</option>{Object.entries(AUDIENCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <label><span className="visually-hidden">Estado</span><select value={status} onChange={(event) => { setStatus(event.target.value as PublicationStatus | ''); setPage(1) }}><option value="">Estado: todos</option><option value="DRAFT">Borradores</option><option value="PUBLISHED">Publicadas</option><option value="INACTIVE">Desactivadas</option></select></label>
         </div>}
       </div>
       {isLoading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay novedades para los filtros seleccionados."/> : <>
-        {isMobile ? <div className="admin-news-cards">{data.items.map((post) => <article data-news-post key={post.id} className="admin-news-mobile-card"><div><h2><button type="button" onClick={() => startEdit(post)}>{post.title}</button></h2><p>{AUDIENCE_LABELS[post.audience]} · {post.publishedAt ? `publicada el ${publicationDate(post.publishedAt)}` : 'sin publicar'}</p></div><span className={`badge ${post.status === 'PUBLISHED' ? 'badge-info' : post.status === 'DRAFT' ? 'badge-secondary' : 'badge-neutral'}`}>{STATUS_LABELS[post.status]}</span>{postActions(post)}</article>)}</div> :
-          <div className="admin-news-table-wrap"><table className="admin-news-table"><thead><tr><th scope="col">Título</th><th scope="col">Audiencia</th><th scope="col">Publicada</th></tr></thead><tbody>{data.items.map((post) => <tr data-news-post key={post.id}><td><div className="admin-news-title-cell"><h2><button type="button" onClick={() => startEdit(post)}>{post.title}</button></h2><span className="visually-hidden">{STATUS_LABELS[post.status]}</span>{postActions(post)}</div></td><td>{AUDIENCE_LABELS[post.audience]}</td><td>{post.publishedAt ? <time dateTime={post.publishedAt}>{publicationDate(post.publishedAt)}</time> : '—'}</td></tr>)}</tbody></table></div>}
+        {isMobile ? <div className="admin-news-cards">{data.items.map((post) => <article data-news-post key={post.id} className="admin-news-mobile-card"><div><h2><button type="button" className="text-link" onClick={() => startEdit(post)}>{post.title}</button></h2><p>{AUDIENCE_LABELS[post.audience]} · {post.publishedAt ? `publicada el ${publicationDate(post.publishedAt)}` : 'sin publicar'}</p></div><span className={`badge ${post.status === 'PUBLISHED' ? 'badge-info' : post.status === 'DRAFT' ? 'badge-secondary' : 'badge-neutral'}`}>{STATUS_LABELS[post.status]}</span>{postActions(post)}</article>)}</div> :
+          <div className="admin-news-table-wrap"><table className="admin-news-table"><thead><tr><th scope="col">Título</th><th scope="col">Audiencia</th><th scope="col">Publicada</th></tr></thead><tbody>{data.items.map((post) => <tr data-news-post key={post.id}><td><div className="admin-news-title-cell"><h2><button type="button" className="text-link" onClick={() => startEdit(post)}>{post.title}</button></h2><span className="visually-hidden">{STATUS_LABELS[post.status]}</span>{postActions(post)}</div></td><td>{AUDIENCE_LABELS[post.audience]}</td><td>{post.publishedAt ? <time dateTime={post.publishedAt}>{publicationDate(post.publishedAt)}</time> : '—'}</td></tr>)}</tbody></table></div>}
         {data.total > data.limit && <nav className="table-pagination" aria-label="Páginas de novedades"><span>Página {data.page} de {Math.ceil(data.total / data.limit)}</span><div><button type="button" className="button button-secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button><button type="button" className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></nav>}
       </>}
     </section>
@@ -136,5 +136,5 @@ function NewsFormDialog({ children, onClose }: { children: ReactNode; onClose: (
     element?.showModal()
     return () => { element?.close(); previousFocus?.focus() }
   }, [])
-  return <dialog ref={dialog} className="admin-news-dialog" aria-label="Formulario de novedad" onCancel={onClose}><button type="button" className="admin-news-dialog-close" aria-label="Cerrar formulario" onClick={onClose}><Icon name="close" size={22}/></button>{children}</dialog>
+  return <dialog ref={dialog} className="admin-news-dialog" aria-label="Formulario de novedad" onCancel={onClose}><button type="button" className="icon-action button-secondary admin-news-dialog-close" aria-label="Cerrar formulario" onClick={onClose}><Icon name="close" size={22}/></button>{children}</dialog>
 }

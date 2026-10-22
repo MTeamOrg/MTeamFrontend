@@ -46,8 +46,8 @@ export function MemberDashboardScreen() {
       { label: 'Eventos', icon: 'trophy', to: '/socio/eventos' },
       { label: 'Novedades', icon: 'megaphone', to: '/socio/novedades' },
     ]}/>}
-    {membership.state === 'error' && <p className="error-message" role="alert"><span>No pudimos obtener tu cuota. {membership.message}</span> <button type="button" className="text-link" onClick={() => void membershipResource.reload()}>Reintentar</button></p>}
-    {medical.state === 'error' && <p className="error-message" role="alert"><span>No pudimos obtener tu apto médico. {medical.message}</span> <button type="button" className="text-link" onClick={() => void medicalResource.reload()}>Reintentar</button></p>}
+    {membership.state === 'error' && <p className="error-message" role="alert"><span>No pudimos obtener tu cuota. {membership.message}</span> <button type="button" className="button button-secondary" onClick={() => void membershipResource.reload()}>Reintentar</button></p>}
+    {medical.state === 'error' && <p className="error-message" role="alert"><span>No pudimos obtener tu apto médico. {medical.message}</span> <button type="button" className="button button-secondary" onClick={() => void medicalResource.reload()}>Reintentar</button></p>}
     {rejected && <p className="error-message" role="status"><span>Tu apto médico fue rechazado{rejected.reviewComment ? `. Observación: “${rejected.reviewComment}”` : '.'}</span> <Link className="text-link" to="/socio/apto-medico">Ver apto médico</Link></p>}
     <section className="member-branches-section" aria-labelledby="member-branches-title">
       <div className="member-section-heading">

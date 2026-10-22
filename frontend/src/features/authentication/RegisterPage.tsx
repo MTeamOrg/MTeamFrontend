@@ -55,7 +55,7 @@ export function RegisterPage() {
         <label className="field"><span>Teléfono</span><input type="tel" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} autoComplete="tel" required /></label>
         <PasswordField label="Contraseña" value={form.password} onChange={(event) => updateField('password', event.target.value)} autoComplete="new-password" minLength={8} required />
         <PasswordField label="Confirmar contraseña" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" minLength={8} required />
-        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}</button>
+        <button className="button button-primary primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}</button>
         <p className="form-footer">¿Ya tenés cuenta? <Link to="/iniciar-sesion">Iniciar sesión</Link></p>
       </form>
     </AuthLayout>

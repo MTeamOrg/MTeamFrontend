@@ -72,7 +72,7 @@ export function UserDetailScreen({ id, onMemberLoaded }: { id: string; onMemberL
       {data.role === 'MEMBER' && <Link className="button button-primary" to="/admin/pagos"><Icon name="plus" size={18}/>Registrar pago</Link>}
       <button type="button" className="button button-secondary" onClick={() => openAction(setIsPasswordOpen)}><Icon name="lock" size={18}/>Restablecer contraseña</button>
       <button type="button" className="button button-secondary" onClick={() => openAction(setIsEditorOpen)}><Icon name="edit" size={18}/>Editar datos</button>
-      <button type="button" className="button button-danger" onClick={() => openAction(setIsStatusOpen)}><Icon name={data.status === 'ACTIVE' ? 'close' : 'check'} size={18}/>{data.status === 'ACTIVE' ? 'Desactivar cuenta' : 'Reactivar cuenta'}</button>
+      <button type="button" className={`button ${data.status === 'ACTIVE' ? 'button-danger' : 'button-secondary'}`} onClick={() => openAction(setIsStatusOpen)}><Icon name={data.status === 'ACTIVE' ? 'close' : 'check'} size={18}/>{data.status === 'ACTIVE' ? 'Desactivar cuenta' : 'Reactivar cuenta'}</button>
     </div>
   </PageHeader> : <PageHeader title="Detalle de usuario"/>
 
@@ -141,7 +141,7 @@ function MobileActions({ user, onEdit, onToggle, onPassword }: { user: AdminUser
     {user.role === 'MEMBER' && <Link className="button button-primary" to="/admin/pagos"><Icon name="plus" size={18}/>Registrar pago</Link>}
     <button type="button" className="button button-secondary" onClick={onPassword}><Icon name="lock" size={18}/>Restablecer contraseña</button>
     <button type="button" className="button button-secondary" onClick={onEdit}><Icon name="edit" size={18}/>Editar datos</button>
-    <button type="button" className="button button-danger" onClick={onToggle}><Icon name={user.status === 'ACTIVE' ? 'close' : 'check'} size={18}/>{user.status === 'ACTIVE' ? 'Desactivar' : 'Reactivar'}</button>
+    <button type="button" className={`button ${user.status === 'ACTIVE' ? 'button-danger' : 'button-secondary'}`} onClick={onToggle}><Icon name={user.status === 'ACTIVE' ? 'close' : 'check'} size={18}/>{user.status === 'ACTIVE' ? 'Desactivar' : 'Reactivar'}</button>
   </div>
 }
 
@@ -253,7 +253,7 @@ function StatusDialog({ user, onClose, onSaved }: { user: AdminUserDetail; onClo
     } catch (value) { setError(describeApiError(value, 'No se pudo cambiar el estado.')) }
     finally { setIsSaving(false) }
   }
-  return <Dialog title={isActive ? 'Desactivar cuenta' : 'Reactivar cuenta'} onClose={() => { if (!isSaving) onClose() }}><form onSubmit={(event) => void submit(event)}><p>¿Confirmás {isActive ? 'la desactivación' : 'la reactivación'} de la cuenta de {user.firstName} {user.lastName}?</p><Input label="Motivo (opcional)" required={false} value={reason} onChange={setReason}/>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" disabled={isSaving} onClick={onClose}>Cancelar</button><button className={`button ${user.role === 'MEMBER' && isActive ? 'button-danger' : 'button-primary'}`} disabled={isSaving}>{isSaving ? 'Guardando…' : 'Confirmar cambio de estado'}</button></div></form></Dialog>
+  return <Dialog title={isActive ? 'Desactivar cuenta' : 'Reactivar cuenta'} onClose={() => { if (!isSaving) onClose() }}><form onSubmit={(event) => void submit(event)}><p>¿Confirmás {isActive ? 'la desactivación' : 'la reactivación'} de la cuenta de {user.firstName} {user.lastName}?</p><Input label="Motivo (opcional)" required={false} value={reason} onChange={setReason}/>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" disabled={isSaving} onClick={onClose}>Cancelar</button><button className={`button ${isActive ? 'button-danger' : 'button-primary'}`} disabled={isSaving}>{isSaving ? 'Guardando…' : 'Confirmar cambio de estado'}</button></div></form></Dialog>
 }
 
 function PasswordDialog({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved: () => void }) {
@@ -293,7 +293,7 @@ function PasswordDialog({ userId, onClose, onSaved }: { userId: string; onClose:
       {isCopied && <p role="status">Contraseña copiada.</p>}
       <div className="dialog-actions">
         <button type="button" className="button button-secondary" onClick={() => void navigator.clipboard.writeText(temporaryPassword).then(() => { setIsCopied(true); setError('') }).catch(() => setError('No se pudo copiar. Seleccioná la contraseña y copiala manualmente.'))}>Copiar</button>
-        <button type="button" className="button button-primary" onClick={onClose}>Cerrar</button>
+        <button type="button" className="button button-secondary" onClick={onClose}>Cerrar</button>
       </div>
     </>}
   </Dialog>
@@ -314,7 +314,7 @@ function Dialog({ title, onClose, children }: { title: string; onClose: () => vo
     const last = controls.at(-1)
     if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last?.focus() }
     else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) { event.preventDefault(); first?.focus() }
-  }} className="workspace-dialog" role="dialog" aria-modal="true" aria-label={title}><button className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{title}</h2>{children}</section></div>
+  }} className="workspace-dialog" role="dialog" aria-modal="true" aria-label={title}><button className="icon-action button-secondary dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{title}</h2>{children}</section></div>
 }
 
 function Input({ label, value, onChange, type = 'text', required = true, minLength, maxLength, hint, disabled = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean; minLength?: number; maxLength?: number; hint?: string; disabled?: boolean }) {

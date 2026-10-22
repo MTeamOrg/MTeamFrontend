@@ -18,13 +18,12 @@
 .admin-news-title-cell { display: flex; align-items: center; gap: 8px; }
 .admin-news-title-cell h2 { flex: 1; }
 .admin-news-title-cell h2, .admin-news-mobile-card h2 { margin: 0; font-size: 13px; font-weight: 500; line-height: 1.5; }
-.admin-news-title-cell h2 button, .admin-news-mobile-card h2 button { padding: 0; border: 0; background: transparent; color: var(--black); font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.admin-news-title-cell h2 button, .admin-news-mobile-card h2 button { text-align: left; white-space: normal; overflow-wrap: anywhere; }
 .admin-news-actions { position: relative; flex: none; }
 .admin-news-actions summary { display: grid; place-items: center; width: 30px; height: 36px; border-radius: 6px; color: var(--text-muted); cursor: pointer; list-style: none; }
 .admin-news-actions summary::-webkit-details-marker { display: none; }
 .admin-news-actions > div { position: absolute; top: 100%; right: 0; z-index: 4; min-width: 140px; padding: 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--white); box-shadow: 0 8px 24px #0a0b0d1a; }
-.admin-news-actions button { display: block; width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 6px; background: transparent; color: var(--black); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
-.admin-news-actions button:hover { background: var(--background); }
+.admin-news-actions button { display: block; width: 100%; min-height: 44px; text-align: left; }
 .admin-news-editor { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
 .admin-news-form { display: grid; gap: 16px; min-width: 0; }
 .admin-news-form h2 { margin: 0; font-size: 20px; line-height: 1.4; }
@@ -55,7 +54,7 @@
   .admin-news-mobile-create { display: flex; justify-content: center; gap: 10px; width: 100%; min-height: 44px; font-size: 14px; }
   .admin-news-toolbar { position: relative; gap: 0; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); }
   .admin-news-search { min-width: 0; border: 0; }
-  .admin-news-filter-button { display: grid; place-items: center; flex: none; width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); }
+  .admin-news-filter-button { display: grid; place-items: center; flex: none; width: 44px; min-height: 44px; padding: 0; }
   .admin-news-filters { position: absolute; top: calc(100% + 8px); right: 0; z-index: 5; display: grid; width: min(280px, 100%); padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--white); box-shadow: 0 8px 24px #0a0b0d1a; }
   .admin-news-list { gap: 14px; }
   .admin-news-cards { display: grid; gap: 14px; }
@@ -67,7 +66,7 @@
   .admin-news-mobile-card .admin-news-actions summary { width: 24px; min-height: 44px; }
   .admin-news-dialog { width: calc(100% - 24px); max-width: 480px; max-height: calc(100dvh - 24px); margin: auto; padding: 24px 18px; overflow-y: auto; border: 1px solid var(--border); border-radius: 16px; color: var(--black); background: var(--white); box-shadow: 0 12px 40px #0003; }
   .admin-news-dialog::backdrop { background: #0a0b0d80; }
-  .admin-news-dialog-close { position: absolute; top: 14px; right: 10px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--black); }
+  .admin-news-dialog-close { position: absolute; top: 14px; right: 10px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; }
   .admin-news-dialog .admin-news-form h2 { padding-right: 36px; }
   .admin-news-audience span { min-height: 44px; padding-inline: 12px; }
 }

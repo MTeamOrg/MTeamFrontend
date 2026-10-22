@@ -91,7 +91,7 @@ export function ClassDialog({ weekStartsOn, branches, trainers, scheduledClass, 
 
   return <div className="dialog-backdrop" role="presentation">
     <section className="workspace-dialog class-dialog" role="dialog" aria-modal="true" aria-labelledby="class-dialog-title">
-      <button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" size={20}/></button>
+      <button type="button" className="icon-action button-secondary dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" size={20}/></button>
       <h2 id="class-dialog-title">{title}</h2>
       {locked && <p className="class-dialog-locked" role="status"><Icon name="info" size={18}/>Esta clase ya comenzó: no puede modificarse ni eliminarse.</p>}
       <form onSubmit={submit}>

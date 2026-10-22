@@ -145,8 +145,8 @@ export function NotificationsScreen() {
             <h2>{notification.title}</h2>
             <p>{notification.message}</p>
             <div className="notification-actions">
-              <button type="button" id={toggleId(notification.id)} className="text-link" aria-expanded={isOpen} aria-controls={detailId(notification.id)} onClick={() => toggleDetail(notification)}>{isOpen ? 'Ocultar detalle' : 'Ver detalle'}</button>
-              {!notification.readAt && <button type="button" className="text-link" disabled={isSaving} onClick={() => void saveReadStatus(notification)}>Marcar como leída</button>}
+              <button type="button" id={toggleId(notification.id)} className="button button-secondary" aria-expanded={isOpen} aria-controls={detailId(notification.id)} onClick={() => toggleDetail(notification)}>{isOpen ? 'Ocultar detalle' : 'Ver detalle'}</button>
+              {!notification.readAt && <button type="button" className="button button-secondary" disabled={isSaving} onClick={() => void saveReadStatus(notification)}>Marcar como leída</button>}
             </div>
             {isOpen && <dl id={detailId(notification.id)} className="notification-detail">
               <div><dt>Recibida</dt><dd>{formatDateTime(notification.createdAt)}</dd></div>

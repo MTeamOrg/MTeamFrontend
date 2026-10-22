@@ -60,7 +60,7 @@ export function ProfileScreen({ role, onPasswordChange, onLogout }: { role: User
             updateProfilePhoto(profile.photoUrl)
           }}
         />}
-    {role !== 'ADMIN' && <button type="button" className="button button-secondary profile-mobile-logout" onClick={onLogout}><Icon name="logout" size={20}/>Cerrar sesión</button>}
+    {role !== 'ADMIN' && <button type="button" className="button button-danger profile-mobile-logout" onClick={onLogout}><Icon name="logout" size={20}/>Cerrar sesión</button>}
   </div>
 }
 
