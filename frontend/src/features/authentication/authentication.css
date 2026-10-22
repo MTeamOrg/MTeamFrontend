@@ -27,12 +27,17 @@
 .input-shell:focus-within, .field > input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(217,30,80,.1); }
 .input-shell > img { width: 17px; opacity: .65; }
 .input-shell input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; }
-.icon-button { display: grid; place-items: center; padding: 4px; }
+.icon-button { display: grid; place-items: center; padding: 4px; border: 0; background: transparent; cursor: pointer; }
 .icon-button img { width: 18px; opacity: .7; }
-.form-options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; color: #475467; font-size: 12px; }
+.form-options { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #475467; font-size: 12px; }
 .checkbox { display: flex; align-items: center; gap: 7px; }
 .checkbox input { accent-color: var(--brand); }
 .muted-link { color: var(--brand); font-weight: 600; }
+.primary-button, .secondary-button { min-height: 44px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.primary-button { border: 1px solid var(--brand); color: white; background: var(--brand); }
+.primary-button:hover:not(:disabled) { background: var(--brand-dark); }
+.primary-button:disabled { opacity: .6; cursor: wait; }
+.secondary-button { border: 1px solid #d0d5dd; color: #344054; background: white; }
 .form-divider { display: flex; align-items: center; color: #98a2b3; font-size: 11px; }
 .form-divider::before, .form-divider::after { content: ''; flex: 1; height: 1px; background: #eaecf0; }
 .form-divider span { padding: 0 12px; }

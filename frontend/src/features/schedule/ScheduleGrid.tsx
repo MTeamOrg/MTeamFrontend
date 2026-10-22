@@ -24,6 +24,6 @@ function ScheduleDay({ day, onSelectClass, onAdd }: {
       <span>{day.label}</span>
     </header>
     {day.classes.map((scheduledClass, index) => <ScheduledClassCard key={scheduledClass.id} scheduledClass={scheduledClass} tone={toneForIndex(index)} onSelect={onSelectClass}/>)}
-    {onAdd && <button type="button" className="button button-secondary schedule-add" onClick={() => onAdd(day.date)} aria-label={`Agregar clase el ${day.name} ${day.label}`}><Icon name="plus" size={16}/><span>Agregar</span></button>}
+    {onAdd && <button type="button" className="schedule-add" onClick={() => onAdd(day.date)} aria-label={`Agregar clase el ${day.name} ${day.label}`}><Icon name="plus" size={16}/><span>Agregar</span></button>}
   </section>
 }

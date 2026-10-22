@@ -77,7 +77,7 @@ export function AdminMedicalCertificatesScreen() {
       </div>
       <div className="medical-filter-toolbar" aria-label="Filtros de aptos médicos">
         <label className="search-shell"><Icon name="search" size={18}/><input value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Buscar por socio o documento" aria-label="Buscar por socio o documento"/></label>
-        <button type="button" className="icon-action button-secondary medical-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
+        <button type="button" className="medical-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
         <div className={`medical-filter-fields${filtersOpen ? ' is-open' : ''}`}>
           <select value={status} onChange={(event) => updateStatus(event.target.value as MedicalCertificateStatus | '')} aria-label="Filtrar por estado">
             <option value="">Todos los estados</option>

@@ -32,7 +32,7 @@ export function WorkspaceSidebar({ user, active, onLogout }: { user: AuthUser; a
           <small>{ROLE_LABEL[role]}</small>
         </div>
       </div>
-      <button type="button" className="button button-primary app-sidebar-logout" onClick={onLogout}>
+      <button type="button" className="app-sidebar-logout" onClick={onLogout}>
         <Icon name="logout" size={20}/>
         <span>Cerrar sesión</span>
       </button>

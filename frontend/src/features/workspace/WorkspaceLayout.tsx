@@ -41,7 +41,7 @@ export function WorkspaceLayout({ user, active, title, notice, onDismissNotice, 
         </Link>}
       </header>
       <main className="app-content">
-        {notice && <div className="app-notice-error" role="alert"><Icon name="alert" size={20}/><span>{notice}</span><button type="button" className="button button-secondary" onClick={onDismissNotice}>Cerrar</button></div>}
+        {notice && <div className="app-notice-error" role="alert"><Icon name="alert" size={20}/><span>{notice}</span><button type="button" className="text-link" onClick={onDismissNotice}>Cerrar</button></div>}
         {children}
       </main>
     </div>

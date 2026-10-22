@@ -132,7 +132,8 @@ body { background: var(--background); color: var(--black); }
 .app-sidebar-user div { display: grid; gap: 2px; min-width: 0; }
 .app-sidebar-user strong { font-size: 14px; font-weight: 600; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-sidebar-user small { font-size: 12px; font-weight: 400; color: var(--sidebar-muted); }
-.app-sidebar-logout { display: flex; align-items: center; gap: 12px; text-align: left; }
+.app-sidebar-logout { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; color: var(--sidebar-muted); font-size: 14px; cursor: pointer; text-align: left; }
+.app-sidebar-logout:hover { color: var(--white); }
 .app-main { min-height: 100vh; margin-left: 280px; }
 .app-topbar, .app-tabbar { display: none; }
 .app-content { display: flex; flex-direction: column; gap: 28px; padding: 40px 40px 48px; }
@@ -279,7 +280,7 @@ body { background: var(--background); color: var(--black); }
   .payment-mobile-value { justify-items: end; }
   .payment-mobile-value > strong { color: var(--black); font-size: 13px; white-space: nowrap; }
   .payment-mobile-value .badge { padding: 5px 8px; font-size: 10px; white-space: nowrap; }
-  .payment-mobile-void { grid-column: 2 / -1; justify-self: end; }
+  .payment-mobile-void { grid-column: 2 / -1; justify-self: end; padding: 0; border: 0; background: transparent; color: var(--pink); font-size: 11px; cursor: pointer; }
   .workspace-dialog.payment-dialog { border-radius: 16px 16px 0 0; }
   .payment-dialog-header { padding: 18px; }
   .payment-dialog-header p { font-size: 12px; }
@@ -325,7 +326,7 @@ body { background: var(--background); color: var(--black); }
   .admin-branches-mobile-create { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; font-size: 15px; }
   .admin-branches-toolbar { position: relative; display: block; width: 100%; margin: 0; }
   .admin-branches-toolbar .search-shell { width: 100%; min-width: 0; height: 44px; padding-right: 52px; }
-  .admin-branches-filter-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; }
+  .admin-branches-filter-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-left: 1px solid var(--input-border); border-radius: 0 8px 8px 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
   .admin-branches-filter-toggle:focus-visible { outline: 2px solid var(--pink); outline-offset: -2px; }
   .admin-branches-filter-fields { display: none; width: 100%; }
   .admin-branches-filter-fields.is-open { display: block; margin-top: 8px; }
@@ -439,10 +440,10 @@ body { background: var(--background); color: var(--black); }
 @media (max-width: 700px) {
   .admin-users-screen > .page-header { display: none; }
   .admin-users-screen { padding-bottom: 42px; }
-  .admin-users-mobile-create { position: fixed; top: 10px; right: 18px; display: grid; place-items: center; width: 44px; height: 44px; margin: 0; z-index: 10; }
+  .admin-users-mobile-create { position: fixed; top: 10px; right: 18px; display: grid; place-items: center; width: 34px; height: 34px; margin: 0; border: 0; border-radius: 8px; background: var(--pink); color: var(--white); cursor: pointer; z-index: 10; }
   .admin-users-toolbar { position: relative; display: block; width: 100%; margin-top: 0; }
   .admin-users-toolbar .search-shell { width: 100%; min-width: 0; height: 42px; padding-right: 50px; }
-  .admin-users-filter-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; }
+  .admin-users-filter-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-left: 1px solid var(--input-border); border-radius: 0 8px 8px 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
   .admin-users-filter-toggle:focus-visible { outline: 2px solid var(--pink); outline-offset: -2px; }
   .admin-users-filter-fields { display: none; width: 100%; gap: 7px; align-items: center; }
   .admin-users-filter-fields.is-open { display: grid; grid-template-columns: 1fr; margin-top: 8px; }

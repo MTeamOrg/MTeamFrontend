@@ -16,7 +16,7 @@ export function AuthenticatedHomePage() {
         <span className="eyebrow">M-TEAM GIMNASIO</span>
         <h1>¡Hola, {session?.user.firstName}!</h1>
         <p>Tu sesión está activa. El dashboard correspondiente al rol <strong>{session?.user.role}</strong> se implementará en el módulo siguiente.</p>
-        <button className="button button-primary primary-button" type="button" onClick={() => void handleLogout()}>Cerrar sesión</button>
+        <button className="primary-button" type="button" onClick={() => void handleLogout()}>Cerrar sesión</button>
       </div>
     </main>
   )

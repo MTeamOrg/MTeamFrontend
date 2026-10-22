@@ -43,7 +43,7 @@ export function RecoveryDialog({ initialEmail, onClose }: { initialEmail: string
 
   return (
     <dialog ref={dialogRef} className="workspace-dialog recovery-dialog" aria-labelledby="recovery-title" onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose() }}>
-      <button className="icon-action button-secondary dialog-close" type="button" aria-label="Cerrar" onClick={onClose}>×</button>
+      <button className="dialog-close" type="button" aria-label="Cerrar" onClick={onClose}>×</button>
       <span className="eyebrow">RECUPERAR ACCESO</span>
       <h2 id="recovery-title">Restablecer contraseña</h2>
       <p>Ingresá el correo de tu cuenta para recibir un enlace seguro. El enlace vence en 30 minutos y se puede usar una sola vez.</p>

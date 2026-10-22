@@ -21,7 +21,7 @@ export function MobileSchedule({ days, selectedDate, onSelectDate, onSelectClass
         type="button"
         role="tab"
         aria-selected={item.date === day.date}
-        className={item.date === day.date ? 'button button-primary day-pill is-active' : 'button button-secondary day-pill'}
+        className={item.date === day.date ? 'day-pill is-active' : 'day-pill'}
         onClick={() => onSelectDate(item.date)}
       >{item.shortName} {Number(item.date.slice(8))}</button>)}
     </div>

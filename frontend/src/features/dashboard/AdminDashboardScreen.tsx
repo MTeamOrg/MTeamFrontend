@@ -63,7 +63,7 @@ export function AdminDashboardScreen({ onLogout }: { onLogout?: () => void } = {
       <MetricCard label="CUOTAS VENCIDAS" tone="pink" value={metrics.data?.expiredMemberships} loading={metrics.loading} error={metrics.error} to="/admin/usuarios?role=MEMBER&membershipStatus=EXPIRED" unit="socios" sub="Requieren seguimiento"/>
       <MetricCard label="APTOS PENDIENTES" tone="purple" value={metrics.data?.pendingMedicalCertificates} loading={metrics.loading} error={metrics.error} to="/admin/aptos?status=PENDING" unit="aptos" sub={metrics.data ? `${metrics.data.rejectedMedicalCertificates} rechazados esta semana` : undefined}/>
     </div>
-    {metrics.error && <p className="error-message" role="alert">{metrics.error} <button type="button" className="button button-secondary" onClick={() => void metrics.reload()}>Reintentar</button></p>}
+    {metrics.error && <p className="error-message" role="alert">{metrics.error} <button type="button" className="text-link" onClick={() => void metrics.reload()}>Reintentar</button></p>}
   </>
 
   if (isMobile) {

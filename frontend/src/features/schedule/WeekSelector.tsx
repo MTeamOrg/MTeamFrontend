@@ -4,8 +4,8 @@ import { weekRangeLabel } from './schedule-model'
 
 export function WeekSelector({ weekStartsOn, onChange }: { weekStartsOn: string; onChange: (weekStartsOn: string) => void }) {
   return <div className="week-selector">
-    <button className="icon-action button-secondary" type="button" aria-label="Semana anterior" onClick={() => onChange(addDays(weekStartsOn, -7))}><Icon name="back" size={18}/></button>
+    <button type="button" aria-label="Semana anterior" onClick={() => onChange(addDays(weekStartsOn, -7))}><Icon name="back" size={18}/></button>
     <span aria-live="polite">{weekRangeLabel(weekStartsOn)}</span>
-    <button className="icon-action button-secondary" type="button" aria-label="Semana siguiente" onClick={() => onChange(addDays(weekStartsOn, 7))}><Icon name="next" size={18}/></button>
+    <button type="button" aria-label="Semana siguiente" onClick={() => onChange(addDays(weekStartsOn, 7))}><Icon name="next" size={18}/></button>
   </div>
 }

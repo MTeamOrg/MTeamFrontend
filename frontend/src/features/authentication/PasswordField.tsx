@@ -14,7 +14,7 @@ export function PasswordField({ label, ...props }: PasswordFieldProps) {
       <span className="input-shell">
         <img src={lockIcon} alt="" />
         <input {...props} type={isVisible ? 'text' : 'password'} />
-        <button type="button" className="icon-action button-secondary icon-button" onClick={() => setIsVisible((value) => !value)} aria-label={isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+        <button type="button" className="icon-button" onClick={() => setIsVisible((value) => !value)} aria-label={isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
           <img src={eyeIcon} alt="" />
         </button>
       </span>

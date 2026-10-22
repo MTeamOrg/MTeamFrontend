@@ -54,9 +54,9 @@ export function LoginPage() {
         <PasswordField label="Contraseña" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Ingresá tu contraseña" autoComplete="current-password" required />
         <div className="form-options">
           <label className="checkbox"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /> Mantener la sesión iniciada</label>
-          <button className="button button-secondary muted-link recovery-link" type="button" onClick={() => { setIsRecoveryOpen(true) }}>¿Olvidaste tu contraseña?</button>
+          <button className="muted-link recovery-link" type="button" onClick={() => { setIsRecoveryOpen(true) }}>¿Olvidaste tu contraseña?</button>
         </div>
-        <button className="button button-primary primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}</button>
+        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}</button>
         <div className="form-divider"><span>o</span></div>
         <p className="form-footer">¿Todavía no tenés cuenta? <Link to="/crear-cuenta">Crear cuenta</Link></p>
       </form>

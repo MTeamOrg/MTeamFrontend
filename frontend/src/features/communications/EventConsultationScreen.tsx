@@ -52,11 +52,11 @@ export function EventConsultationScreen() {
   return <div className="app-page event-consultation-page">
     <PageHeader title="Eventos" description="Actividades especiales de M-TEAM, ordenadas por fecha."/>
     <div className="event-status-tabs" role="group" aria-label="Estado de los eventos">
-      {STATUS_OPTIONS.map((option) => <button key={option.value} className={`button ${status === option.value ? 'button-primary' : 'button-secondary'}`} type="button" aria-pressed={status === option.value} onClick={() => selectStatus(option.value)}>{option.label}</button>)}
+      {STATUS_OPTIONS.map((option) => <button key={option.value} type="button" aria-pressed={status === option.value} onClick={() => selectStatus(option.value)}>{option.label}</button>)}
     </div>
     <div className="event-search-toolbar">
       <label className="event-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar evento</span><input type="search" maxLength={100} placeholder="Buscar evento" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
-      <button ref={filterButton} type="button" className="icon-action button-secondary event-filter-button" aria-label={`Filtrar eventos: ${STATUS_OPTIONS.find((option) => option.value === status)?.label}`} aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={20}/></button>
+      <button ref={filterButton} type="button" className="event-filter-button" aria-label={`Filtrar eventos: ${STATUS_OPTIONS.find((option) => option.value === status)?.label}`} aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={20}/></button>
       {isFilterOpen && <fieldset id={filterId} className="event-filter-panel" onKeyDown={(event) => { if (event.key === 'Escape') { setIsFilterOpen(false); filterButton.current?.focus() } }}>
         <legend>Estado de los eventos</legend>
         {STATUS_OPTIONS.map((option) => <label key={option.value}><input autoFocus={status === option.value} type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}

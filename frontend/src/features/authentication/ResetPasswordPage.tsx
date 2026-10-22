@@ -42,11 +42,11 @@ export function ResetPasswordPage() {
           {error && <div className="error-message" role="alert">{error}</div>}
           {isTokenRejected ? <>
             {!error && <p role="alert">El enlace es inválido o está incompleto. Solicitá uno nuevo.</p>}
-            <button className="button button-primary primary-button" type="button" onClick={() => setIsRecoveryOpen(true)}>Solicitar otro enlace</button>
+            <button className="primary-button" type="button" onClick={() => setIsRecoveryOpen(true)}>Solicitar otro enlace</button>
           </> : <>
             <PasswordField label="Nueva contraseña" value={newPassword} onChange={event => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} maxLength={72} required disabled={isSubmitting} />
             <PasswordField label="Confirmar nueva contraseña" value={confirmation} onChange={event => setConfirmation(event.target.value)} autoComplete="new-password" minLength={8} maxLength={72} required disabled={isSubmitting} />
-            <button className="button button-primary primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Guardar contraseña'}</button>
+            <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Guardar contraseña'}</button>
           </>}
         </>}
         <Link to="/iniciar-sesion">Volver a iniciar sesión</Link>
