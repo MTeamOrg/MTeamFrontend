@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setMobileViewport } from '../../test/test-utils'
 import { AdminBranchesScreen } from './AdminBranchesScreen'
@@ -16,6 +16,7 @@ describe('administración de sedes', () => {
     render(<AdminBranchesScreen/>)
     expect((await screen.findAllByText('Sede Norte')).length).toBeGreaterThan(0)
     expect(screen.getAllByText('Desactivada').length).toBeGreaterThan(0)
+    expect(screen.getByRole('columnheader', { name: 'Acciones' })).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Filtrar sedes por estado'), { target: { value: 'inactive' } })
     await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('isActive=false'), expect.anything()))
   })
@@ -52,7 +53,10 @@ describe('administración de sedes', () => {
     fireEvent.click(filterToggle)
     expect(filterToggle).toHaveAttribute('aria-expanded', 'true')
     expect(document.querySelector('.admin-branches-filter-fields')).toHaveClass('is-open')
-    expect(screen.getAllByRole('button', { name: 'Editar' }).length).toBeGreaterThan(0)
+    const mobileCard = screen.getByRole('article')
+    const actionMenu = mobileCard.querySelector('.admin-branch-more') as HTMLElement
+    fireEvent.click(actionMenu)
+    expect(within(mobileCard).getByRole('button', { name: 'Editar' })).toBeInTheDocument()
     fireEvent.click(document.querySelector('.admin-branches-mobile-create') as HTMLElement)
     expect(screen.getByRole('dialog', { name: 'Nueva sede' })).toBeInTheDocument()
   })
