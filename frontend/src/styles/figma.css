@@ -29,7 +29,7 @@
   --disabled: #A7ACB2;
   --danger: #D91E50;
   --card-shadow: 0 2px 8px rgba(10, 11, 13, 0.04);
-  --sidebar-width: 280px;
+  --sidebar-width: 264px;
   font-family: Inter, system-ui, sans-serif;
   color: var(--black);
   background: var(--background);
@@ -110,14 +110,14 @@ body { background: var(--background); color: var(--black); }
 /* Authenticated shell — desktop */
 .app-shell { min-height: 100vh; background: var(--background); }
 .app-sidebar {
-  position: fixed; inset: 0 auto 0 0; z-index: 10; width: 280px; height: 100vh;
+  position: fixed; inset: 0 auto 0 0; z-index: 10; width: 264px; height: 100vh;
   display: flex; flex-direction: column; padding: 24px 0 20px; background: var(--black); color: var(--white); overflow-y: auto;
 }
 .app-sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 0 20px; margin-bottom: 32px; }
 .app-brand-mark { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--pink); color: var(--white); font-size: 17px; font-weight: 700; }
 .app-brand-name { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; color: var(--white); }
 .app-brand-name span { color: var(--pink); }
-.app-sidebar-nav { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; gap: 4px; padding: 0 16px; }
+.app-sidebar-nav { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; gap: 4px; padding: 0 8px; }
 .app-nav-item {
   position: relative; width: 248px; display: flex; align-items: center; gap: 14px; padding: 12px 14px;
   border-radius: 10px; color: var(--sidebar-muted); font-size: 14px; font-weight: 400; line-height: 1.4;
@@ -134,7 +134,7 @@ body { background: var(--background); color: var(--black); }
 .app-sidebar-user small { font-size: 12px; font-weight: 400; color: var(--sidebar-muted); }
 .app-sidebar-logout { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; color: var(--sidebar-muted); font-size: 14px; cursor: pointer; text-align: left; }
 .app-sidebar-logout:hover { color: var(--white); }
-.app-main { min-height: 100vh; margin-left: 280px; }
+.app-main { min-height: 100vh; margin-left: 264px; }
 .app-topbar, .app-tabbar { display: none; }
 .app-content { display: flex; flex-direction: column; gap: 28px; padding: 40px 40px 48px; }
 .app-page { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
