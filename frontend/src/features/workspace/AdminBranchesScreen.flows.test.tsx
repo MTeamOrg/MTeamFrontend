@@ -85,7 +85,7 @@ describe('AdminBranchesScreen: flujos de gestión', () => {
     ])
     render(<AdminBranchesScreen/>)
     const row = await screen.findByRole('row', { name: /Sede Belgrano/ })
-    fireEvent.click(within(row).getByRole('button', { name: 'Editar' }))
+    fireEvent.click(within(row).getByRole('button', { name: 'Editar sede Sede Belgrano' }))
     fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: 'inválido' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sede' }))
 
@@ -106,6 +106,9 @@ describe('AdminBranchesScreen: flujos de gestión', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<AdminBranchesScreen/>)
     const row = await screen.findByRole('row', { name: /Sede Belgrano/ })
+    expect(within(row).getByRole('button', { name: 'Editar sede Sede Belgrano' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Desactivar' })).toBeInTheDocument()
+    expect(within(row).queryByRole('button', { name: 'Activar' })).not.toBeInTheDocument()
     fireEvent.click(within(row).getByRole('button', { name: 'Desactivar' }))
     expect(confirm).toHaveBeenCalledWith('¿Confirmás la desactivación de Sede Belgrano?')
     expect(requestsTo(fetchStub, 'PATCH', '/branches/branch-1/status')).toHaveLength(0)

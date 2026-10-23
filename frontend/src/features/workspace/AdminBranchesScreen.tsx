@@ -89,17 +89,20 @@ function BranchStatusBadge({ isActive }: { isActive?: boolean }) {
 }
 
 function BranchActions({ branch, variant, onEdit, onToggle }: { branch: Branch; variant: 'desktop' | 'mobile'; onEdit: () => void; onToggle: () => void }) {
+  const editLabel = `Editar sede ${branch.name}`
+  const statusLabel = branch.isActive ? 'Desactivar' : 'Activar'
+
   if (variant === 'mobile') return <details className="admin-branch-actions-mobile">
       <summary className="admin-branch-more" aria-label={`Acciones de ${branch.name}`}><Icon name="more" size={20}/></summary>
       <div className="admin-branch-actions-menu">
-        <button type="button" className="button button-secondary" onClick={onEdit}><Icon name="edit" size={16}/>Editar</button>
-        <button type="button" className="button button-secondary" onClick={onToggle}>{branch.isActive ? 'Desactivar' : 'Reactivar'}</button>
+        <button type="button" className="button button-secondary" aria-label={editLabel} onClick={onEdit}><Icon name="edit" size={16}/>Editar</button>
+        <button type="button" className="button button-secondary" onClick={onToggle}>{statusLabel}</button>
       </div>
     </details>
 
   return <div className="admin-branch-actions admin-branch-actions-desktop">
-    <button type="button" className="button button-secondary admin-branch-edit" aria-label="Editar" title="Editar" onClick={onEdit}><Icon name="edit" size={17}/><span className="visually-hidden">Editar</span></button>
-    <button type="button" className="button button-secondary admin-branch-toggle" onClick={onToggle}>{branch.isActive ? 'Desactivar' : 'Reactivar'}</button>
+    <button type="button" className="button button-secondary admin-branch-edit" aria-label={editLabel} title={editLabel} onClick={onEdit}><Icon name="edit" size={17}/><span className="visually-hidden">{editLabel}</span></button>
+    <button type="button" className="button button-secondary admin-branch-toggle" onClick={onToggle}>{statusLabel}</button>
   </div>
 }
 
