@@ -82,3 +82,13 @@ it('shows trainer publications and branch details with directions from the API',
   expect(screen.getByText('123456')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Cómo llegar' })).toHaveAttribute('href', expect.stringContaining('Calle%20123'))
 })
+it('keeps trainer branch information available when directions cannot be generated', async () => {
+  stubApi([
+    { path: '/branches', handler: () => ({ body: { ...page, items: [{ id: 'b1', name: 'Sede sin ubicación', imageUrl: '', address: '', openingHours: '8 a 23', phone: '123456', isActive: true }] } }) },
+    ...routes,
+  ])
+  renderWithSession(<TrainerDashboardScreen/>, { user: trainer })
+  expect(await screen.findByText('Sede sin ubicación')).toBeInTheDocument()
+  expect(screen.getByRole('status', { name: /Cómo llegar no disponible/ })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Cómo llegar' })).not.toBeInTheDocument()
+})

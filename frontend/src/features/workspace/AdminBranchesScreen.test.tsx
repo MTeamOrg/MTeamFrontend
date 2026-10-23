@@ -20,9 +20,9 @@ describe('administración de sedes', () => {
     await waitFor(() => expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('isActive=false'), expect.anything()))
   })
 
-  it('conserva los datos de imagen al abrir el editor', async () => {
+  it('conserva la URL de imagen y oculta los campos manuales de ubicación', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      items: [{ id: 'branch-2', name: 'Sede Sur', imageUrl: 'https://example.com/rota.jpg', address: 'Calle 2', openingHours: '08 a 22', phone: '222222', description: 'Sede', isActive: true, latitude: null, longitude: null }],
+      items: [{ id: 'branch-2', name: 'Sede Sur', imageUrl: 'https://example.com/rota.jpg', address: 'Calle 2', openingHours: '08 a 22', phone: '222222', description: 'Sede', isActive: true, latitude: '-34.60', longitude: '-58.42' }],
       page: 1,
       limit: 20,
       total: 1,
@@ -32,6 +32,10 @@ describe('administración de sedes', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0])
     expect(screen.getByRole('dialog', { name: 'Editar sede' })).toBeInTheDocument()
     expect(screen.getByDisplayValue('https://example.com/rota.jpg')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Latitud')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Longitud')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Altitud')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Descripción').tagName).toBe('TEXTAREA')
   })
 
   it('muestra controles compactos y conserva acciones en celular', async () => {

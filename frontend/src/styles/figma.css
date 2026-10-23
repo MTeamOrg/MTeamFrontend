@@ -192,6 +192,8 @@ body { background: var(--background); color: var(--black); }
 /* Media fallback for broken or missing images */
 .media-fallback { display: grid; place-items: center; background: var(--background); color: var(--disabled); }
 .media-fallback svg { width: 32px; height: 32px; }
+.branch-directions-unavailable { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+.branch-directions-unavailable svg { flex: none; color: var(--text-muted); }
 
 /* Real conflicts with legacy index.css rules that out-specify the design system */
 .workspace-dialog form > .error-message { color: var(--pink); font-size: 14px; line-height: 1.45; }

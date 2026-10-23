@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type Branch } from '../../service/backend-api'
+import { BranchDirections } from '../branches/BranchDirections'
 import { EmptyState, ErrorState, LoadingState, UnavailableState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { SafeImage } from '../workspace/SafeImage'
@@ -40,7 +41,7 @@ function Highlight({icon,label,value}:{icon:'wallet'|'calendar'|'qr';label:strin
 
 function BranchCards({branches,compact=false}:{branches:Branch[];compact?:boolean}){
   if(!branches.length)return <EmptyState message="No hay sedes activas para mostrar."/>
-  return <div className={`branch-grid ${compact?'compact':''}`}>{branches.map(branch=><article className="branch-card" key={branch.id}><SafeImage className="media-placeholder" src={branch.imageUrl} alt={`Sede ${branch.name}`}/><div className="branch-info"><div className="card-title-row"><h3><Link to={`/sedes/${branch.id}`}>{branch.name}</Link></h3><span className="badge badge-info">Abierta</span></div><p><Icon name="pin"/>{branch.address}</p><p><Icon name="clock"/>{branch.openingHours}</p><p><Icon name="phone"/>{branch.phone}</p><a className="button button-secondary directions" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.address)}`} target="_blank" rel="noreferrer"><Icon name="map"/> Cómo llegar</a></div></article>)}</div>
+  return <div className={`branch-grid ${compact?'compact':''}`}>{branches.map(branch=><article className="branch-card" key={branch.id}><SafeImage className="media-placeholder" src={branch.imageUrl} alt={`Sede ${branch.name}`}/><div className="branch-info"><div className="card-title-row"><h3><Link to={`/sedes/${branch.id}`}>{branch.name}</Link></h3><span className="badge badge-info">Abierta</span></div><p><Icon name="pin"/>{branch.address}</p><p><Icon name="clock"/>{branch.openingHours}</p><p><Icon name="phone"/>{branch.phone}</p><BranchDirections branch={branch} className="button button-secondary directions"/></div></article>)}</div>
 }
 
 function BranchesPage(){
