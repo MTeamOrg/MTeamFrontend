@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderWithSession, requestsTo, stubApi, testUser } from '../../test/test-utils'
 import { AdminAccessAttemptsScreen } from './AdminAccessAttemptsScreen'
@@ -42,10 +42,13 @@ describe('pantalla administrativa de accesos', () => {
     renderWithSession(<AdminAccessAttemptsScreen />, { user: testUser('ADMIN'), route: '/admin/accesos' })
 
     expect(screen.getByRole('status')).toBeInTheDocument()
-    expect(await screen.findAllByText('Marta Gómez')).toHaveLength(2)
-    expect(screen.getAllByText('Entrada principal')).toHaveLength(2)
-    expect(screen.getByText('Permitido')).toBeInTheDocument()
-    expect(screen.getByText('Rechazado · Cuota vencida')).toBeInTheDocument()
+    await screen.findAllByText('Marta Gómez')
+    const responsiveList = document.querySelector('.admin-access-mobile-list') as HTMLElement
+    expect(within(responsiveList).getAllByText('Marta Gómez')).toHaveLength(2)
+    expect(within(responsiveList).getAllByText('Entrada principal')).toHaveLength(2)
+    expect(within(responsiveList).getByText('Permitido')).toBeInTheDocument()
+    expect(within(responsiveList).getByText('Rechazado · Cuota vencida')).toBeInTheDocument()
+    expect(within(responsiveList).getAllByText('40123456')).toHaveLength(2)
     expect(screen.getByText('2 intentos')).toBeInTheDocument()
     expect(requestsTo(fetchStub, 'GET', '/access-attempts')).toHaveLength(1)
   })
@@ -76,7 +79,8 @@ describe('pantalla administrativa de accesos', () => {
     shouldFail = false
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
 
-    expect(await screen.findByText('Marta Gómez')).toBeInTheDocument()
+    await screen.findAllByText('Marta Gómez')
+    expect(await within(document.querySelector('.admin-access-mobile-list') as HTMLElement).findByText('Marta Gómez')).toBeInTheDocument()
     expect(requestsTo(fetchStub, 'GET', '/access-attempts')).toHaveLength(2)
   })
 
@@ -121,13 +125,15 @@ describe('pantalla administrativa de accesos', () => {
 
     renderWithSession(<AdminAccessAttemptsScreen />, { user: testUser('ADMIN') })
 
-    expect(await screen.findByText('Permitido')).toBeInTheDocument()
+    await waitFor(() => expect(document.querySelector('.admin-access-mobile-list')).not.toBeNull())
+    const responsiveList = document.querySelector('.admin-access-mobile-list') as HTMLElement
+    expect(await within(responsiveList).findByText('Permitido')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
 
     await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/access-attempts').some(({ url }) =>
       url.searchParams.get('page') === '2')).toBe(true))
-    expect(await screen.findByText('Rechazado · Cuota vencida')).toBeInTheDocument()
+    expect(await within(responsiveList).findByText('Rechazado · Cuota vencida')).toBeInTheDocument()
     expect(screen.getByText('Página 2')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Anterior' }))
