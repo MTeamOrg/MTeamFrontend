@@ -193,20 +193,30 @@ export function AdminEventsScreen() {
 }
 
 function EventTable({ events, disabled, onEdit, onDetails, onStatus }: { events: Event[]; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
-  return <div className="admin-events-table-wrap"><table className="admin-events-table"><thead><tr><th scope="col">Evento</th><th scope="col">Fecha y horario</th><th scope="col">Ubicación</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody>{events.map((event) => <tr data-event-row key={event.id}><td><strong>{event.title}</strong></td><td><time dateTime={event.startsAt}>{formatDateTime(event.startsAt).replace(' ', ' · ')}</time></td><td>{event.location}</td><td><StatusBadge event={event}/></td><td><EventActions event={event} disabled={disabled} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></td></tr>)}</tbody></table></div>
+  return <div className="admin-events-table-wrap"><table className="admin-events-table"><thead><tr><th scope="col">Evento</th><th scope="col">Fecha y horario</th><th scope="col">Ubicación</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody>{events.map((event) => <tr data-event-row key={event.id}><td><strong>{event.title}</strong></td><td><time dateTime={event.startsAt}>{formatDateTime(event.startsAt).replace(' ', ' · ')}</time></td><td>{event.location}</td><td><StatusBadge event={event}/></td><td><EventActions event={event} isMobile={false} disabled={disabled} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></td></tr>)}</tbody></table></div>
 }
 
 function MobileEventCard({ event, disabled, onEdit, onDetails, onStatus }: { event: Event; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
-  return <article className="admin-event-card" data-event-card><div className="admin-event-card-content"><h2>{event.title}</h2><p>{eventSummary(event)}</p></div><StatusBadge event={event}/><EventActions event={event} disabled={disabled} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></article>
+  return <article className="admin-event-card" data-event-card><div className="admin-event-card-content"><h2>{event.title}</h2><p>{eventSummary(event)}</p></div><StatusBadge event={event}/><EventActions event={event} isMobile disabled={disabled} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></article>
 }
 
 function StatusBadge({ event }: { event: Event }) {
   return <span className={`admin-event-status ${eventStatusClass(event)}`}>{eventStatusLabel(event)}</span>
 }
 
-function EventActions({ event, disabled, onEdit, onDetails, onStatus }: { event: Event; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
+function EventActions({ event, isMobile, disabled, onEdit, onDetails, onStatus }: { event: Event; isMobile: boolean; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
   const isFinished = event.status === 'PUBLISHED' && event.displayStatus === 'FINISHED'
   const isReadOnly = event.status === 'CANCELLED' || isFinished
+  if (!isMobile) {
+    return <div className="admin-events-action-buttons">
+      {isReadOnly ? <button type="button" className="button button-secondary admin-events-action-view" disabled={disabled} onClick={() => onDetails(event)}>Ver</button> : <>
+        <button type="button" className="button button-secondary admin-events-action-edit" disabled={disabled} onClick={() => onEdit(event)}>Editar</button>
+        {event.status === 'DRAFT' && <button type="button" className="button button-primary admin-events-action-publish" disabled={disabled} onClick={() => void onStatus(event, 'PUBLISHED')}>Publicar</button>}
+        {event.status === 'PUBLISHED' && <button type="button" className="button button-danger admin-events-action-cancel" disabled={disabled} onClick={() => void onStatus(event, 'CANCELLED')}>Cancelar</button>}
+      </>}
+    </div>
+  }
+
   return <details className="admin-events-actions"><summary aria-label={`Acciones de ${event.title}`}><Icon name="more" size={20}/></summary><div>
     {isReadOnly ? <button type="button" disabled={disabled} onClick={(currentEvent) => { currentEvent.currentTarget.closest('details')?.removeAttribute('open'); onDetails(event) }}>Ver detalles</button> : <>
       <button type="button" disabled={disabled} onClick={(currentEvent) => { currentEvent.currentTarget.closest('details')?.removeAttribute('open'); onEdit(event) }}>Editar</button>

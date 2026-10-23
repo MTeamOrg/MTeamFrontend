@@ -46,16 +46,16 @@ describe('EventsScreen', () => {
     expect(screen.getByText('Finalizado')).toBeInTheDocument()
     expect(screen.getByText('Cancelado')).toBeInTheDocument()
 
-    const publishedMenu = screen.getByLabelText('Acciones de Evento publicado')
-    fireEvent.click(publishedMenu)
     const publishedRow = screen.getByRole('row', { name: /Evento publicado/ })
-    expect(within(publishedRow).getByRole('button', { name: 'Editar' })).toBeInTheDocument()
-    expect(within(publishedRow).getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    expect(within(publishedRow).getByRole('button', { name: 'Editar' })).toHaveClass('button-secondary', 'admin-events-action-edit')
+    expect(within(publishedRow).getByRole('button', { name: 'Cancelar' })).toHaveClass('button-danger', 'admin-events-action-cancel')
     expect(within(publishedRow).queryByRole('button', { name: 'Publicar' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByLabelText('Acciones de Evento borrador'))
-    expect(within(screen.getByRole('row', { name: /Evento borrador/ })).getByRole('button', { name: 'Publicar' })).toBeInTheDocument()
-    fireEvent.click(screen.getByLabelText('Acciones de Evento finalizado'))
-    expect(within(screen.getByRole('row', { name: /Evento finalizado/ })).getByRole('button', { name: 'Ver detalles' })).toBeInTheDocument()
+    const draftRow = screen.getByRole('row', { name: /Evento borrador/ })
+    expect(within(draftRow).getByRole('button', { name: 'Editar' })).toHaveClass('button-secondary', 'admin-events-action-edit')
+    expect(within(draftRow).getByRole('button', { name: 'Publicar' })).toHaveClass('button-primary', 'admin-events-action-publish')
+    expect(within(screen.getByRole('row', { name: /Evento finalizado/ })).getByRole('button', { name: 'Ver' })).toHaveClass('button-secondary', 'admin-events-action-view')
+    expect(within(screen.getByRole('row', { name: /Evento cancelado/ })).getByRole('button', { name: 'Ver' })).toHaveClass('button-secondary', 'admin-events-action-view')
+    expect(screen.queryByLabelText('Acciones de Evento publicado')).not.toBeInTheDocument()
   })
 
   it('conserva búsqueda, filtros de estado y sede y reinicia la paginación', async () => {
@@ -117,8 +117,7 @@ describe('EventsScreen', () => {
     ])
     renderWithSession(<EventsScreen isAdmin/>, { user: testUser('ADMIN') })
     const row = (await screen.findByText(currentEvent.title)).closest('tr') as HTMLElement
-    fireEvent.click(within(row).getByLabelText(`Acciones de ${currentEvent.title}`))
-    fireEvent.click(screen.getByRole('button', { name: 'Editar' }))
+    fireEvent.click(within(row).getByRole('button', { name: 'Editar' }))
     const dialog = screen.getByRole('dialog', { name: 'Editar evento' })
     fireEvent.change(within(dialog).getByLabelText('Título'), { target: { value: 'Título actualizado' } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar borrador' }))
@@ -143,7 +142,6 @@ describe('EventsScreen', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderWithSession(<EventsScreen isAdmin/>, { user: testUser('ADMIN') })
     const row = (await screen.findByText(currentEvent.title)).closest('tr') as HTMLElement
-    fireEvent.click(within(row).getByLabelText(`Acciones de ${currentEvent.title}`))
     fireEvent.click(within(row).getByRole('button', { name: action }))
 
     await waitFor(() => expect(requestsTo(fetchStub, 'PATCH', '/events/event-1/status')[0]?.body).toEqual({ status: nextStatus }))
@@ -159,8 +157,7 @@ describe('EventsScreen', () => {
     ])
     renderWithSession(<EventsScreen isAdmin/>, { user: testUser('ADMIN') })
     const row = (await screen.findByText(event.title)).closest('tr') as HTMLElement
-    fireEvent.click(within(row).getByLabelText(`Acciones de ${event.title}`))
-    fireEvent.click(within(row).getByRole('button', { name: 'Ver detalles' }))
+    fireEvent.click(within(row).getByRole('button', { name: 'Ver' }))
     expect(await screen.findByRole('dialog', { name: event.title })).toHaveTextContent(event.description)
   })
 
@@ -186,6 +183,7 @@ describe('EventsScreen', () => {
     expect(await screen.findAllByRole('article')).toHaveLength(2)
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Nuevo evento' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText(/Acciones de/)).toHaveLength(2)
     const filterButton = screen.getByRole('button', { name: 'Filtrar eventos' })
     expect(screen.queryByLabelText('Filtrar por sede')).not.toBeInTheDocument()
     fireEvent.click(filterButton)
