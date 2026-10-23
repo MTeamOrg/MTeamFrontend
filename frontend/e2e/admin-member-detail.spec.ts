@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-for (const width of [1440, 390, 320]) {
-  test(`member detail presentation ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: width > 700 ? 1240 : 1100 })
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 390, height: 1100 }, { width: 320, height: 1100 }]) {
+  test(`member detail presentation ${viewport.width}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
     const errors: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
     page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
@@ -29,7 +29,7 @@ for (const width of [1440, 390, 320]) {
     await expect(payButton).toHaveCount(1)
     await expect(page.getByRole('button', { name: 'Restablecer contraseña', exact: true })).toBeVisible()
     await expect(page.locator('.user-detail-payment-row')).toHaveCount(3)
-    if (width <= 700) {
+    if (viewport.width <= 700) {
       await expect(page.locator('.member-detail-summary .status-card').filter({ visible: true })).toHaveCount(2)
       await expect(page.locator('.member-detail-inline-access')).toBeVisible()
       expect((await payButton.boundingBox())!.y).toBeLessThan((await page.getByRole('button', { name: 'Editar datos' }).boundingBox())!.y)
@@ -39,7 +39,7 @@ for (const width of [1440, 390, 320]) {
       await expect(page.locator('.member-detail-aside')).toBeVisible()
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-    await page.screenshot({ path: `${process.env.TEMP}/admin-member-detail-${width}.png`, fullPage: true })
+    await page.screenshot({ path: `${process.env.TEMP}/admin-member-detail-${viewport.width}.png`, fullPage: true })
     await page.getByRole('button', { name: 'Editar datos' }).click()
     await expect(page.getByRole('dialog', { name: 'Editar datos' })).toBeVisible()
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click()

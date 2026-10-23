@@ -24,6 +24,7 @@ export function WorkspaceLayout({ user, active, title, notice, onDismissNotice, 
   // The bottom tab bar has no room for them, so on phones the bell is the way into the notifications and
   // the (i) icon the way into the frequently asked questions. Administrators reach them from the panel.
   const hasNotifications = user.role !== 'ADMIN'
+  const contentClassName = active.href === 'novedades' ? 'app-content' : 'app-content app-content-density'
   return <div className="app-shell">
     <WorkspaceSidebar user={user} active={active} onLogout={onLogout}/>
     <div className="app-main">
@@ -40,7 +41,7 @@ export function WorkspaceLayout({ user, active, title, notice, onDismissNotice, 
           <UnreadBadge count={unreadCount}/>
         </Link>}
       </header>
-      <main className="app-content">
+      <main className={contentClassName}>
         {notice && <div className="app-notice-error" role="alert"><Icon name="alert" size={20}/><span>{notice}</span><button type="button" className="text-link" onClick={onDismissNotice}>Cerrar</button></div>}
         {children}
       </main>

@@ -1,0 +1,384 @@
+/* Authenticated desktop density. Mobile and public/auth screens intentionally keep their existing rules. */
+@media (min-width: 1201px) {
+  /* Shared authenticated shell */
+  .app-content-density {
+    gap: 24px;
+    padding: 32px 32px 40px;
+  }
+
+  .app-content-density > .app-page {
+    gap: 24px;
+  }
+
+  .app-content-density > .app-page.communications-page {
+    gap: 16px;
+  }
+
+  .app-content-density .page-header {
+    gap: 16px;
+  }
+
+  .app-content-density .page-header-text {
+    gap: 6px;
+  }
+
+  .app-content-density .app-card,
+  .app-content-density .surface-card {
+    padding: 18px;
+  }
+
+  .app-content-density .status-card {
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .app-content-density .toolbar {
+    gap: 10px;
+  }
+
+  .app-content-density .table-pagination {
+    margin-top: 10px;
+  }
+
+  .app-content-density .data-table th {
+    height: 36px;
+    padding-inline: 10px;
+  }
+
+  .app-content-density .data-table td {
+    height: 48px;
+    padding: 8px 10px;
+  }
+
+  /* Member and trainer dashboards */
+  .app-content-density .member-dashboard,
+  .app-content-density .trainer-dashboard {
+    gap: 24px;
+  }
+
+  .app-content-density .member-status-grid {
+    gap: 16px;
+  }
+
+  .app-content-density .member-status-grid .status-card {
+    min-height: 136px;
+  }
+
+  .app-content-density .member-branches-section {
+    gap: 14px;
+  }
+
+  .app-content-density .member-section-heading h2 {
+    font-size: 26px;
+  }
+
+  .app-content-density .member-branch-grid {
+    gap: 16px;
+  }
+
+  .app-content-density .member-branch-image {
+    height: 160px;
+  }
+
+  .app-content-density .member-branch-content {
+    gap: 9px;
+    padding: 18px;
+  }
+
+  .app-content-density .member-branch-title-row h3 {
+    font-size: 22px;
+  }
+
+  .app-content-density .member-branch-content p {
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .app-content-density .admin-metrics-grid {
+    gap: 16px;
+  }
+
+  .app-content-density .admin-metrics-grid .status-card {
+    min-height: 108px;
+  }
+
+  .app-content-density .admin-panel-grid,
+  .app-content-density .trainer-content-grid {
+    gap: 20px;
+  }
+
+  .app-content-density .admin-dashboard-column {
+    gap: 16px;
+  }
+
+  .app-content-density .dashboard-card {
+    gap: 12px;
+  }
+
+  .app-content-density .revenue-bars {
+    height: 132px;
+  }
+
+  .app-content-density .quick-actions {
+    gap: 10px;
+  }
+
+  .app-content-density .initial-period-summary,
+  .app-content-density .schedule-status-summary {
+    gap: 8px;
+  }
+
+  .app-content-density .access-attempt-card {
+    padding: 10px 0;
+  }
+
+  .app-content-density .trainer-status-grid {
+    gap: 16px;
+  }
+
+  .app-content-density .trainer-status-grid .status-card {
+    min-height: 112px;
+  }
+
+  .app-content-density .trainer-actions {
+    gap: 10px;
+  }
+
+  .app-content-density .trainer-section {
+    gap: 12px;
+  }
+
+  .app-content-density .trainer-class-card {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .app-content-density .trainer-class-copy {
+    padding-left: 12px;
+  }
+
+  .app-content-density .trainer-news-card {
+    padding: 18px;
+  }
+
+  .app-content-density .trainer-news-card li {
+    padding: 4px 0;
+  }
+
+  /* Weekly schedule */
+  .app-content-density .schedule-toolbar {
+    gap: 10px;
+  }
+
+  .app-content-density .schedule-card {
+    padding: 16px;
+  }
+
+  .app-content-density .schedule-grid {
+    gap: 10px;
+  }
+
+  .app-content-density .schedule-day {
+    gap: 8px;
+  }
+
+  .app-content-density .schedule-day-header {
+    padding-bottom: 4px;
+  }
+
+  .app-content-density .class-card {
+    gap: 5px;
+    padding: 10px;
+  }
+
+  /* Profile and admin member detail */
+  .app-content-density .profile-layout,
+  .app-content-density .member-detail-content {
+    gap: 20px;
+  }
+
+  .app-content-density .profile-primary,
+  .app-content-density .profile-secondary,
+  .app-content-density .member-detail-main,
+  .app-content-density .member-detail-aside {
+    gap: 16px;
+  }
+
+  .app-content-density .profile-section {
+    gap: 14px;
+  }
+
+  .app-content-density .profile-read-grid,
+  .app-content-density .profile-edit-grid {
+    gap: 14px 16px;
+  }
+
+  .app-content-density .profile-identity-section {
+    padding: 20px;
+  }
+
+  .app-content-density .profile-quota-grid {
+    gap: 12px;
+  }
+
+  .app-content-density .profile-quota-metric {
+    padding: 14px;
+  }
+
+  .app-content-density .profile-payment-row {
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .app-content-density .member-detail-screen {
+    gap: 20px;
+  }
+
+  .app-content-density .member-detail-actions {
+    gap: 10px;
+  }
+
+  .app-content-density .member-detail-summary {
+    gap: 16px;
+  }
+
+  .app-content-density .member-detail-summary .status-card {
+    min-height: 112px;
+  }
+
+  .app-content-density .member-detail-content {
+    gap: 20px;
+  }
+
+  .app-content-density .member-detail-desktop-identity {
+    padding: 18px;
+  }
+
+  .app-content-density .member-detail-screen .user-detail-card-heading {
+    margin-bottom: 14px;
+  }
+
+  .app-content-density .member-detail-screen .user-detail-list {
+    gap: 12px;
+  }
+
+  .app-content-density .member-detail-screen .user-detail-payment-row {
+    min-height: 78px;
+    padding: 14px 0;
+  }
+
+  .app-content-density .member-detail-screen .user-detail-audit-row {
+    padding: 12px 0;
+  }
+
+  /* Access QR */
+  .app-content-density .access-qr-heading {
+    margin-bottom: 20px;
+  }
+
+  .app-content-density .access-qr-grid {
+    gap: 20px;
+  }
+
+  .app-content-density .access-qr-card {
+    padding: 20px;
+  }
+
+  .app-content-density .access-qr-controls {
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .app-content-density .access-qr-help {
+    gap: 16px;
+  }
+
+  .app-content-density .access-qr-help h2 {
+    margin-bottom: 14px;
+  }
+
+  .app-content-density .access-qr-help p,
+  .app-content-density .access-qr-help li {
+    line-height: 1.6;
+  }
+
+  .app-content-density .access-qr-help li {
+    margin-bottom: 10px;
+  }
+
+  /* Events, notifications and administrative tables */
+  .app-content-density .communications-grid {
+    gap: 12px;
+  }
+
+  .app-content-density .communication-card {
+    grid-template-columns: 156px minmax(0, 1fr);
+  }
+
+  .app-content-density .communication-image {
+    min-height: 190px;
+  }
+
+  .app-content-density .communication-card-body {
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .app-content-density .notification-list {
+    gap: 8px;
+  }
+
+  .app-content-density .notification-item {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .app-content-density .admin-branches-table th {
+    height: 38px;
+    padding-inline: 14px;
+  }
+
+  .app-content-density .admin-branches-table td {
+    height: 50px;
+    padding-inline: 14px;
+  }
+
+  .app-content-density .payment-table th {
+    height: 38px;
+    padding-inline: 14px;
+  }
+
+  .app-content-density .payment-table td {
+    height: 50px;
+    padding-inline: 14px;
+  }
+
+  .app-content-density .admin-payments-screen .admin-payments-layout {
+    gap: 20px;
+  }
+
+  .app-content-density .admin-payments-screen .payment-filter-toolbar {
+    gap: 10px;
+  }
+
+  .app-content-density .admin-payments-screen .admin-payment-side {
+    gap: 16px;
+  }
+
+  .app-content-density .admin-payments-screen .admin-payment-side > .surface-card {
+    padding: 16px;
+  }
+
+  .app-content-density .payment-price-card form {
+    gap: 12px;
+  }
+
+  .app-content-density .event-consultation-grid {
+    gap: 16px;
+  }
+
+  .app-content-density .event-consultation-body {
+    gap: 8px;
+    padding: 16px;
+  }
+}

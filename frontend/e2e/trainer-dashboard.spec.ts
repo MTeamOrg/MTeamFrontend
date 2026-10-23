@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-for (const viewport of [{ width: 1440, height: 1050 }, { width: 390, height: 844 }]) {
+for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 390, height: 844 }]) {
   test(`trainer home ${viewport.width}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     const errors: string[] = []

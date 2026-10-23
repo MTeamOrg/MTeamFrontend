@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './features/authentication/AuthProvider'
 import './index.css'
 import './styles/figma.css'
+import './styles/authenticated-desktop-density.css'
 import App from './App'
 
 createRoot(document.getElementById('root')!).render(
