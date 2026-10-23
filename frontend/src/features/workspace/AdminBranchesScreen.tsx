@@ -63,9 +63,7 @@ export function AdminBranchesScreen() {
         </div>
         <div className="admin-branches-mobile-list">{data.items.map((branch) => <article className="admin-branch-mobile-card" key={branch.id}>
           <div className="admin-branch-mobile-title"><h2>{branch.name}</h2><BranchStatusBadge isActive={branch.isActive}/></div>
-          <p><Icon name="pin" size={16}/><span>Dirección: {branch.address}</span></p>
-          <p><span>Horarios: {branch.openingHours}</span></p>
-          <p><span>Teléfono: {branch.phone}</span></p>
+          <p><Icon name="pin" size={16}/><span>{branch.address} · {branch.openingHours}</span></p>
           <BranchActions branch={branch} onEdit={() => setEditing(branch)} onToggle={() => void toggleStatus(branch)}/>
         </article>)}</div>
         <div className="form-actions admin-branches-pagination"><button type="button" className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button type="button" className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div>

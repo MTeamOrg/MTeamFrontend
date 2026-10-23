@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type AdminMedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
-import { formatDateTime } from '../../service/date-time'
+import { formatDate, formatDateTime } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
@@ -106,9 +106,9 @@ export function AdminMedicalCertificatesScreen() {
         </div>
         <div className="medical-mobile-list">{data.items.map((certificate) => <article className="medical-mobile-item" key={certificate.id}>
           <span className="medical-member-avatar">{certificate.member.firstName.slice(0, 1)}{certificate.member.lastName.slice(0, 1)}</span>
-          <div><strong>{certificateMember(certificate)}</strong><small>DNI: {certificate.member.documentNumber}</small><small>Archivo: Documento de apto médico</small><small>Cargado: {formatDateTime(certificate.uploadedAt)}</small></div>
+          <div><strong>{certificateMember(certificate)}</strong><small>{certificate.member.documentNumber} · Documento de apto médico · {formatDate(certificate.uploadedAt)}</small></div>
           <span className={`badge ${STATUS_CLASS[certificate.status]}`}>{STATUS_LABEL[certificate.status]}</span>
-          <Link className="button button-secondary medical-mobile-item-link" to={`/admin/aptos/${certificate.id}`}>Ver detalle</Link>
+          <Link className="medical-mobile-item-link" to={`/admin/aptos/${certificate.id}`} aria-label={`Ver ${certificateMember(certificate)}`}><Icon name="chevron" size={18}/></Link>
         </article>)}</div>
         <div className="table-pagination"><span>Mostrando {data.items.length} de {data.total}</span><div><button type="button" className="button button-secondary" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Anterior</button><button type="button" className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage((value) => value + 1)}>Siguiente</button></div></div>
       </> : <EmptyState message="No hay certificados que coincidan con los filtros."/>}

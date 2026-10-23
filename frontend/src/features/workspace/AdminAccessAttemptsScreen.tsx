@@ -22,7 +22,7 @@ export function AdminAccessAttemptsScreen() {
   const { data, loading, error, reload } = useApiResource(loader)
   const { data: branches } = useApiResource(() => backendApi.listAdminBranches({ page: 1, limit: 100 }))
 
-  return <div className="app-page admin-access-screen">
+  return <div className="app-page">
     <PageHeader title="Accesos" description="Consultá los intentos de ingreso permitidos y rechazados, con su motivo."/>
     <div className="toolbar access-history-filters">
       <label className="search-shell"><input aria-label="Buscar por usuario o documento" placeholder="Buscar por usuario o documento" value={search} onChange={(event) => setSearch(event.target.value)}/></label>
@@ -33,10 +33,7 @@ export function AdminAccessAttemptsScreen() {
       <label className="access-date-filter">Hasta<input aria-label="Hasta" type="date" value={to} onChange={(event) => { setPage(1); setTo(event.target.value) }}/></label>
     </div>
     {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay intentos de ingreso que coincidan con los filtros."/> : <>
-      <div className="table-scroll admin-access-table"><table className="data-table"><thead><tr><th>Usuario</th><th>Documento</th><th>Rol</th><th>Sede</th><th>Punto de acceso</th><th>Fecha y hora</th><th>Resultado</th></tr></thead><tbody>{data.items.map((attempt) => <AccessRow key={attempt.id} attempt={attempt}/>)}</tbody></table></div>
-      <div className="admin-access-mobile-list" aria-label="Intentos de acceso">
-        {data.items.map((attempt) => <AccessCard key={attempt.id} attempt={attempt}/>)}
-      </div>
+      <div className="table-scroll"><table className="data-table"><thead><tr><th>Usuario</th><th>Documento</th><th>Rol</th><th>Sede</th><th>Punto de acceso</th><th>Fecha y hora</th><th>Resultado</th></tr></thead><tbody>{data.items.map((attempt) => <AccessRow key={attempt.id} attempt={attempt}/>)}</tbody></table></div>
       <div className="table-pagination"><span>{data!.total} intentos</span><div><button type="button" className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><span>Página {page}</span><button type="button" className="button button-secondary" disabled={page * data!.limit >= data!.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
     </>}
   </div>
@@ -51,20 +48,4 @@ const reasonLabels: Record<string, string> = {
 function AccessRow({ attempt }: { attempt: AccessAttemptResult }) {
   const allowed = attempt.result === 'ALLOWED'
   return <tr><td>{attempt.user ? `${attempt.user.firstName} ${attempt.user.lastName}` : '—'}</td><td>{attempt.user?.documentNumber ?? '—'}</td><td>{attempt.roleAtAttempt === 'MEMBER' ? 'Socio' : 'Entrenador'}</td><td>{attempt.branch?.name ?? '—'}</td><td>{attempt.accessPoint?.name ?? '—'}</td><td>{new Date(attempt.attemptedAt).toLocaleString('es-AR')}</td><td><span className={`table-status${allowed ? '' : ' danger'}`}>{allowed ? 'Permitido' : `Rechazado · ${reasonLabels[attempt.denialReason ?? ''] ?? 'motivo no disponible'}`}</span></td></tr>
-}
-
-function AccessCard({ attempt }: { attempt: AccessAttemptResult }) {
-  const allowed = attempt.result === 'ALLOWED'
-  const label = allowed ? 'Permitido' : `Rechazado · ${reasonLabels[attempt.denialReason ?? ''] ?? 'motivo no disponible'}`
-  return <article className="admin-access-card">
-    <h2>{attempt.user ? `${attempt.user.firstName} ${attempt.user.lastName}` : 'Usuario no disponible'}</h2>
-    <dl>
-      <div><dt>Documento</dt><dd>{attempt.user?.documentNumber ?? '—'}</dd></div>
-      <div><dt>Rol</dt><dd>{attempt.roleAtAttempt === 'MEMBER' ? 'Socio' : 'Entrenador'}</dd></div>
-      <div><dt>Sede</dt><dd>{attempt.branch?.name ?? '—'}</dd></div>
-      <div><dt>Punto de acceso</dt><dd>{attempt.accessPoint?.name ?? '—'}</dd></div>
-      <div><dt>Fecha y hora</dt><dd>{new Date(attempt.attemptedAt).toLocaleString('es-AR')}</dd></div>
-      <div><dt>Resultado</dt><dd><span className={`table-status${allowed ? '' : ' danger'}`}>{label}</span></dd></div>
-    </dl>
-  </article>
 }

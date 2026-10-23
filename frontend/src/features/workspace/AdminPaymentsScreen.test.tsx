@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderWithSession, requestsTo, stubApi, testUser } from '../../test/test-utils'
 import { AdminPaymentsScreen } from './AdminPaymentsScreen'
@@ -29,15 +29,11 @@ describe('pagos y cuota del administrador', () => {
     expect(screen.getByRole('heading', { name: 'Pagos y cuota' })).toBeInTheDocument()
     expect((await screen.findAllByText('RECAUDADO HOY')).length).toBeGreaterThan(0)
     expect(screen.getByText('SOCIOS SIN PAGO')).toBeInTheDocument()
-    const responsiveHistory = document.querySelector('.payment-responsive-history') as HTMLElement
-    expect(within(responsiveHistory).getByRole('heading', { name: 'Juan Manuel Pérez' })).toBeInTheDocument()
-    expect(within(responsiveHistory).getByText('Fecha y hora')).toBeInTheDocument()
-    expect(within(responsiveHistory).getByText('Vencimiento')).toBeInTheDocument()
-    expect(within(responsiveHistory).getByRole('button', { name: 'Anular pago' })).toBeInTheDocument()
+    expect(screen.getByText('Juan Manuel Pérez')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Cambiar el valor de la cuota' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Historial de valores' })).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Estado de las cuotas' })).toHaveLength(2)
-    expect(screen.getByRole('heading', { name: 'Historial de pagos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Últimos pagos' })).toBeInTheDocument()
   })
 
   it('aclara que solo los aumentos notifican a los socios activos', async () => {

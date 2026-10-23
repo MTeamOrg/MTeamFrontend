@@ -117,7 +117,7 @@ body { background: var(--background); color: var(--black); }
 .app-brand-mark { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 9px; background: var(--pink); color: var(--white); font-size: 17px; font-weight: 700; }
 .app-brand-name { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; color: var(--white); }
 .app-brand-name span { color: var(--pink); }
-.app-sidebar-nav { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; gap: 4px; padding: 0 16px; }
+.app-sidebar-nav { display: flex; flex-direction: column; gap: 4px; padding: 0 16px; }
 .app-nav-item {
   position: relative; width: 248px; display: flex; align-items: center; gap: 14px; padding: 12px 14px;
   border-radius: 10px; color: var(--sidebar-muted); font-size: 14px; font-weight: 400; line-height: 1.4;
@@ -126,7 +126,7 @@ body { background: var(--background); color: var(--black); }
 .app-nav-item:hover { color: var(--white); }
 .app-nav-item.is-active { background: var(--sidebar-active); color: var(--white); font-weight: 600; box-shadow: inset 3px 0 0 var(--pink); }
 .app-nav-item.is-active svg { color: var(--pink); }
-.app-sidebar-footer { margin-top: 0; padding: 20px 20px 0; border-top: 1px solid var(--sidebar-divider); display: grid; gap: 16px; }
+.app-sidebar-footer { margin-top: auto; padding: 20px 20px 0; border-top: 1px solid var(--sidebar-divider); display: grid; gap: 16px; }
 .app-sidebar-user { display: flex; align-items: center; gap: 12px; }
 .app-avatar { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--sidebar-active); color: var(--white); font-size: 14px; font-weight: 600; }
 .app-sidebar-user div { display: grid; gap: 2px; min-width: 0; }
@@ -151,8 +151,8 @@ body { background: var(--background); color: var(--black); }
 @media (max-height: 700px) and (min-width: 701px) {
   .app-sidebar { padding-top: 12px; padding-bottom: 8px; }
   .app-sidebar-brand { margin-bottom: 14px; }
-  .app-sidebar-nav { justify-content: space-between; gap: 1px; }
-  .app-nav-item { flex: none; padding-block: 5px; }
+  .app-sidebar-nav { gap: 1px; }
+  .app-nav-item { padding-block: 5px; }
   .app-sidebar-footer { gap: 8px; padding-top: 10px; }
   .app-avatar { width: 36px; height: 36px; }
 }
@@ -260,8 +260,7 @@ body { background: var(--background); color: var(--black); }
 .payment-operation-summary .payment-new-expiration strong { color: var(--pink); font-size: 18px; }
 .payment-dialog-actions { margin: 0; padding: 16px 24px 20px; }
 
-/* The fixed 280px sidebar and page gutters reduce usable width on desktop. */
-@media (max-width: 1599px) {
+@media (max-width: 1359px) {
   .admin-payments-screen .admin-payments-layout { grid-template-columns: 1fr; }
   .admin-payments-screen .admin-payment-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-payments-screen .payment-price-card { grid-column: 1 / -1; }
@@ -516,79 +515,4 @@ body { background: var(--background); color: var(--black); }
   .user-detail-note p { font-size: 10px; }
   .desktop-only { display: none; }
   .mobile-only { display: inline; }
-}
-
-/* Keep admin records complete when the available width is too small for wide tables. */
-.admin-access-mobile-list,
-.payment-responsive-history { display: none; }
-
-.admin-access-card,
-.payment-responsive-card {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--white);
-  box-shadow: var(--card-shadow);
-}
-.admin-access-card h2,
-.payment-responsive-card h3 { margin: 0; overflow-wrap: anywhere; color: var(--black); font-size: 15px; }
-.admin-access-card dl,
-.payment-responsive-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
-.admin-access-card dl > div,
-.payment-responsive-card dl > div { display: grid; gap: 4px; min-width: 0; }
-.admin-access-card dt,
-.payment-responsive-card dt { color: var(--text-secondary); font-size: 11px; }
-.admin-access-card dd,
-.payment-responsive-card dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--black); font-size: 13px; }
-.payment-responsive-card > .text-link { justify-self: end; }
-
-@media (max-width: 1599px) {
-  .admin-access-table,
-  .admin-branches-table-wrap,
-  .admin-users-table-wrap .table-scroll,
-  .medical-table-wrap,
-  .admin-payments-screen .payment-table-wrap { display: none; }
-  .admin-access-mobile-list,
-  .admin-branches-mobile-list,
-  .admin-users-mobile-list,
-  .medical-mobile-list,
-  .admin-payments-screen .payment-responsive-history { display: grid; gap: 10px; min-width: 0; }
-
-  .admin-access-card,
-  .payment-responsive-card { padding: 14px; }
-  .admin-branches-mobile-list { gap: 10px; }
-  .admin-branch-mobile-card { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--white); box-shadow: var(--card-shadow); }
-  .admin-branch-mobile-title h2 { white-space: normal; overflow-wrap: anywhere; }
-  .admin-branch-mobile-card > p { overflow-wrap: anywhere; }
-  .admin-branch-mobile-card .admin-branch-actions { display: flex; flex-wrap: wrap; }
-
-  .admin-user-mobile-card { grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; gap: 10px; min-width: 0; min-height: 0; padding: 14px; overflow: visible; }
-  .admin-user-mobile-copy { grid-column: 2; grid-row: 1 / span 2; padding: 0; }
-  .admin-user-mobile-copy strong { white-space: normal; overflow-wrap: anywhere; }
-  .admin-user-mobile-copy span,
-  .admin-user-mobile-copy small { overflow: visible; white-space: normal; overflow-wrap: anywhere; }
-  .admin-user-mobile-card > .badge { grid-column: 3; grid-row: 1; }
-  .admin-user-mobile-link { position: static; grid-column: 2 / -1; grid-row: 3; justify-self: end; display: inline-flex; align-items: center; justify-content: center; width: fit-content; min-height: 34px; padding: 0 12px; color: var(--black); }
-  .admin-user-mobile-link svg { display: none; }
-
-  .medical-mobile-list { gap: 10px; }
-  .medical-mobile-item { grid-template-columns: 36px minmax(0, 1fr) auto; align-items: start; min-width: 0; padding: 14px; }
-  .medical-mobile-item > div { min-width: 0; }
-  .medical-mobile-item small { overflow: visible; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
-  .medical-mobile-item-link { position: static; grid-column: 2 / -1; justify-self: end; width: fit-content; min-height: 34px; padding: 0 12px; opacity: 1; font-size: 12px; }
-
-  .table-pagination { flex-wrap: wrap; gap: 10px; }
-  .table-pagination > div { flex-wrap: wrap; }
-}
-
-@media (max-width: 700px) {
-  .payment-mobile-card { grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: 8px 10px; }
-  .payment-mobile-detail strong,
-  .payment-mobile-detail > span { overflow: visible; white-space: normal; overflow-wrap: anywhere; }
-  .payment-mobile-value { grid-column: 2; justify-items: start; }
-  .payment-mobile-void { grid-column: 2; justify-self: start; }
-  .payment-mobile-summary .payment-pagination { display: flex; }
 }
