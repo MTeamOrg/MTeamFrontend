@@ -67,7 +67,8 @@ describe('shell autenticado', () => {
     expect(within(tabbar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Panel', 'Usuarios', 'Pagos', 'Aptos', 'Clases'])
     expect(within(tabbar).queryByRole('link', { name: 'Perfil' })).not.toBeInTheDocument()
     expect(document.querySelector('.app-topbar-title')).toHaveTextContent('Eventos')
-    expect(document.querySelector('.app-topbar')!.querySelectorAll('button, a')).toHaveLength(0)
+    expect(document.querySelector('.app-topbar')!.querySelectorAll('button, a')).toHaveLength(1)
+    expect(document.querySelector('.app-topbar')!.querySelector('a')).toHaveAttribute('href', '/admin')
   })
 
   it('el administrador puede cerrar sesión desde el panel en celular', async () => {

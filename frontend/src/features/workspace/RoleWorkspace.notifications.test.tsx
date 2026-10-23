@@ -62,7 +62,7 @@ describe('unread notifications counter in the workspace', () => {
     const fetchStub = stubApi([unreadTotal(7)])
     renderWorkspace('/admin/eventos', 'ADMIN')
     await waitFor(() => expect(screen.getAllByRole('heading', { name: 'Eventos' }).length).toBeGreaterThan(0))
-    expect(within(topbar()).queryByRole('link')).toBeNull()
+    expect(within(topbar()).getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
     expect(document.querySelector('.app-nav-badge')).toBeNull()
     expect(requestsTo(fetchStub, 'GET', '/notifications')).toHaveLength(0)
   })
