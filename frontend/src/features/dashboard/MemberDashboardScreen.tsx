@@ -8,6 +8,7 @@ import { ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { SafeImage } from '../workspace/SafeImage'
 import { StatusCard } from '../workspace/StatusCard'
+import { BranchDirections } from '../branches/BranchDirections'
 import { DashboardHeader, QuickActions } from './DashboardParts'
 import { describeAccess, describeFee, describeMedical, describeMembership, readSource } from './member-situation'
 import './dashboard.css'
@@ -66,7 +67,6 @@ export function MemberDashboardScreen() {
 }
 
 function MemberBranchCard({ branch }: { branch: Branch }) {
-  const mapQuery = branch.latitude && branch.longitude ? `${branch.latitude},${branch.longitude}` : branch.address
   return <article className="member-branch-card">
     <SafeImage className="member-branch-image" src={branch.imageUrl} alt={`Imagen de la sede ${branch.name}`} />
     <div className="member-branch-content">
@@ -74,7 +74,7 @@ function MemberBranchCard({ branch }: { branch: Branch }) {
       <p><Icon name="pin" size={20}/>{branch.address}</p>
       <p><Icon name="clock" size={20}/>{branch.openingHours}</p>
       {branch.phone && <p><Icon name="phone" size={20}/>{branch.phone}</p>}
-      <a className="button button-secondary member-branch-directions" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`} target="_blank" rel="noreferrer"><Icon name="map" size={20}/>Cómo llegar</a>
+      <BranchDirections branch={branch} className="button button-secondary member-branch-directions"/>
     </div>
   </article>
 }

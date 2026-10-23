@@ -5,6 +5,7 @@ import { useIsMobile } from '../../hooks/use-is-mobile'
 import { backendApi, type Branch } from '../../service/backend-api'
 import { gymDate, mondayOfGymWeek } from '../../service/date-time'
 import { useAuth } from '../authentication/use-auth'
+import { BranchDirections } from '../branches/BranchDirections'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { SafeImage } from '../workspace/SafeImage'
@@ -50,6 +51,5 @@ export function TrainerDashboardScreen() {
 }
 
 function TrainerBranchCard({ branch }: { branch: Branch }) {
-  const mapQuery = branch.latitude != null && branch.longitude != null ? `${branch.latitude},${branch.longitude}` : branch.address
-  return <article className="member-branch-card"><SafeImage className="member-branch-image" src={branch.imageUrl} alt={`Imagen de la sede ${branch.name}`}/><div className="member-branch-content"><div className="member-branch-title-row"><h3>{branch.name}</h3><span className="badge badge-info">{branch.isActive === undefined ? 'Estado no informado' : branch.isActive ? 'Activa' : 'Inactiva'}</span></div><p><Icon name="pin" size={16}/>{branch.address || 'Dirección no informada'}</p><p><Icon name="clock" size={16}/>{branch.openingHours || 'Horario no informado'}</p><p><Icon name="phone" size={16}/>{branch.phone || 'Teléfono no informado'}</p>{mapQuery && <a className="button button-secondary member-branch-directions" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`} target="_blank" rel="noreferrer"><Icon name="map" size={18}/>Cómo llegar</a>}</div></article>
+  return <article className="member-branch-card"><SafeImage className="member-branch-image" src={branch.imageUrl} alt={`Imagen de la sede ${branch.name}`}/><div className="member-branch-content"><div className="member-branch-title-row"><h3>{branch.name}</h3><span className="badge badge-info">{branch.isActive === undefined ? 'Estado no informado' : branch.isActive ? 'Activa' : 'Inactiva'}</span></div><p><Icon name="pin" size={16}/>{branch.address || 'Dirección no informada'}</p><p><Icon name="clock" size={16}/>{branch.openingHours || 'Horario no informado'}</p><p><Icon name="phone" size={16}/>{branch.phone || 'Teléfono no informado'}</p><BranchDirections branch={branch} className="button button-secondary member-branch-directions"/></div></article>
 }

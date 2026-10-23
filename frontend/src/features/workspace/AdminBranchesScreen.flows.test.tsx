@@ -48,7 +48,7 @@ describe('AdminBranchesScreen: flujos de gestión', () => {
     expect(requestsTo(fetchStub, 'GET', '/admin/branches').at(-1)?.url.searchParams.get('page')).toBe('1')
   })
 
-  it('crea una sede con coordenadas numéricas y recarga el listado', async () => {
+  it('crea una sede con URL de imagen y recarga el listado sin coordenadas manuales', async () => {
     let current = page([])
     const fetchStub = stubApi([
       { path: '/admin/branches', handler: () => ({ body: current }) },
@@ -66,21 +66,19 @@ describe('AdminBranchesScreen: flujos de gestión', () => {
     fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: '222222' } })
     fireEvent.change(screen.getByLabelText('URL de imagen'), { target: { value: 'https://example.com/sede.jpg' } })
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Nueva sede' } })
-    fireEvent.change(screen.getByLabelText('Latitud'), { target: { value: '-34.57' } })
-    fireEvent.change(screen.getByLabelText('Longitud'), { target: { value: '-58.42' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sede' }))
 
     expect((await screen.findAllByText(/Sede Palermo/)).length).toBeGreaterThan(0)
     expect(requestsTo(fetchStub, 'POST', '/branches')[0]?.body).toEqual({
       name: ' Sede Palermo ', imageUrl: 'https://example.com/sede.jpg', address: 'Calle 20', openingHours: '09 a 21',
-      phone: '222222', description: 'Nueva sede', latitude: -34.57, longitude: -58.42,
+      phone: '222222', description: 'Nueva sede',
     })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('edita datos de una sede y muestra el error si el guardado falla', async () => {
     const fetchStub = stubApi([
-      { path: '/admin/branches', handler: () => ({ body: page([branch({ imageUrl: 'https://example.com/branch.jpg' })]) }) },
+      { path: '/admin/branches', handler: () => ({ body: page([branch({ imageUrl: 'https://example.com/branch.jpg', latitude: '-34.60', longitude: '-58.42' })]) }) },
       { method: 'PATCH', path: '/branches/branch-1', handler: () => ({ status: 400, body: { message: 'El teléfono no es válido.' } }) },
     ])
     render(<AdminBranchesScreen/>)
@@ -90,7 +88,7 @@ describe('AdminBranchesScreen: flujos de gestión', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar sede' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('El teléfono no es válido.')
-    expect(requestsTo(fetchStub, 'PATCH', '/branches/branch-1')[0]?.body).toMatchObject({ phone: 'inválido' })
+    expect(requestsTo(fetchStub, 'PATCH', '/branches/branch-1')[0]?.body).toMatchObject({ phone: 'inválido', imageUrl: 'https://example.com/branch.jpg', latitude: -34.6, longitude: -58.42 })
     expect(screen.getByRole('dialog', { name: 'Editar sede' })).toBeInTheDocument()
   })
 
