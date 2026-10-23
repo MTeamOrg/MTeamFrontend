@@ -22,7 +22,7 @@ export function AdminAccessAttemptsScreen() {
   const { data, loading, error, reload } = useApiResource(loader)
   const { data: branches } = useApiResource(() => backendApi.listAdminBranches({ page: 1, limit: 100 }))
 
-  return <div className="app-page">
+  return <div className="app-page admin-access-screen">
     <PageHeader title="Accesos" description="Consultá los intentos de ingreso permitidos y rechazados, con su motivo."/>
     <div className="toolbar access-history-filters">
       <label className="search-shell"><input aria-label="Buscar por usuario o documento" placeholder="Buscar por usuario o documento" value={search} onChange={(event) => setSearch(event.target.value)}/></label>
