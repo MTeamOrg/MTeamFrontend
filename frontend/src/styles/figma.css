@@ -139,6 +139,15 @@ body { background: var(--background); color: var(--black); }
 .app-content { display: flex; flex-direction: column; gap: 28px; padding: 40px 40px 48px; }
 .app-page { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 
+/* Tablet: preserve the desktop sidebar without letting it consume most of the content width. */
+@media (max-width: 900px) and (min-width: 701px) {
+  .app-sidebar { width: 220px; }
+  .app-sidebar-brand { padding-inline: 14px; }
+  .app-sidebar-nav { padding-inline: 10px; }
+  .app-nav-item { width: 100%; gap: 10px; padding-inline: 10px; font-size: 13px; }
+  .app-main { margin-left: 220px; }
+}
+
 /* Page header */
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .page-header-text { display: grid; gap: 8px; }
