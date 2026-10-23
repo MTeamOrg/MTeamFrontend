@@ -26,7 +26,11 @@ it.each([POST.imageUrl, null])('removes image management and preserves the store
     { method: 'PATCH', path: '/news-posts/news-1', handler: () => ({ body: currentPost }) },
   ])
   renderNews()
-  fireEvent.click(await screen.findByRole('button', { name: POST.title }))
+  await screen.findByRole('button', { name: POST.title })
+  expect(screen.getByRole('columnheader', { name: 'Estado' })).toBeInTheDocument()
+  expect(screen.getByRole('cell', { name: 'Borrador' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: `Editar ${POST.title}` })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: POST.title }))
   expect(screen.queryByLabelText(/Imagen/)).not.toBeInTheDocument()
   expect(document.querySelector('img')).toBeNull()
   fireEvent.change(screen.getByLabelText('Contenido'), { target: { value: 'Contenido actualizado' } })
