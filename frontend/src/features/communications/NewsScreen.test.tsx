@@ -39,6 +39,25 @@ describe('NewsScreen', () => {
     expect(screen.queryByRole('button', { name: 'Desactivar' })).not.toBeInTheDocument()
   })
 
+  it('muestra la tabla administrativa con estado, fecha y acciones soportadas', async () => {
+    const draft = post({ id: 'news-2', title: 'Borrador de actividad', audience: 'ALL', status: 'DRAFT', publishedAt: null })
+    stubApi([{ path: '/news-posts', handler: () => ({ body: page([post(), draft]) }) }])
+    renderWithSession(<NewsScreen isAdmin/>, { user: testUser('ADMIN') })
+
+    const table = await screen.findByRole('table')
+    expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toEqual(['Título', 'Audiencia', 'Publicada', 'Estado', 'Acciones'])
+    const rows = within(table).getAllByRole('row')
+    expect(within(rows[1]).getByText('Publicada')).toBeInTheDocument()
+    expect(within(rows[1]).getByText('01/09/2030')).toBeInTheDocument()
+    expect(within(rows[2]).getByText('Borrador')).toBeInTheDocument()
+    expect(within(rows[2]).getByText('—')).toBeInTheDocument()
+
+    fireEvent.click(within(rows[1]).getByLabelText('Acciones de Horario de feriado'))
+    expect(within(rows[1]).getByRole('button', { name: 'Editar' })).toBeInTheDocument()
+    expect(within(rows[1]).getByRole('button', { name: 'Desactivar' })).toBeInTheDocument()
+    expect(within(rows[1]).queryByRole('button', { name: 'Publicar' })).not.toBeInTheDocument()
+  })
+
   it('muestra vacío y permite reintentar cuando falla la carga', async () => {
     let failed = false
     stubApi([{ path: '/news-posts', handler: () => {
