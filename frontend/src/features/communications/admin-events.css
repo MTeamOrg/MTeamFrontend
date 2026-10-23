@@ -14,10 +14,10 @@
 .admin-events-table { width: 100%; border-spacing: 0; table-layout: fixed; text-align: left; }
 .admin-events-table th { height: 48px; padding: 0 20px; color: var(--text-secondary); background: var(--background); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
 .admin-events-table th:first-child { width: 27%; border-top-left-radius: 16px; }
-.admin-events-table th:nth-child(2) { width: 21%; }
-.admin-events-table th:nth-child(3) { width: 21%; }
-.admin-events-table th:nth-child(4) { width: 15%; }
-.admin-events-table th:last-child { width: 22%; padding-inline: 8px; border-top-right-radius: 16px; }
+.admin-events-table th:nth-child(2) { width: 20%; }
+.admin-events-table th:nth-child(3) { width: 20%; }
+.admin-events-table th:nth-child(4) { width: 13%; }
+.admin-events-table th:last-child { width: 20%; padding-inline: 8px; border-top-right-radius: 16px; }
 .admin-events-table td { height: 72px; padding: 12px 20px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 14px; overflow-wrap: anywhere; vertical-align: middle; }
 .admin-events-table td:last-child { padding-inline: 8px; white-space: nowrap; }
 .admin-events-table td strong { color: var(--black); font-size: 15px; font-weight: 600; line-height: 1.4; }
@@ -27,12 +27,12 @@
 .admin-event-status--draft { background: var(--purple-tint); color: var(--purple); }
 .admin-event-status--finished { background: var(--background); color: var(--text-secondary); }
 .admin-event-status--cancelled { background: var(--background); color: var(--disabled); }
-.admin-events-action-buttons { display: flex; align-items: center; gap: 12px; }
-.admin-events-action-buttons .button { flex: none; padding-inline: 16px; white-space: nowrap; }
-.admin-events-action-edit { min-width: 92px; }
-.admin-events-action-publish { min-width: 108px; }
-.admin-events-action-cancel { min-width: 118px; }
-.admin-events-action-view { min-width: 70px; }
+.admin-events-action-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin-events-action-buttons .button { flex: none; height: 40px; min-height: 40px; padding-inline: 12px; border-radius: 8px; font-size: 14px; white-space: nowrap; }
+.admin-events-action-edit { min-width: 80px; }
+.admin-events-action-publish { min-width: 90px; }
+.admin-events-action-cancel { min-width: 96px; }
+.admin-events-action-view { min-width: 64px; }
 .admin-events-actions { position: relative; display: inline-block; }
 .admin-events-actions summary { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--input-border); border-radius: 8px; color: var(--black); cursor: pointer; list-style: none; }
 .admin-events-actions summary::-webkit-details-marker { display: none; }
@@ -67,6 +67,15 @@
   .admin-events-toolbar { flex-wrap: wrap; }
   .admin-events-search { flex-basis: 100%; }
   .admin-events-desktop-create { margin-left: auto; }
+  .admin-events-table th, .admin-events-table td { padding-inline: 12px; }
+  .admin-events-table th:last-child, .admin-events-table td:last-child { padding-inline: 6px; }
+  .admin-events-table time { white-space: normal; }
+  .admin-events-action-buttons { gap: 6px; }
+  .admin-events-action-buttons .button { padding-inline: 10px; font-size: 13px; }
+  .admin-events-action-edit { min-width: 76px; }
+  .admin-events-action-publish { min-width: 86px; }
+  .admin-events-action-cancel { min-width: 92px; }
+  .admin-events-action-view { min-width: 60px; }
 }
 
 @media (max-width: 700px) {
