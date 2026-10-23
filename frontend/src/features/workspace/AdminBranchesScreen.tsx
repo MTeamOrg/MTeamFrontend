@@ -4,7 +4,6 @@ import { backendApi, type Branch, type BranchInput } from '../../service/backend
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
-import { SafeImage } from './SafeImage'
 
 const EMPTY_BRANCH: BranchInput = {
   name: '',
@@ -137,29 +136,7 @@ function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onC
     }
   }
 
-  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={branch ? 'Editar sede' : 'Nueva sede'}><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{branch ? 'Editar sede' : 'Nueva sede'}</h2><form onSubmit={(event) => void submit(event)}><div className="dialog-fields"><Input label="Nombre" value={form.name} onChange={(value) => change('name', value)}/><Input label="Dirección" value={form.address} onChange={(value) => change('address', value)}/><Input label="Horarios" value={form.openingHours} onChange={(value) => change('openingHours', value)}/><Input label="Teléfono" value={form.phone} onChange={(value) => change('phone', value)}/><Input label="Descripción" value={form.description} onChange={(value) => change('description', value)}/><BranchIntegrationFields branch={branch} form={form}/></div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar sede'}</button></div></form></section></div>
-}
-
-function BranchIntegrationFields({ branch, form }: { branch: Branch | null; form: BranchInput }) {
-  const hasImage = Boolean(form.imageUrl)
-  const hasCoordinates = form.latitude !== undefined && form.latitude !== null && form.longitude !== undefined && form.longitude !== null
-  const integrationMessage = branch
-    ? 'La selección y carga para sedes todavía no están integradas. Se conservarán los datos guardados mientras no exista esa operación.'
-    : 'La selección y carga para sedes todavía no están integradas. No se modifican datos existentes.'
-
-  return <div className="admin-branch-integrations">
-    <section className="admin-branch-integration" aria-labelledby="branch-image-heading">
-      <div className="admin-branch-integration-heading"><Icon name="image" size={18}/><h3 id="branch-image-heading">Imagen de la sede</h3></div>
-      <SafeImage className="admin-branch-image-preview" src={form.imageUrl} alt="Vista previa de la imagen de la sede"/>
-      <p>{hasImage ? 'La imagen guardada se conservará al guardar sin cambios.' : 'Esta sede no tiene una imagen guardada.'}</p>
-      <small>{integrationMessage}</small>
-    </section>
-    <section className="admin-branch-integration" aria-labelledby="branch-location-heading">
-      <div className="admin-branch-integration-heading"><Icon name="map" size={18}/><h3 id="branch-location-heading">Ubicación</h3></div>
-      <div className="admin-branch-location-preview"><strong>{hasCoordinates ? 'Ubicación guardada' : 'Sin ubicación guardada'}</strong><span>{hasCoordinates ? 'Las coordenadas requeridas por el backend se conservarán al guardar.' : 'No hay coordenadas guardadas para esta sede.'}</span></div>
-      <small>{integrationMessage} La dirección se sigue editando en el campo correspondiente.</small>
-    </section>
-  </div>
+  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={branch ? 'Editar sede' : 'Nueva sede'}><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{branch ? 'Editar sede' : 'Nueva sede'}</h2><form onSubmit={(event) => void submit(event)}><div className="dialog-fields"><Input label="Nombre" value={form.name} onChange={(value) => change('name', value)}/><Input label="Dirección" value={form.address} onChange={(value) => change('address', value)}/><Input label="Horarios" value={form.openingHours} onChange={(value) => change('openingHours', value)}/><Input label="Teléfono" value={form.phone} onChange={(value) => change('phone', value)}/><Input label="URL de imagen" type="url" value={form.imageUrl} onChange={(value) => change('imageUrl', value)}/><Input label="Descripción" value={form.description} onChange={(value) => change('description', value)}/><Input label="Latitud" type="number" required={false} value={form.latitude?.toString() ?? ''} onChange={(value) => change('latitude', value)}/><Input label="Longitud" type="number" required={false} value={form.longitude?.toString() ?? ''} onChange={(value) => change('longitude', value)}/></div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar sede'}</button></div></form></section></div>
 }
 
 function Input({ label, value, onChange, type = 'text', required = true }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
