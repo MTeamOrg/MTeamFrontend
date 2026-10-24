@@ -7,7 +7,7 @@ export function AuthenticatedHomePage() {
 
   async function handleLogout() {
     await logout()
-    navigate('/iniciar-sesion', { replace: true })
+    await navigate('/iniciar-sesion', { replace: true })
   }
 
   return (
