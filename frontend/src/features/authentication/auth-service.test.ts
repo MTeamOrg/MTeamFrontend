@@ -59,6 +59,26 @@ describe('servicio de autenticación real', () => {
     expect(fetch).toHaveBeenCalledWith('http://localhost:3000/api/auth/login', expect.objectContaining({ method: 'POST' }))
   })
 
+  it('rechaza respuestas de login con datos fuera de la allowlist', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      ...loginResponse,
+      user: { ...loginResponse.user, role: 'SUPER_ADMIN' },
+    }), { status: 200 }))
+
+    await expect(authService.login({ email: 'lara@example.com', password: 'valid-password' }))
+      .rejects.toThrow('El servidor devolvió una respuesta de autenticación inválida.')
+  })
+
+  it('rechaza identidades incompletas o con un rol no permitido', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      ...loginResponse.user,
+      role: 'SUPER_ADMIN',
+    }), { status: 200 }))
+
+    await expect(authService.currentIdentity())
+      .rejects.toThrow('El servidor devolvió una respuesta de autenticación inválida.')
+  })
+
   it('propaga el mensaje seguro de un login incorrecto', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ code: 'INVALID_CREDENTIALS', message: 'Correo o contraseña incorrectos', details: null }), { status: 401 }))
     await expect(authService.login({ email: 'lara@example.com', password: 'wrong-password' })).rejects.toMatchObject({

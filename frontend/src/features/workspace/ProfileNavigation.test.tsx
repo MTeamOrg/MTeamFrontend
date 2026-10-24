@@ -83,7 +83,7 @@ describe.each(['MEMBER', 'TRAINER'] as const)('profile navigation for %s', (role
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo guardar la foto')
     expect(within(document.querySelector('.app-sidebar-user') as HTMLElement).getByRole('img')).toHaveAccessibleName(/Iniciales/)
     expect(within(screen.getByRole('region', { name: 'Resumen del perfil' })).getByRole('img')).toHaveAccessibleName(/Iniciales/)
-    expect(authStorage.read()?.user.photoUrl).toBeNull()
+    expect(authStorage.read()?.user.photoUrl).toBeUndefined()
   })
 
   it.each([204, 503])('logs out from the last profile control and clears both storage locations (HTTP %s)', async (status) => {
