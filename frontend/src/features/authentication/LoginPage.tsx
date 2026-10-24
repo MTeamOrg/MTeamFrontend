@@ -30,7 +30,7 @@ export function LoginPage() {
     try {
       const nextSession = await login({ email, password }, remember)
       const roleHome = nextSession.user.role === 'ADMIN' ? '/admin' : nextSession.user.role === 'TRAINER' ? '/entrenador' : '/socio'
-      navigate(nextSession.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome, { replace: true })
+      await navigate(nextSession.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome, { replace: true })
     } catch (caughtError) {
       setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible iniciar sesión.')
     } finally {
