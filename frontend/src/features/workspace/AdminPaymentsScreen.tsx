@@ -18,17 +18,18 @@ const mobilePaymentDate = (date: string) => new Intl.DateTimeFormat('es-AR', {
 export function AdminPaymentsScreen() {
   const today = gymDate()
   const monthStart = `${today.slice(0, 8)}01`
+  const lastThirtyDaysStart = addDays(today, -29)
   const tomorrow = addDays(today, 1)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [method, setMethod] = useState('')
   const [status, setStatus] = useState<PaymentStatus | ''>('')
-  const [from, setFrom] = useState(monthStart)
-  const [to] = useState(tomorrow)
+  const [dateRange, setDateRange] = useState<'last30' | 'month' | 'all'>('last30')
   const [paymentOpen, setPaymentOpen] = useState(false)
+  const from = dateRange === 'month' ? monthStart : dateRange === 'last30' ? lastThirtyDaysStart : ''
   const loader = useCallback(async () => {
     const [payments, todaySummary, monthSummary, currentPrice, prices, metrics] = await Promise.all([
-      backendApi.listPayments({ page, limit: 20, documentNumber: search.trim() || undefined, method: method || undefined, status: status || undefined, from: gymInstant(from), to: gymInstant(to) }),
+      backendApi.listPayments({ page, limit: 20, documentNumber: search.trim() || undefined, method: method || undefined, status: status || undefined, from: from ? gymInstant(from) : undefined, to: gymInstant(tomorrow) }),
       backendApi.getPaymentsSummary(gymInstant(today), gymInstant(tomorrow)),
       backendApi.getPaymentsSummary(gymInstant(monthStart), gymInstant(tomorrow)),
       backendApi.getCurrentPrice().catch(() => null),
@@ -36,10 +37,10 @@ export function AdminPaymentsScreen() {
       backendApi.getAdminDashboardMetrics(),
     ])
     return { payments, todaySummary, monthSummary, currentPrice, prices, metrics }
-  }, [from, method, monthStart, page, search, status, to, today, tomorrow])
+  }, [from, method, monthStart, page, search, status, today, tomorrow])
   const { data, loading, error, reload } = useApiResource(loader)
   const setFilter = (action: () => void) => { setPage(1); action() }
-  const header = <PageHeader title="Pagos y cuota" description="El valor vigente de la cuota y todos los pagos acreditados. Cada acreditación abre 30 días de vigencia." />
+  const header = <PageHeader title="Pagos y cuota" description="El valor vigente de la cuota y todos los pagos acreditados. Cada acreditación abre 30 días de vigencia."><button type="button" className="button button-primary payment-header-register" aria-label="Registrar pago" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button></PageHeader>
   const dialog = paymentOpen && <PaymentDialog currentPrice={data?.currentPrice?.amount ?? null} onClose={() => setPaymentOpen(false)} onSaved={() => { setPaymentOpen(false); void reload() }} />
 
   if (loading) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState /></div>{dialog}</div>
@@ -73,8 +74,7 @@ export function AdminPaymentsScreen() {
         {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <article className="payment-mobile-card" key={payment.id}>
           <span className="payment-mobile-icon"><Icon name="wallet" size={16} /></span>
           <div className="payment-mobile-detail"><strong>{payment.member.firstName} {payment.member.lastName} · {mobilePaymentDate(payment.accreditedAt)}</strong><span>{payment.method} · {payment.status === 'VOIDED' ? 'anulado' : `vence ${formatDate(payment.expiresAt)}`}</span></div>
-          <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></div>
-          {payment.status === 'ACCREDITED' && <button type="button" className="payment-mobile-void" aria-label={`Anular pago de ${payment.member.firstName} ${payment.member.lastName}`} onClick={() => void voidPayment(payment.id)}>Anular</button>}
+          <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span><PaymentActions payment={payment} onVoid={() => void voidPayment(payment.id)} /></div>
         </article>)}</div>}
       </section>
     </section>
@@ -83,14 +83,13 @@ export function AdminPaymentsScreen() {
       <label className="search-shell"><Icon name="search" /><input aria-label="Buscar por socio o documento" placeholder="Buscar por socio o documento" value={search} onChange={(event) => setFilter(() => setSearch(event.target.value))} /></label>
       <select aria-label="Filtrar por medio" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}><option value="">Medio: todos</option><option value="Efectivo">Efectivo</option><option value="Débito">Débito</option><option value="Transferencia">Transferencia</option></select>
       <select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Estado: todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select>
-      <label className="payment-date-filter" title="Fecha inicial"><span className="visually-hidden">Desde</span><Icon name="calendar" size={18} /><input aria-label="Desde" type="date" value={from} max={to} onChange={(event) => setFilter(() => setFrom(event.target.value))} /></label>
-      <button type="button" className="button button-primary payment-register-button" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar pago</button>
+      <label className="payment-period-filter"><span className="visually-hidden">Filtrar por fecha</span><select aria-label="Filtrar por fecha" value={dateRange} onChange={(event) => setFilter(() => setDateRange(event.target.value as 'last30' | 'month' | 'all'))}><option value="last30">Últimos 30 días</option><option value="month">Este mes</option><option value="all">Todo el historial</option></select></label>
     </div>
 
     <div className="admin-payments-layout">
       <section className="payment-list-panel">
         <div className="payment-desktop-history">
-          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th><span className="visually-hidden">Acción</span></th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}</td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.method}</td><td>{formatDate(payment.expiresAt)}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td>{payment.status === 'ACCREDITED' && <button className="text-link" onClick={() => void voidPayment(payment.id)}>Anular</button>}</td></tr>)}</tbody></table></div>}
+          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Comprobante</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th><span className="visually-hidden">Acción</span></th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}</td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.receiptNumber || '—'}</td><td>{payment.method}</td><td>{formatDate(payment.expiresAt)}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td><PaymentActions payment={payment} onVoid={() => void voidPayment(payment.id)} desktop /></td></tr>)}</tbody></table></div>}
           <div className="table-pagination payment-pagination"><span>Página {page}</span><div><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
         </div>
       </section>
@@ -104,11 +103,30 @@ export function AdminPaymentsScreen() {
   </div>
 
   async function voidPayment(id: string) {
+    if (!window.confirm('¿Confirmás la anulación de este pago? El pago quedará en el historial y se recalculará la vigencia.')) return
     const reason = window.prompt('Ingresá el motivo de la anulación:')?.trim()
     if (!reason) return
     try { await backendApi.voidPayment(id, reason); await reload() }
     catch (value) { window.alert(value instanceof Error ? value.message : 'No se pudo anular el pago.') }
   }
+}
+
+function canVoidPayment(payment: { status: PaymentStatus; expiresAt: string }) {
+  return payment.status === 'ACCREDITED' && new Date(payment.expiresAt).getTime() > Date.now()
+}
+
+function PaymentActions({ payment, onVoid, desktop = false }: { payment: { id: string; status: PaymentStatus; expiresAt: string; member: { firstName: string; lastName: string } }; onVoid: () => void; desktop?: boolean }) {
+  const canVoid = canVoidPayment(payment)
+  if (desktop) return canVoid
+    ? <button type="button" className="payment-desktop-void" aria-label={`Anular pago de ${payment.member.firstName} ${payment.member.lastName}`} onClick={onVoid}><Icon name="close" size={16} />Anular</button>
+    : null
+
+  return <details className="payment-mobile-actions">
+    <summary className="payment-mobile-more" aria-label={`Acciones de ${payment.member.firstName} ${payment.member.lastName}`}><Icon name="more" size={19} /></summary>
+    <div className="payment-mobile-menu">
+      {canVoid ? <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); onVoid() }}>Anular pago</button> : <span>Sin acciones disponibles</span>}
+    </div>
+  </details>
 }
 
 function PriceForm({ current, onSaved }: { current: string | null; onSaved: () => void }) {

@@ -15,12 +15,13 @@ function stubPaymentsApi(priceHandler: () => { status?: number; body?: unknown }
     { path: '/members', handler: () => ({ body: page([{ id: 'member-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com', status: 'ACTIVE', membershipStatus: 'CURRENT', lastPaymentAt: '2026-09-05T14:00:00-03:00', expiresAt: '2026-10-05T14:00:00-03:00' }]) }) },
     { method: 'POST', path: '/payments/previews', handler: () => ({ body: { member: { id: 'member-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com' }, currentPrice: '32000', amount: '32000', method: 'Efectivo', receiptNumber: '0001-0456', estimatedAccreditedAt: '2026-10-05T14:00:00-03:00', estimatedExpiresAt: '2026-11-04T14:00:00-03:00' } }) },
     { method: 'POST', path: '/payments', handler: () => ({ status: 201, body: { id: 'pay-2' } }) },
+    { method: 'POST', path: '/payments/pay-1/voids', handler: () => ({ body: { id: 'pay-1', status: 'VOIDED' } }) },
     { method: 'POST', path: '/membership-prices', handler: priceHandler },
   ])
 }
 
 describe('pagos y cuota del administrador', () => {
-  afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); vi.unstubAllGlobals() })
 
   it('muestra las métricas, la tabla y los paneles definidos en Figma', async () => {
     stubPaymentsApi()
@@ -30,10 +31,27 @@ describe('pagos y cuota del administrador', () => {
     expect((await screen.findAllByText('RECAUDADO HOY')).length).toBeGreaterThan(0)
     expect(screen.getByText('SOCIOS SIN PAGO')).toBeInTheDocument()
     expect(screen.getByText('Juan Manuel Pérez')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Comprobante' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Filtrar por fecha' })).toHaveValue('last30')
     expect(screen.getByRole('heading', { name: 'Cambiar el valor de la cuota' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Historial de valores' })).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Estado de las cuotas' })).toHaveLength(2)
     expect(screen.getByRole('heading', { name: 'Últimos pagos' })).toBeInTheDocument()
+  })
+
+  it('confirma la anulación y envía el motivo solo para un pago vigente', async () => {
+    const fetchStub = stubPaymentsApi()
+    const confirm = vi.fn(() => true)
+    const prompt = vi.fn(() => 'Carga duplicada')
+    vi.stubGlobal('confirm', confirm)
+    vi.stubGlobal('prompt', prompt)
+    renderWithSession(<AdminPaymentsScreen />, { user: testUser('ADMIN') })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Anular pago de Juan Manuel Pérez' }))
+    await waitFor(() => expect(requestsTo(fetchStub, 'POST', '/payments/pay-1/voids')).toHaveLength(1))
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(prompt).toHaveBeenCalledOnce()
+    expect(requestsTo(fetchStub, 'POST', '/payments/pay-1/voids')[0].body).toEqual({ reason: 'Carga duplicada' })
   })
 
   it('aclara que solo los aumentos notifican a los socios activos', async () => {
