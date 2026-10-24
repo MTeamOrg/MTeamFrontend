@@ -59,7 +59,7 @@ export function RoleWorkspace({ role }: { role: UserRole }) {
 
   async function handleLogout() {
     await logout()
-    navigate('/iniciar-sesion', { replace: true })
+    await navigate('/iniciar-sesion', { replace: true })
   }
 
   // Keyed by account so that a different user never inherits the previous unread counter.
