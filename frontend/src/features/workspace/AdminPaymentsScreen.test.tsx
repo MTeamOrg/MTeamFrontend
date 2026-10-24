@@ -1,13 +1,15 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { PaymentReportItem } from '../../service/backend-api'
 import { renderWithSession, requestsTo, stubApi, testUser } from '../../test/test-utils'
 import { AdminPaymentsScreen } from './AdminPaymentsScreen'
 
 const page = (items: unknown[] = [], total = items.length) => ({ items, page: 1, limit: 20, total })
+const DEFAULT_PAYMENT: PaymentReportItem = { id: 'pay-1', amount: '32000', method: 'Efectivo', receiptNumber: '0001-0456', status: 'ACCREDITED', accreditedAt: '2026-10-05T14:00:00-03:00', expiresAt: '2026-11-04T14:00:00-03:00', voidedAt: null, voidReason: null, member: { id: 'member-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com' } }
 
-function stubPaymentsApi(priceHandler: () => { status?: number; body?: unknown } = () => ({ status: 201, body: { id: 'price-2' } })) {
+function stubPaymentsApi(priceHandler: () => { status?: number; body?: unknown } = () => ({ status: 201, body: { id: 'price-2' } }), payment: PaymentReportItem = DEFAULT_PAYMENT) {
   return stubApi([
-    { path: '/payments', handler: () => ({ body: page([{ id: 'pay-1', amount: '32000', method: 'Efectivo', receiptNumber: '0001-0456', status: 'ACCREDITED', accreditedAt: '2026-10-05T14:00:00-03:00', expiresAt: '2026-11-04T14:00:00-03:00', voidedAt: null, voidReason: null, member: { id: 'member-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com' } }]) }) },
+    { path: '/payments', handler: () => ({ body: page([payment]) }) },
     { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: 4, totalAmount: '128000', days: [] } }) },
     { path: '/membership-prices/current', handler: () => ({ body: { id: 'price-1', amount: '32000', effectiveFrom: '2026-09-01T00:00:00-03:00', createdAt: '', createdById: 'admin-1' } }) },
     { path: '/membership-prices', handler: () => ({ body: page([{ id: 'price-1', amount: '32000', effectiveFrom: '2026-09-01T00:00:00-03:00', createdAt: '', createdById: 'admin-1' }]) }) },
@@ -39,6 +41,42 @@ describe('pagos y cuota del administrador', () => {
     expect(screen.getByRole('heading', { name: 'Historial de valores' })).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Estado de las cuotas' })).toHaveLength(2)
     expect(screen.getByRole('heading', { name: 'Últimos pagos' })).toBeInTheDocument()
+  })
+
+  it('expone el detalle completo de valores largos sin perder la acción', async () => {
+    const longPayment: PaymentReportItem = {
+      id: 'long-payment-fixture',
+      amount: '987654321',
+      method: 'Transferencia electrónica internacional para pruebas de longitud',
+      receiptNumber: 'COMPROBANTE-DE-PRUEBA-LARGO-000000000000',
+      status: 'ACCREDITED',
+      accreditedAt: '2026-10-05T14:00:00-03:00',
+      expiresAt: '2026-11-04T14:00:00-03:00',
+      voidedAt: null,
+      voidReason: null,
+      member: {
+        id: 'long-member-fixture',
+        firstName: 'Nombre extremadamente largo para probar',
+        lastName: 'Apellido compuesto de prueba',
+        documentNumber: 'TEST-DOCUMENT-000000',
+        email: 'long.member@example.test',
+      },
+    }
+    stubPaymentsApi(undefined, longPayment)
+    renderWithSession(<AdminPaymentsScreen />, { user: testUser('ADMIN') })
+
+    const memberCell = await screen.findByText('Nombre extremadamente largo para probar Apellido compuesto de prueba', { exact: true })
+    expect(memberCell).toHaveClass('payment-cell-text')
+    expect(memberCell).toHaveAttribute('title', memberCell.textContent)
+    expect(memberCell).toHaveAttribute('aria-label', memberCell.textContent)
+    expect(screen.getByTitle(longPayment.receiptNumber!)).toHaveClass('payment-cell-text')
+    expect(screen.getByTitle(longPayment.method)).toHaveClass('payment-cell-text')
+    expect(screen.getByRole('columnheader', { name: 'Estado' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anular pago de Nombre extremadamente largo para probar Apellido compuesto de prueba' })).toBeInTheDocument()
+
+    const mobileCard = document.querySelector('.payment-mobile-card')
+    expect(mobileCard?.querySelector('[title*="Nombre extremadamente largo"]')).toBeTruthy()
+    expect(mobileCard?.querySelector(`[title*="${longPayment.method}"]`)).toBeTruthy()
   })
 
   it('confirma la anulación y envía el motivo solo para un pago vigente', async () => {

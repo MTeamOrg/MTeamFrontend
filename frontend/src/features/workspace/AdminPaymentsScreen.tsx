@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { backendApi, type MemberListItem, type PaymentPreview, type PaymentStatus } from '../../service/backend-api'
+import { backendApi, type MemberListItem, type PaymentPreview, type PaymentReportItem, type PaymentStatus } from '../../service/backend-api'
 import { addDays, formatDate, formatDateTime, gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
@@ -14,6 +14,44 @@ const gymInstant = (date: string) => `${date}T00:00:00-03:00`
 const mobilePaymentDate = (date: string) => new Intl.DateTimeFormat('es-AR', {
   timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
 }).format(new Date(date))
+
+function PaymentCellText({ value }: { value: string }) {
+  return <span className="payment-cell-text" title={value} aria-label={value}>{value}</span>
+}
+
+function PaymentMobileCard({ payment, onVoid }: { payment: PaymentReportItem; onVoid: () => void }) {
+  const memberName = `${payment.member.firstName} ${payment.member.lastName}`
+  const heading = `${memberName} · ${mobilePaymentDate(payment.accreditedAt)}`
+  const details = payment.status === 'VOIDED'
+    ? `${payment.method} · anulado`
+    : `${payment.method} · vence ${formatDate(payment.expiresAt)}`
+
+  return <article className="payment-mobile-card">
+    <span className="payment-mobile-icon"><Icon name="wallet" size={16} /></span>
+    <div className="payment-mobile-detail">
+      <strong title={heading} aria-label={heading}>{heading}</strong>
+      <span title={details} aria-label={details}>{details}</span>
+    </div>
+    <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span><PaymentActions payment={payment} onVoid={onVoid} /></div>
+  </article>
+}
+
+function PaymentTableRow({ payment, onVoid }: { payment: PaymentReportItem; onVoid: () => void }) {
+  const memberName = `${payment.member.firstName} ${payment.member.lastName}`
+  const receiptNumber = payment.receiptNumber || '—'
+  const statusLabel = payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'
+
+  return <tr>
+    <td><PaymentCellText value={memberName} /></td>
+    <td><PaymentCellText value={formatDateTime(payment.accreditedAt)} /></td>
+    <td><PaymentCellText value={money(payment.amount)} /></td>
+    <td><PaymentCellText value={receiptNumber} /></td>
+    <td><PaymentCellText value={payment.method} /></td>
+    <td><PaymentCellText value={formatDate(payment.expiresAt)} /></td>
+    <td className="payment-status-cell"><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{statusLabel}</span></td>
+    <td className="payment-action-cell"><PaymentActions payment={payment} onVoid={onVoid} desktop /></td>
+  </tr>
+}
 
 export function AdminPaymentsScreen() {
   const today = gymDate()
@@ -71,11 +109,7 @@ export function AdminPaymentsScreen() {
       </section>
       <section className="payment-mobile-history">
         <h2>Últimos pagos</h2>
-        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <article className="payment-mobile-card" key={payment.id}>
-          <span className="payment-mobile-icon"><Icon name="wallet" size={16} /></span>
-          <div className="payment-mobile-detail"><strong>{payment.member.firstName} {payment.member.lastName} · {mobilePaymentDate(payment.accreditedAt)}</strong><span>{payment.method} · {payment.status === 'VOIDED' ? 'anulado' : `vence ${formatDate(payment.expiresAt)}`}</span></div>
-          <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span><PaymentActions payment={payment} onVoid={() => void voidPayment(payment.id)} /></div>
-        </article>)}</div>}
+        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <PaymentMobileCard key={payment.id} payment={payment} onVoid={() => void voidPayment(payment.id)} />)}</div>}
       </section>
     </section>
 
@@ -89,7 +123,7 @@ export function AdminPaymentsScreen() {
     <div className="admin-payments-layout">
       <section className="payment-list-panel">
         <div className="payment-desktop-history">
-          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Comprobante</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th aria-label="Acción"></th></tr></thead><tbody>{data.payments.items.map((payment) => <tr key={payment.id}><td>{payment.member.firstName} {payment.member.lastName}</td><td>{formatDateTime(payment.accreditedAt)}</td><td>{money(payment.amount)}</td><td>{payment.receiptNumber || '—'}</td><td>{payment.method}</td><td>{formatDate(payment.expiresAt)}</td><td><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span></td><td><PaymentActions payment={payment} onVoid={() => void voidPayment(payment.id)} desktop /></td></tr>)}</tbody></table></div>}
+          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Comprobante</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th aria-label="Acción"></th></tr></thead><tbody>{data.payments.items.map((payment) => <PaymentTableRow key={payment.id} payment={payment} onVoid={() => void voidPayment(payment.id)} />)}</tbody></table></div>}
           <div className="table-pagination payment-pagination"><span>Página {page}</span><div><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
         </div>
       </section>
