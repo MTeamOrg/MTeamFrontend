@@ -741,3 +741,65 @@ body { background: var(--background); color: var(--black); }
 @media (max-width: 700px) {
   .medical-admin-metric-desktop-only { display: none; }
 }
+
+/* Admin payments — final responsive polish for the supplied desktop/mobile references. */
+.admin-payments-screen { overflow-x: hidden; }
+.admin-payments-screen .page-header { align-items: flex-start; }
+.admin-payments-screen .page-header-actions { padding-top: 8px; }
+.payment-header-register { min-width: 252px; }
+.admin-payments-screen .payment-filter-toolbar { grid-template-columns: minmax(220px, 1fr) 145px 150px minmax(180px, 210px); }
+.payment-period-filter, .payment-period-filter select { min-width: 0; width: 100%; }
+.payment-period-filter select { height: 44px; padding: 0 14px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); font-size: 14px; }
+.payment-period-filter select:focus { border-color: var(--pink); outline: none; box-shadow: 0 0 0 3px rgba(217, 30, 80, .12); }
+.admin-payments-screen .payment-table-wrap { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.admin-payments-screen .payment-table { min-width: 1120px; table-layout: fixed; }
+.admin-payments-screen .payment-table th,
+.admin-payments-screen .payment-table td { min-width: 0; overflow: hidden; overflow-wrap: normal; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.admin-payments-screen .payment-cell-text { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-payments-screen .payment-table th:nth-child(1) { width: 210px; min-width: 210px; }
+.admin-payments-screen .payment-table th:nth-child(2) { width: 170px; min-width: 170px; }
+.admin-payments-screen .payment-table th:nth-child(3) { width: 105px; min-width: 105px; }
+.admin-payments-screen .payment-table th:nth-child(4) { width: 135px; min-width: 135px; }
+.admin-payments-screen .payment-table th:nth-child(5) { width: 135px; min-width: 135px; }
+.admin-payments-screen .payment-table th:nth-child(6) { width: 135px; min-width: 135px; }
+.admin-payments-screen .payment-table th:nth-child(7) { width: 115px; min-width: 115px; }
+.admin-payments-screen .payment-table th:nth-child(8) { width: 115px; min-width: 115px; }
+.admin-payments-screen .payment-table th,
+.admin-payments-screen .payment-table td { padding: 8px 10px; font-size: 13px; }
+.admin-payments-screen .payment-table .payment-status-cell { overflow: visible; }
+.admin-payments-screen .payment-table .payment-action-cell { overflow: visible; text-align: right; }
+.payment-desktop-void { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 96px; min-height: 32px; padding: 0 10px; border: 1px solid var(--pink); border-radius: 8px; background: var(--white); color: var(--pink); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.payment-desktop-void:hover { background: var(--pink-tint); }
+.payment-mobile-actions { position: relative; display: none; }
+.payment-mobile-more { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; color: var(--black); cursor: pointer; list-style: none; }
+.payment-mobile-more::-webkit-details-marker { display: none; }
+.payment-mobile-menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 4; display: grid; min-width: 170px; padding: 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--white); box-shadow: 0 8px 24px rgba(10, 11, 13, .12); text-align: left; }
+.payment-mobile-menu button, .payment-mobile-menu span { display: block; min-height: 38px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: var(--pink); font-size: 12px; font-weight: 600; line-height: 38px; text-align: left; }
+.payment-mobile-menu button:hover { background: var(--pink-tint); }
+.payment-mobile-menu span { color: var(--text-muted); font-weight: 400; }
+
+@media (max-width: 1359px) and (min-width: 701px) {
+  .admin-payments-screen .payment-filter-toolbar { grid-template-columns: minmax(180px, 1fr) minmax(120px, .65fr) minmax(120px, .65fr) minmax(170px, .8fr); }
+}
+
+@media (max-width: 1100px) and (min-width: 701px) {
+  .admin-payments-screen .admin-payment-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1000px) and (min-width: 701px) {
+  .admin-payments-screen .payment-filter-toolbar { grid-template-columns: minmax(120px, .7fr) minmax(120px, .7fr) minmax(170px, .9fr); }
+  .admin-payments-screen .payment-filter-toolbar .search-shell { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .admin-payments-screen .page-header-actions { display: none; }
+  .payment-mobile-actions { display: block; }
+  .payment-mobile-value { position: relative; }
+  .payment-mobile-value .payment-mobile-actions { margin-top: 1px; }
+  .payment-mobile-card { align-items: start; }
+  .payment-mobile-card .payment-mobile-detail { padding-top: 2px; }
+  .payment-mobile-detail strong, .payment-mobile-detail > span { min-width: 0; max-width: 100%; }
+  .payment-mobile-card .payment-mobile-value { min-width: 0; }
+  .payment-mobile-card .payment-mobile-value { align-content: start; gap: 5px; }
+  .payment-mobile-more { margin-right: -2px; }
+}
