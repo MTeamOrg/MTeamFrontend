@@ -6,28 +6,45 @@ import { AdminMedicalCertificatesScreen } from './AdminMedicalCertificatesScreen
 const item = {
   id: 'cert-1', memberId: 'member-1', status: 'PENDING',
   uploadedAt: '2026-09-03T20:14:00Z', reviewedAt: null, reviewComment: null,
-  member: { id: 'member-1', firstName: 'Lucas', lastName: 'Torres', documentNumber: '44.870.910', email: 'lucas@example.com' },
+  member: { id: 'member-1', firstName: 'Nora', lastName: 'Campos', documentNumber: '50.123.456', email: 'nora@example.com' },
   reviewedBy: null,
+} as const
+
+const approvedItem = {
+  ...item,
+  id: 'cert-2', status: 'APPROVED', uploadedAt: '2026-09-02T18:00:00Z',
+} as const
+
+const rejectedItem = {
+  ...item,
+  id: 'cert-3', status: 'REJECTED', uploadedAt: '2026-09-01T16:30:00Z', reviewComment: 'Falta la firma.',
 } as const
 
 describe('bandeja administrativa de aptos médicos', () => {
   afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-  it('lista los socios y obtiene totales reales por estado sin inventar el período inicial', async () => {
-    const fetchStub = stubApi([{ path: '/medical-certificates', handler: (url) => {
-      const totals = { PENDING: 7, APPROVED: 162, REJECTED: 4 }
-      const status = url.searchParams.get('status') as keyof typeof totals | null
-      return { body: { items: status ? [] : [item], page: 1, limit: Number(url.searchParams.get('limit')), total: status ? totals[status] : 173 } }
-    } }])
+  it('lista los socios y obtiene métricas completas desde los resúmenes disponibles', async () => {
+    const fetchStub = stubApi([
+      { path: '/admin/dashboard/metrics', handler: () => ({ body: { activeMembers: 24, inactiveMembers: 2, currentMemberships: 21, expiringMemberships: 1, expiredMemberships: 3, pendingMedicalCertificates: 7, rejectedMedicalCertificates: 4, initialPeriodMembers: 3 } }) },
+      { path: '/medical-certificates', handler: (url) => {
+        const isApprovedMetric = url.searchParams.get('status') === 'APPROVED'
+        return { body: { items: isApprovedMetric ? [] : [item, approvedItem, rejectedItem], page: 1, limit: Number(url.searchParams.get('limit')), total: isApprovedMetric ? 162 : 173 } }
+      } },
+    ])
     renderWithSession(<AdminMedicalCertificatesScreen/>, { user: testUser('ADMIN'), route: '/admin/aptos' })
-    expect((await screen.findAllByText('Lucas Torres')).length).toBeGreaterThan(0)
-    await waitFor(() => expect(screen.getByText('162')).toBeInTheDocument())
-    expect(screen.getByText('7')).toBeInTheDocument()
-    expect(screen.getByText('4')).toBeInTheDocument()
-    expect(screen.getByText('Sin dato disponible')).toBeInTheDocument()
+    expect((await screen.findAllByText('Nora Campos')).length).toBeGreaterThan(0)
+    await waitFor(() => expect(screen.getByText('162 aptos')).toBeInTheDocument())
+    expect(screen.getByText('7 aptos')).toBeInTheDocument()
+    expect(screen.getByText('4 aptos')).toBeInTheDocument()
+    expect(screen.getByText('3 socios')).toBeInTheDocument()
+    expect(screen.getByText('Sin fecha de vencimiento')).toBeInTheDocument()
+    expect(screen.getByText('Esperando una nueva carga')).toBeInTheDocument()
+    expect(screen.getByText('Pueden ingresar sin apto')).toBeInTheDocument()
     expect(screen.getAllByText('Documento de apto médico').length).toBeGreaterThan(0)
     expect(screen.getByText('Revisar')).toHaveAttribute('href', '/admin/aptos/cert-1')
-    expect(requestsTo(fetchStub, 'GET', '/medical-certificates')).toHaveLength(4)
+    expect(screen.getAllByRole('link', { name: 'Ver' })).toHaveLength(2)
+    expect(requestsTo(fetchStub, 'GET', '/admin/dashboard/metrics')).toHaveLength(1)
+    expect(requestsTo(fetchStub, 'GET', '/medical-certificates')).toHaveLength(2)
   })
 
   it.each([
@@ -66,6 +83,15 @@ describe('bandeja administrativa de aptos médicos', () => {
     await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/medical-certificates').some(({ url }) =>
       url.searchParams.get('page') === '2' && url.searchParams.get('status') === 'PENDING')).toBe(true))
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0)
+  })
+
+  it('mantiene solo los resúmenes principales en la composición móvil', async () => {
+    setMobileViewport(true)
+    stubApi([{ path: '/medical-certificates', handler: () => ({ body: { items: [item], page: 1, limit: 20, total: 1 } }) }])
+    renderWithSession(<AdminMedicalCertificatesScreen/>, { user: testUser('ADMIN') })
+    await screen.findAllByText('Nora Campos')
+    expect(document.querySelectorAll('.medical-admin-metric')).toHaveLength(4)
+    expect(document.querySelectorAll('.medical-admin-metric-desktop-only')).toHaveLength(2)
   })
 
   it('muestra el error real de la API cuando la bandeja no carga', async () => {
