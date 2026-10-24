@@ -40,6 +40,13 @@ const ACTION_LABEL: Record<string, string> = {
   ACTIVATED: 'Cuenta reactivada',
   DEACTIVATED: 'Cuenta desactivada',
   PASSWORD_RESET: 'Contraseña restablecida',
+  PROFILE_PHOTO_UPDATED: 'Foto de perfil actualizada',
+}
+
+const UNKNOWN_ACTION_LABEL = 'Acción registrada'
+
+function getAuditActionLabel(action: string) {
+  return ACTION_LABEL[action] ?? UNKNOWN_ACTION_LABEL
 }
 
 function isValidEmail(value: string) {
@@ -174,7 +181,7 @@ function TrainerCard({ user }: { user: AdminUserDetail }) {
 function AuditHistory({ userId }: { userId: string }) {
   const loader = useCallback(() => backendApi.listUserAuditLogs(userId, 1, 10), [userId])
   const { data, loading, error, reload } = useApiResource(loader)
-  return <section className="surface-card user-detail-card user-detail-list-card" aria-labelledby="audit-title"><div className="user-detail-card-heading"><h2 id="audit-title"><span className="desktop-only">Historial de acciones sobre la cuenta</span><span className="mobile-only">Acciones sobre la cuenta</span></h2><Icon name="clock" size={20}/></div>{loading ? <LoadingState message="Cargando historial…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay acciones registradas."/> : <div className="user-detail-audit-list">{data.items.map((item) => <div className="user-detail-audit-row" key={item.id}><strong>{ACTION_LABEL[item.action] ?? item.action}</strong><span>{formatDateTime(item.occurredAt)}</span><small>{item.performedBy.firstName} {item.performedBy.lastName}{item.reason ? ` · ${item.reason}` : ''}</small></div>)}</div>}</section>
+  return <section className="surface-card user-detail-card user-detail-list-card" aria-labelledby="audit-title"><div className="user-detail-card-heading"><h2 id="audit-title"><span className="desktop-only">Historial de acciones sobre la cuenta</span><span className="mobile-only">Acciones sobre la cuenta</span></h2><Icon name="clock" size={20}/></div>{loading ? <LoadingState message="Cargando historial…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay acciones registradas."/> : <div className="user-detail-audit-list">{data.items.map((item) => <div className="user-detail-audit-row" key={item.id}><time dateTime={item.occurredAt}>{formatDateTime(item.occurredAt)}</time><div className="user-detail-audit-action"><strong>{getAuditActionLabel(item.action)}</strong>{item.reason && <span className="user-detail-audit-reason">Motivo: {item.reason}</span>}</div><span className="user-detail-audit-actor">{item.performedBy.firstName} {item.performedBy.lastName}</span></div>)}</div>}</section>
 }
 
 function UserEditorDialog({ user, onClose, onUpdated, onBranchesUpdated }: { user: AdminUserDetail; onClose: () => void; onUpdated: (user: AdminUserDetail) => void; onBranchesUpdated: (user: AdminUserDetail) => void }) {

@@ -66,6 +66,26 @@ function setup(user: AdminUserDetail = userDetail, routes: ApiRoute[] = []) {
   return fetchStub
 }
 
+it('translates audit actions and keeps unknown events readable', async () => {
+  setup({ ...userDetail, role: 'ADMIN' }, [{
+    path: '/users/user-1/audit-logs',
+    handler: () => ({ body: { items: [
+      { id: 'audit-created', userId: 'user-1', action: 'CREATED', reason: null, occurredAt: '2026-09-02T17:10:00Z', performedBy: { id: 'admin-1', firstName: 'Operador', lastName: 'Sintético', email: 'operator@example.com', role: 'ADMIN' } },
+      { id: 'audit-photo', userId: 'user-1', action: 'PROFILE_PHOTO_UPDATED', reason: 'Actualización de prueba', occurredAt: '2026-09-01T17:10:00Z', performedBy: { id: 'admin-1', firstName: 'Operador', lastName: 'Sintético', email: 'operator@example.com', role: 'ADMIN' } },
+      { id: 'audit-unknown', userId: 'user-1', action: 'INTERNAL_EVENT', reason: null, occurredAt: '2026-08-30T17:10:00Z', performedBy: { id: 'admin-1', firstName: 'Operador', lastName: 'Sintético', email: 'operator@example.com', role: 'ADMIN' } },
+    ], page: 1, limit: 10, total: 3 } }),
+  }])
+
+  expect(await screen.findByText('Cuenta creada')).toBeInTheDocument()
+  expect(screen.getByText('Foto de perfil actualizada')).toBeInTheDocument()
+  expect(screen.getByText('Acción registrada')).toBeInTheDocument()
+  expect(screen.getByText('Motivo: Actualización de prueba')).toBeInTheDocument()
+  expect(screen.queryByText('PROFILE_PHOTO_UPDATED')).not.toBeInTheDocument()
+  expect(screen.queryByText('INTERNAL_EVENT')).not.toBeInTheDocument()
+  expect(screen.getAllByText('Operador Sintético')).toHaveLength(3)
+  expect(screen.getAllByRole('time')).toHaveLength(3)
+})
+
 async function openEditor() {
   fireEvent.click((await screen.findAllByRole('button', { name: 'Editar datos' }))[0])
   return within(screen.getByRole('dialog', { name: 'Editar datos' }))
