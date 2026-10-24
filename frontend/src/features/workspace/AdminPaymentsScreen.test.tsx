@@ -32,6 +32,8 @@ describe('pagos y cuota del administrador', () => {
     expect(screen.getByText('SOCIOS SIN PAGO')).toBeInTheDocument()
     expect(screen.getByText('Juan Manuel Pérez')).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Comprobante' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Vencimiento' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Anular pago de / })).toHaveLength(1)
     expect(screen.getByRole('combobox', { name: 'Filtrar por fecha' })).toHaveValue('last30')
     expect(screen.getByRole('heading', { name: 'Cambiar el valor de la cuota' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Historial de valores' })).toBeInTheDocument()
