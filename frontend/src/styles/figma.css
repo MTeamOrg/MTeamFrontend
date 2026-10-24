@@ -278,7 +278,7 @@ body { background: var(--background); color: var(--black); }
 
 /* Administrator access history: accurate totals from the paginated API and responsive history views. */
 .admin-access-screen { min-width: 0; }
-.access-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.access-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
 .access-summary-card { min-width: 0; min-height: 124px; display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
 .access-summary-card-label { color: var(--text-secondary); font-size: 12px; font-weight: 500; letter-spacing: .72px; text-transform: uppercase; }
 .access-summary-card-value { color: var(--black); font-size: 22px; line-height: 1.25; }
@@ -289,10 +289,12 @@ body { background: var(--background); color: var(--black); }
 .access-summary-card.tone-blue .access-summary-card-sub svg { color: var(--blue); }
 .access-summary-card.tone-pink .access-summary-card-sub svg { color: var(--pink); }
 .access-summary-error { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--background); color: var(--text-secondary); font-size: 13px; }
-.admin-access-screen .access-history-filters { display: grid; grid-template-columns: minmax(250px, 1.45fr) repeat(5, minmax(116px, .65fr)); gap: 12px; width: 100%; margin: 0; align-items: center; }
+.admin-access-screen .access-history-filters { display: grid; grid-template-columns: minmax(250px, 1.45fr) repeat(4, minmax(116px, .65fr)); gap: 12px; width: 100%; margin: 0; align-items: center; }
 .admin-access-screen .access-history-filters .search-shell { width: 100%; min-width: 0; height: 44px; }
 .access-filter-fields { display: contents; }
 .admin-access-screen .access-history-filters select { width: 100%; height: 44px; min-width: 0; padding: 0 12px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); font-size: 14px; }
+.access-period-filter { min-width: 0; }
+.access-period-filter select { width: 100%; }
 .access-date-filter { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--text-secondary); font-size: 12px; }
 .access-date-filter span { flex: none; }
 .access-date-filter input { width: 100%; min-width: 0; height: 44px; padding: 0 8px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); font-size: 12px; }
@@ -306,12 +308,17 @@ body { background: var(--background); color: var(--black); }
 .access-result-badge.is-denied { background: var(--pink-tint); color: var(--pink); }
 .access-mobile-list { display: none; }
 
+@media (min-width: 701px) {
+  .admin-access-screen .access-date-filter { display: none; }
+}
+
 @media (max-width: 700px) {
   .admin-access-screen { padding-bottom: 42px; }
   .admin-access-screen > .page-header { display: none; }
   .access-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .access-summary-card { min-height: 84px; gap: 6px; padding: 14px; border-radius: 14px; }
   .access-summary-card--allowed { display: none; }
+  .access-summary-card--distinct { display: none; }
   .access-summary-card-label { font-size: 10px; letter-spacing: .6px; }
   .access-summary-card-value { font-size: 16px; }
   .access-summary-card-sub { min-height: 0; font-size: 11px; }
@@ -322,6 +329,7 @@ body { background: var(--background); color: var(--black); }
   .access-filter-fields { display: none; width: 100%; }
   .access-filter-fields.is-open { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
   .admin-access-screen .access-history-filters select { width: 100%; height: 42px; font-size: 12px; }
+  .access-period-filter { display: none; }
   .access-date-filter { justify-content: space-between; width: 100%; font-size: 11px; }
   .access-date-filter input { width: min(70%, 220px); height: 42px; font-size: 11px; }
   .admin-access-screen .access-history-table-wrap { display: none; }
@@ -339,8 +347,7 @@ body { background: var(--background); color: var(--black); }
 }
 
 @media (max-width: 1100px) and (min-width: 701px) {
-  .admin-access-screen .access-history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .admin-access-screen .access-history-filters > .search-shell { grid-column: 1 / -1; }
+  .admin-access-screen .access-history-filters { grid-template-columns: minmax(180px, 1.45fr) repeat(4, minmax(100px, .65fr)); }
 }
 
 @media (max-width: 700px) {
