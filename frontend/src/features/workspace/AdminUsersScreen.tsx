@@ -48,7 +48,7 @@ export function AdminUsersScreen() {
   return <div className="app-page admin-users-screen">
     <PageHeader title="Usuarios" description="Socios, entrenadores y administradores en un solo listado. Filtrá por rol para administrarlos."/>
     <div className="admin-list-main">
-      <button type="button" className="button button-primary admin-users-mobile-create" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20}/>Crear cuenta</button>
+      <button type="button" className="button button-primary admin-users-mobile-create" aria-label="Crear cuenta" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20} aria-hidden="true"/><span className="visually-hidden">Crear cuenta</span></button>
       <div className="toolbar admin-list-toolbar admin-users-toolbar">
         <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar usuarios" placeholder="Buscar por nombre, documento o correo" value={search} onChange={(event) => resetPage(() => setSearch(event.target.value))}/></label>
         <button type="button" className="admin-users-filter-toggle" aria-label="Mostrar filtros" aria-controls="admin-users-filter-fields" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
@@ -124,11 +124,15 @@ function AdminUserTableRow({ user, metadata, metadataLoading, href }: { user: Us
 
 function AdminUserMobileCard({ user, metadata, metadataLoading, href }: { user: UserListItem; metadata?: UserMetadata; metadataLoading: boolean; href: string }) {
   const fullName = `${user.firstName} ${user.lastName}`
-  return <article className="admin-user-mobile-card">
-    <UserAvatar firstName={user.firstName} lastName={user.lastName} photoUrl={metadata?.photoUrl} className="admin-users-avatar"/>
-    <div className="admin-user-mobile-copy"><strong title={fullName}>{fullName}</strong><span title={`${ROLE_LABEL[user.role]} · ${user.documentNumber}`}>{ROLE_LABEL[user.role]} · {user.documentNumber}</span><small title={user.email}>{user.email}</small><MembershipStatusBadge role={user.role} status={metadata?.membershipStatus} loading={metadataLoading}/></div>
-    <div className="admin-user-mobile-actions"><span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span><Link className="button button-secondary admin-user-mobile-link" aria-label={`Editar usuario ${fullName}`} to={href}>Editar</Link></div>
-  </article>
+  const membershipSuffix = user.role === 'MEMBER' && !metadataLoading && metadata?.membershipStatus
+    ? ` · cuota ${MEMBERSHIP_LABEL[metadata.membershipStatus].toLocaleLowerCase('es-AR')}`
+    : ''
+  const secondaryLabel = `${ROLE_LABEL[user.role]} · ${user.documentNumber}${membershipSuffix}`
+  return <Link className="admin-user-mobile-card admin-user-mobile-link" aria-label={`Editar usuario ${fullName}`} to={href}>
+    <UserAvatar firstName={user.firstName} lastName={user.lastName} className="admin-users-avatar"/>
+    <div className="admin-user-mobile-copy"><strong title={fullName}>{fullName}</strong><span title={secondaryLabel}>{secondaryLabel}</span></div>
+    <span className={`badge admin-user-mobile-account-status ${user.status === 'ACTIVE' ? 'is-active' : 'is-inactive'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span>
+  </Link>
 }
 
 function MembershipStatusBadge({ role, status, loading }: { role: UserRole; status?: MembershipStatus; loading: boolean }) {
