@@ -54,6 +54,24 @@ describe('AdminUsersScreen: flujos de gestión', () => {
     })
   })
 
+  it('abre y cierra el formulario, selecciona roles y conserva autocompletado por tipo', async () => {
+    stubApi([{ path: '/users', handler: () => ({ body: userPage([]) }) }])
+    renderUsers()
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Crear cuenta' }))[0])
+    const dialog = screen.getByRole('dialog', { name: 'Crear cuenta' })
+    expect(within(dialog).getByText('Las cuentas de entrenador y administrador solo se crean desde acá.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Socio' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(dialog).getByLabelText('Correo electrónico')).toHaveAttribute('autocomplete', 'email')
+    expect(within(dialog).getByLabelText('Teléfono')).toHaveAttribute('autocomplete', 'tel')
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Entrenador' }))
+    expect(within(dialog).getByRole('button', { name: 'Entrenador' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(dialog).getByLabelText('Especialidad')).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('dialog', { name: 'Crear cuenta' })).not.toBeInTheDocument()
+  })
+
   it('valida documento y campos obligatorios antes de crear la cuenta', async () => {
     const fetchStub = stubApi([{ path: '/users', handler: () => ({ body: userPage([]) }) }])
     renderUsers()
@@ -117,7 +135,7 @@ describe('AdminUsersScreen: flujos de gestión', () => {
       'Correo electrónico': 'tomas@example.com', Teléfono: '1122334455',
     })) fireEvent.change(within(dialog).getByLabelText(label), { target: { value } })
     fireEvent.change(dialog.querySelector('input[type="password"]')!, { target: { value: 'ClaveSegura123' } })
-    fireEvent.change(within(dialog).getByLabelText('Rol'), { target: { value: 'TRAINER' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Entrenador' }))
     fireEvent.submit(form)
     expect(await screen.findByRole('alert')).toHaveTextContent('Completá los campos obligatorios: Especialidad, Descripción.')
     expect(requestsTo(fetchStub, 'POST', '/users')).toHaveLength(0)

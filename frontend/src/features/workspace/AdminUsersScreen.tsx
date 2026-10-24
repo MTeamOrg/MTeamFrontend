@@ -11,6 +11,11 @@ import { PageHeader } from './PageHeader'
 import { UserAvatar } from './UserAvatar'
 
 const ROLE_LABEL: Record<UserRole, string> = { MEMBER: 'Socio', TRAINER: 'Entrenador', ADMIN: 'Administrador' }
+const ROLE_OPTIONS: ReadonlyArray<{ value: UserRole; label: string; mobileLabel: string }> = [
+  { value: 'MEMBER', label: 'Socio', mobileLabel: 'Socio' },
+  { value: 'TRAINER', label: 'Entrenador', mobileLabel: 'Entrenador' },
+  { value: 'ADMIN', label: 'Administrador', mobileLabel: 'Admin' },
+]
 type UserField = keyof CreateUserInput
 const FIELD_LABELS: Record<string, string> = { firstName: 'Nombre', lastName: 'Apellido', documentNumber: 'Documento', birthDate: 'Fecha de nacimiento', email: 'Correo electrónico', phone: 'Teléfono', password: 'Contraseña temporal', emergencyContactName: 'Contacto de emergencia', emergencyContactPhone: 'Teléfono de emergencia', specialty: 'Especialidad', description: 'Descripción' }
 const BASE_REQUIRED: UserField[] = ['firstName', 'lastName', 'documentNumber', 'birthDate', 'email', 'phone', 'password']
@@ -167,13 +172,40 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       onCreated()
     } catch (value) { setError(describeApiError(value, 'No se pudo crear la cuenta.', FIELD_LABELS)) } finally { setSaving(false) }
   }
-  return <Dialog title="Crear una cuenta" onClose={onClose}><form onSubmit={(event) => void submit(event)}><div className="dialog-fields"><Input label="Nombre" value={form.firstName} maxLength={100} onChange={(value) => change('firstName', value)}/><Input label="Apellido" value={form.lastName} maxLength={100} onChange={(value) => change('lastName', value)}/><Input label="Documento" value={form.documentNumber} maxLength={30} onChange={(value) => change('documentNumber', value)}/><Input label="Fecha de nacimiento" type="date" value={form.birthDate} max={gymDate()} onChange={(value) => change('birthDate', value)}/><Input label="Correo electrónico" type="email" value={form.email} maxLength={255} onChange={(value) => change('email', value)}/><Input label="Teléfono" type="tel" value={form.phone} maxLength={30} onChange={(value) => change('phone', value)}/><Input label="Contraseña temporal" type="password" value={form.password} minLength={8} maxLength={72} hint="Entre 8 y 72 caracteres." onChange={(value) => change('password', value)}/><label className="read-field"><span>Rol</span><select value={form.role} onChange={(event) => change('role', event.target.value)}><option value="MEMBER">Socio</option><option value="TRAINER">Entrenador</option><option value="ADMIN">Administrador</option></select></label>{form.role === 'MEMBER' && <><Input label="Contacto de emergencia" required={false} maxLength={200} value={form.emergencyContactName ?? ''} onChange={(value) => change('emergencyContactName', value)}/><Input label="Teléfono de emergencia" type="tel" required={false} maxLength={30} value={form.emergencyContactPhone ?? ''} onChange={(value) => change('emergencyContactPhone', value)}/></>}{form.role === 'TRAINER' && <><Input label="Especialidad" maxLength={150} value={form.specialty ?? ''} onChange={(value) => change('specialty', value)}/><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)}/></>}</div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div></form></Dialog>
+  return <Dialog title="Crear cuenta" description="Las cuentas de entrenador y administrador solo se crean desde acá." onClose={onClose}>
+    <form className="admin-create-account-form" onSubmit={(event) => void submit(event)}>
+      <div className="admin-create-account-fields">
+        <Input className="admin-create-account-first-name" label="Nombre" value={form.firstName} maxLength={100} onChange={(value) => change('firstName', value)} />
+        <Input className="admin-create-account-last-name" label="Apellido" value={form.lastName} maxLength={100} onChange={(value) => change('lastName', value)} />
+        <Input className="admin-create-account-document" label="Documento" value={form.documentNumber} maxLength={30} onChange={(value) => change('documentNumber', value)} />
+        <Input className="admin-create-account-birth-date" label="Fecha de nacimiento" type="date" value={form.birthDate} max={gymDate()} onChange={(value) => change('birthDate', value)} />
+        <Input className="admin-create-account-email" label="Correo electrónico" type="email" autoComplete="email" value={form.email} maxLength={255} onChange={(value) => change('email', value)} />
+        <Input className="admin-create-account-phone" label="Teléfono" type="tel" autoComplete="tel" value={form.phone} maxLength={30} onChange={(value) => change('phone', value)} />
+      </div>
+
+      <fieldset className="admin-create-account-role">
+        <legend>Rol</legend>
+        <div className="admin-create-account-role-options" role="group" aria-label="Rol">
+          {ROLE_OPTIONS.map((option) => <button key={option.value} type="button" className="admin-create-account-role-option" aria-label={option.label} aria-pressed={form.role === option.value} onClick={() => change('role', option.value)}><span className="admin-create-account-role-label">{option.label}</span><span className="admin-create-account-role-mobile-label">{option.mobileLabel}</span></button>)}
+        </div>
+      </fieldset>
+
+      <Input className="admin-create-account-password" label="Contraseña temporal" type="password" autoComplete="new-password" value={form.password} minLength={8} maxLength={72} hint="Entre 8 y 72 caracteres." onChange={(value) => change('password', value)} />
+      <div className="admin-create-account-notice" role="note"><Icon name="alert" size={18} aria-hidden="true" /><p>La contraseña será temporal y el usuario deberá cambiarla en su primer inicio de sesión.</p></div>
+
+      {form.role === 'MEMBER' && <div className="admin-create-account-extra-fields"><Input label="Contacto de emergencia" required={false} maxLength={200} value={form.emergencyContactName ?? ''} onChange={(value) => change('emergencyContactName', value)} /><Input label="Teléfono de emergencia" type="tel" autoComplete="tel" required={false} maxLength={30} value={form.emergencyContactPhone ?? ''} onChange={(value) => change('emergencyContactPhone', value)} /></div>}
+      {form.role === 'TRAINER' && <div className="admin-create-account-extra-fields"><Input label="Especialidad" maxLength={150} value={form.specialty ?? ''} onChange={(value) => change('specialty', value)} /><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)} /></div>}
+
+      {error && <p className="error-message admin-create-account-error" role="alert">{error}</p>}
+      <div className="dialog-actions admin-create-account-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div>
+    </form>
+  </Dialog>
 }
 
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={title}><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{title}</h2>{children}</section></div>
+function Dialog({ title, description, onClose, children }: { title: string; description: string; onClose: () => void; children: ReactNode }) {
+  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog admin-create-account-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-create-account-title" aria-describedby="admin-create-account-description"><header className="admin-create-account-header"><div><h2 id="admin-create-account-title">{title}</h2><p id="admin-create-account-description">{description}</p></div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" size={20} aria-hidden="true" /></button></header>{children}</section></div>
 }
 
-function Input({ label, value, onChange, type = 'text', required = true, minLength, maxLength, max, hint }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean; minLength?: number; maxLength?: number; max?: string; hint?: string }) {
-  return <label className="read-field"><span>{label}</span><input type={type} required={required} minLength={minLength} maxLength={maxLength} max={max} value={value} onChange={(event) => onChange(event.target.value)}/>{hint && <small className="field-hint">{hint}</small>}</label>
+function Input({ label, value, onChange, type = 'text', required = true, minLength, maxLength, max, hint, autoComplete, className = '' }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean; minLength?: number; maxLength?: number; max?: string; hint?: string; autoComplete?: string; className?: string }) {
+  return <label className={`read-field ${className}`.trim()}><span>{label}</span><span className="admin-create-account-control"><input type={type} required={required} minLength={minLength} maxLength={maxLength} max={max} autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} /></span>{hint && <small className="field-hint">{hint}</small>}</label>
 }

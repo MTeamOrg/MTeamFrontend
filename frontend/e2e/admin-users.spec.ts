@@ -39,7 +39,32 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByRole('link', { name: /Editar usuario Nombre de prueba/ }).filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByText('Vencida', { exact: true }).filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByPlaceholder('Buscar por nombre, documento o correo')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Crear cuenta', exact: true }).filter({ visible: true }).first()).toBeVisible()
+    const createButton = page.getByRole('button', { name: 'Crear cuenta', exact: true }).filter({ visible: true }).first()
+    await expect(createButton).toBeVisible()
+    await createButton.click()
+    const dialog = page.getByRole('dialog', { name: 'Crear cuenta' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText('Las cuentas de entrenador y administrador solo se crean desde acá.')).toBeVisible()
+    await expect(dialog.getByLabel('Nombre')).toBeVisible()
+    await expect(dialog.getByLabel('Fecha de nacimiento')).toBeVisible()
+    await expect(dialog.getByLabel('Correo electrónico')).toHaveAttribute('autocomplete', 'email')
+    await expect(dialog.getByRole('textbox', { name: 'Teléfono', exact: true })).toHaveAttribute('autocomplete', 'tel')
+    await expect(dialog.getByRole('button', { name: 'Socio' })).toHaveAttribute('aria-pressed', 'true')
+    await dialog.getByRole('button', { name: 'Administrador' }).click()
+    await expect(dialog.getByRole('button', { name: 'Administrador' })).toHaveAttribute('aria-pressed', 'true')
+    const dialogBox = await dialog.boundingBox()
+    expect(dialogBox).not.toBeNull()
+    if (width > 700) {
+      expect(dialogBox!.width).toBeLessThanOrEqual(680)
+    } else {
+      expect(dialogBox!.x).toBe(0)
+      expect(dialogBox!.width).toBe(width)
+      expect(dialogBox!.y).toBeGreaterThan(0)
+      expect(dialogBox!.y + dialogBox!.height).toBe(900)
+    }
+    await page.screenshot({ path: `${process.env.TEMP}/admin-create-account-${width}.png`, fullPage: false })
+    await dialog.getByRole('button', { name: 'Cerrar' }).click()
+    await expect(dialog).not.toBeVisible()
     await page.screenshot({ path: `${process.env.TEMP}/admin-users-${width}.png`, fullPage: true })
 
     if (width > 700) {

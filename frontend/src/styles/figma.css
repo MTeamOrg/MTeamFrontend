@@ -877,3 +877,109 @@ body { background: var(--background); color: var(--black); }
   .admin-users-pagination { align-items: flex-start; flex-direction: column; gap: 12px; margin-top: 14px; font-size: 12px; }
   .admin-users-pagination-controls { width: 100%; justify-content: space-between; }
 }
+
+/* Administrator account creation: compact desktop dialog and bottom-sheet mobile form. */
+.admin-create-account-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: 85vh;
+  padding: 0;
+  overflow-y: auto;
+  border-radius: 16px;
+}
+.admin-create-account-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.admin-create-account-header h2 { margin: 0 0 5px; font-size: 20px; line-height: 1.2; }
+.admin-create-account-header p { max-width: 520px; margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
+.admin-create-account-header .dialog-close { position: static; width: 32px; height: 32px; margin: -3px -5px 0 0; color: var(--text-secondary); }
+.admin-create-account-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "first-name last-name"
+    "document birth-date"
+    "email phone"
+    "role role"
+    "password password"
+    "notice notice"
+    "extra extra"
+    "error error"
+    "actions actions";
+  gap: 14px 16px;
+  padding: 20px 24px 22px;
+}
+.admin-create-account-fields { display: contents; }
+.admin-create-account-first-name { grid-area: first-name; }
+.admin-create-account-last-name { grid-area: last-name; }
+.admin-create-account-document { grid-area: document; }
+.admin-create-account-birth-date { grid-area: birth-date; }
+.admin-create-account-email { grid-area: email; }
+.admin-create-account-phone { grid-area: phone; }
+.admin-create-account-form .read-field { min-width: 0; gap: 6px; color: var(--black); font-size: 13px; }
+.admin-create-account-form .read-field > span:first-child,
+.admin-create-account-role legend { color: var(--black); font-size: 13px; font-weight: 500; }
+.admin-create-account-control { display: flex; align-items: center; min-width: 0; min-height: 42px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); }
+.admin-create-account-control input { width: 100%; min-width: 0; height: 40px; padding: 0 12px; border: 0; outline: 0; background: transparent; color: var(--black); font: inherit; font-size: 13px; }
+.admin-create-account-control:focus-within { border-color: var(--pink); box-shadow: 0 0 0 2px var(--pink-tint); }
+.admin-create-account-form .field-hint { margin-top: -2px; color: var(--text-secondary); font-size: 11px; }
+.admin-create-account-role { grid-area: role; min-width: 0; margin: 0; padding: 0; border: 0; }
+.admin-create-account-role legend { margin-bottom: 8px; padding: 0; }
+.admin-create-account-role-options { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-create-account-role-option { min-height: 38px; padding: 0 16px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+.admin-create-account-role-option[aria-pressed="true"] { border-color: var(--pink); background: var(--pink-tint); color: var(--pink); font-weight: 600; }
+.admin-create-account-role-option:focus-visible { outline: 2px solid var(--pink); outline-offset: 2px; }
+.admin-create-account-role-mobile-label { display: none; }
+.admin-create-account-password { grid-area: password; }
+.admin-create-account-notice { grid-area: notice; display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 12px 14px; border-radius: 10px; background: var(--blue-tint); color: var(--blue); }
+.admin-create-account-notice svg { flex: none; margin-top: 1px; }
+.admin-create-account-notice p { margin: 0; font-size: 12px; line-height: 1.45; }
+.admin-create-account-extra-fields { grid-area: extra; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; min-width: 0; }
+.admin-create-account-error { grid-area: error; margin: 0; }
+.admin-create-account-actions { grid-area: actions; display: flex; justify-content: flex-end; gap: 10px; margin: 0; padding: 0; }
+.admin-create-account-actions .button { min-height: 40px; padding: 0 18px; font-size: 13px; }
+
+@media (max-width: 700px) {
+  .admin-create-account-dialog { width: 100%; max-height: 85dvh; border-radius: 16px 16px 0 0; }
+  .admin-create-account-dialog::before { display: block; width: 44px; height: 4px; margin: 12px auto 0; border-radius: 999px; background: var(--input-border); content: ''; }
+  .admin-create-account-header { gap: 10px; padding: 16px 18px 0; border-bottom: 0; }
+  .admin-create-account-header h2 { font-size: 20px; }
+  .admin-create-account-header p { font-size: 12px; line-height: 1.45; }
+  .admin-create-account-header .dialog-close { margin: -4px -5px 0 0; }
+  .admin-create-account-form {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "first-name"
+      "last-name"
+      "document"
+      "email"
+      "role"
+      "birth-date"
+      "phone"
+      "password"
+      "notice"
+      "extra"
+      "error"
+      "actions";
+    gap: 12px;
+    padding: 16px 18px 18px;
+  }
+  .admin-create-account-form .read-field { font-size: 13px; }
+  .admin-create-account-control { min-height: 44px; }
+  .admin-create-account-control input { height: 42px; font-size: 14px; }
+  .admin-create-account-role legend { margin-bottom: 8px; }
+  .admin-create-account-role-options { gap: 8px; }
+  .admin-create-account-role-option { min-height: 34px; padding: 0 14px; font-size: 12px; }
+  .admin-create-account-role-label { display: none; }
+  .admin-create-account-role-mobile-label { display: inline; }
+  .admin-create-account-notice { padding: 12px; }
+  .admin-create-account-notice p { font-size: 12px; }
+  .admin-create-account-extra-fields { grid-template-columns: 1fr; gap: 12px; }
+  .admin-create-account-actions { position: sticky; bottom: 0; z-index: 1; display: flex; padding-top: 10px; background: var(--white); }
+  .admin-create-account-actions .button-secondary { display: none; }
+  .admin-create-account-actions .button-primary { width: 100%; min-height: 44px; }
+}
