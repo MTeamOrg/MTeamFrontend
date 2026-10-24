@@ -1,8 +1,8 @@
-import { useCallback, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { UserRole, UserStatus } from '../authentication/auth-types'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { backendApi, type CreateUserInput, type UserListItem } from '../../service/backend-api'
+import { backendApi, type CreateUserInput, type MembershipStatus, type UserListItem } from '../../service/backend-api'
 import { describeApiError } from '../../service/api-errors'
 import { gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
@@ -15,21 +15,30 @@ type UserField = keyof CreateUserInput
 const FIELD_LABELS: Record<string, string> = { firstName: 'Nombre', lastName: 'Apellido', documentNumber: 'Documento', birthDate: 'Fecha de nacimiento', email: 'Correo electrónico', phone: 'Teléfono', password: 'Contraseña temporal', emergencyContactName: 'Contacto de emergencia', emergencyContactPhone: 'Teléfono de emergencia', specialty: 'Especialidad', description: 'Descripción' }
 const BASE_REQUIRED: UserField[] = ['firstName', 'lastName', 'documentNumber', 'birthDate', 'email', 'phone', 'password']
 const REQUIRED_FIELDS: Record<UserRole, UserField[]> = { MEMBER: BASE_REQUIRED, ADMIN: BASE_REQUIRED, TRAINER: [...BASE_REQUIRED, 'specialty', 'description'] }
+type UserMetadata = { photoUrl: string | null; membershipStatus?: MembershipStatus }
+type UserMetadataMap = Record<string, UserMetadata>
+
 const EMPTY_USER: CreateUserInput = { firstName: '', lastName: '', documentNumber: '', birthDate: '', email: '', phone: '', password: '', role: 'MEMBER' }
+const EMPTY_USERS: UserListItem[] = []
+const EMPTY_METADATA: UserMetadataMap = {}
+const MEMBERSHIP_LABEL: Record<MembershipStatus, string> = { CURRENT: 'Al día', EXPIRING_SOON: 'Próxima a vencer', EXPIRED: 'Vencida' }
+const MEMBERSHIP_BADGE_CLASS: Record<MembershipStatus, string> = { CURRENT: 'badge-info', EXPIRING_SOON: 'badge-purple', EXPIRED: 'badge-pink' }
 
 export function AdminUsersScreen() {
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
   const [role, setRole] = useState<UserRole | ''>(() => (searchParams.get('role') as UserRole | null) ?? '')
   const [status, setStatus] = useState<UserStatus | ''>(() => (searchParams.get('status') as UserStatus | null) ?? '')
-  const [membershipStatus, setMembershipStatus] = useState<'' | 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'>(() => (searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED' | null) ?? '')
-  const [initialPeriod, setInitialPeriod] = useState(() => searchParams.get('initialPeriod') === 'true')
+  const [membershipStatus, setMembershipStatus] = useState<MembershipStatus | ''>(() => (searchParams.get('membershipStatus') as MembershipStatus | null) ?? '')
   const [page, setPage] = useState(() => Number(searchParams.get('page')) || 1)
   const [createOpen, setCreateOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const loader = useCallback(() => backendApi.listUsers({ search: search.trim() || undefined, role: role || undefined, status: status || undefined, membershipStatus: membershipStatus || undefined, initialPeriod: initialPeriod || undefined, page, limit: 20 }), [initialPeriod, membershipStatus, page, role, search, status])
+  const loader = useCallback(() => backendApi.listUsers({ search: search.trim() || undefined, role: role || undefined, status: status || undefined, membershipStatus: membershipStatus || undefined, page, limit: 20 }), [membershipStatus, page, role, search, status])
   const { data, loading, error, reload } = useApiResource(loader)
+  const users = data?.items ?? EMPTY_USERS
+  const { metadata, loading: metadataLoading } = useUserMetadata(users)
   const resetPage = (action: () => void) => { setPage(1); action() }
+  const usersQuery = buildUsersQuery({ search, role, status, membershipStatus, page })
 
   return <div className="app-page admin-users-screen">
     <PageHeader title="Usuarios" description="Socios, entrenadores y administradores en un solo listado. Filtrá por rol para administrarlos."/>
@@ -42,7 +51,6 @@ export function AdminUsersScreen() {
           <select aria-label="Filtrar por rol" value={role} onChange={(event) => resetPage(() => setRole(event.target.value as UserRole | ''))}><option value="">Rol: todos</option><option value="MEMBER">Socios</option><option value="TRAINER">Entrenadores</option><option value="ADMIN">Administradores</option></select>
           <select aria-label="Filtrar por estado" value={status} onChange={(event) => resetPage(() => setStatus(event.target.value as UserStatus | ''))}><option value="">Estado: todos</option><option value="ACTIVE">Activas</option><option value="INACTIVE">Desactivadas</option></select>
           <select aria-label="Filtrar por estado de cuota" value={membershipStatus} onChange={(event) => resetPage(() => setMembershipStatus(event.target.value as typeof membershipStatus))}><option value="">Cuota: todas</option><option value="CURRENT">Al día</option><option value="EXPIRING_SOON">Próximas a vencer</option><option value="EXPIRED">Vencidas</option></select>
-          <label className="checkbox"><input type="checkbox" checked={initialPeriod} onChange={(event) => resetPage(() => setInitialPeriod(event.target.checked))}/>Período inicial de 20 días</label>
         </div>
         <button type="button" className="button button-primary admin-users-desktop-create" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20}/>Crear cuenta</button>
       </div>
@@ -52,10 +60,10 @@ export function AdminUsersScreen() {
             <table className="data-table admin-users-table">
               <colgroup><col className="admin-users-column-user"/><col className="admin-users-column-document"/><col className="admin-users-column-email"/><col className="admin-users-column-role"/><col className="admin-users-column-membership"/><col className="admin-users-column-status"/><col className="admin-users-column-action"/></colgroup>
               <thead><tr><th scope="col">Usuario</th><th scope="col">Documento</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Cuota</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
-              <tbody>{data.items.map((user) => <AdminUserTableRow key={user.id} user={user} href={`/admin/usuarios/${user.id}${buildUsersQuery({ search, role, status, membershipStatus, initialPeriod, page })}`}/>)}</tbody>
+              <tbody>{users.map((user) => <AdminUserTableRow key={user.id} user={user} metadata={metadata[user.id]} metadataLoading={metadataLoading} href={`/admin/usuarios/${user.id}${usersQuery}`}/>)}</tbody>
             </table>
           </div>
-          <div className="admin-users-mobile-list">{data.items.map((user) => <AdminUserMobileCard key={user.id} user={user} href={`/admin/usuarios/${user.id}${buildUsersQuery({ search, role, status, membershipStatus, initialPeriod, page })}`}/>)}</div>
+          <div className="admin-users-mobile-list">{users.map((user) => <AdminUserMobileCard key={user.id} user={user} metadata={metadata[user.id]} metadataLoading={metadataLoading} href={`/admin/usuarios/${user.id}${usersQuery}`}/>)}</div>
         </div>
         <Pagination page={page} limit={data.limit} total={data.total} setPage={setPage}/>
       </>}
@@ -64,39 +72,73 @@ export function AdminUsersScreen() {
   </div>
 }
 
-function AdminUserTableRow({ user, href }: { user: UserListItem; href: string }) {
+function useUserMetadata(users: UserListItem[]) {
+  const [state, setState] = useState<{ users: UserListItem[] | null; metadata: UserMetadataMap }>({ users: null, metadata: EMPTY_METADATA })
+
+  useEffect(() => {
+    let isActive = true
+    if (!users.length) return () => { isActive = false }
+
+    void Promise.all(users.map(async (user) => {
+      const [detailResult, membershipResult] = await Promise.allSettled([
+        backendApi.getUser(user.id),
+        user.role === 'MEMBER'
+          ? backendApi.listMembers({ search: user.documentNumber, page: 1, limit: 1 })
+          : Promise.resolve(null),
+      ])
+      const detail = detailResult.status === 'fulfilled' ? detailResult.value : null
+      const member = membershipResult.status === 'fulfilled'
+        ? membershipResult.value?.items.find((item) => item.id === user.id)
+        : undefined
+      return [user.id, { photoUrl: detail?.photoUrl ?? null, membershipStatus: member?.membershipStatus }] as const
+    })).then((entries) => {
+      if (isActive) setState({ users, metadata: Object.fromEntries(entries) })
+    })
+
+    return () => { isActive = false }
+  }, [users])
+
+  return {
+    metadata: state.users === users ? state.metadata : EMPTY_METADATA,
+    loading: users.length > 0 && state.users !== users,
+  }
+}
+
+function AdminUserTableRow({ user, metadata, metadataLoading, href }: { user: UserListItem; metadata?: UserMetadata; metadataLoading: boolean; href: string }) {
   const fullName = `${user.firstName} ${user.lastName}`
   return <tr>
-    <td><div className="admin-user-identity"><UserAvatar firstName={user.firstName} lastName={user.lastName} className="admin-users-avatar"/><span className="admin-users-cell-text" title={fullName} aria-label={fullName}>{fullName}</span></div></td>
+    <td><div className="admin-user-identity"><UserAvatar firstName={user.firstName} lastName={user.lastName} photoUrl={metadata?.photoUrl} className="admin-users-avatar"/><span className="admin-users-cell-text" title={fullName} aria-label={fullName}>{fullName}</span></div></td>
     <td><span className="admin-users-cell-text" title={user.documentNumber} aria-label={user.documentNumber}>{user.documentNumber}</span></td>
     <td><span className="admin-users-cell-text" title={user.email} aria-label={user.email}>{user.email}</span></td>
     <td><span className="admin-users-cell-text" title={ROLE_LABEL[user.role]} aria-label={ROLE_LABEL[user.role]}>{ROLE_LABEL[user.role]}</span></td>
-    <td><MembershipStatusBadge role={user.role}/></td>
+    <td><MembershipStatusBadge role={user.role} status={metadata?.membershipStatus} loading={metadataLoading}/></td>
     <td><span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span></td>
     <td className="admin-users-action-cell"><Link className="button button-secondary admin-user-detail-link" aria-label={`Editar usuario ${fullName}`} title={`Editar usuario ${fullName}`} to={href}>Editar</Link></td>
   </tr>
 }
 
-function AdminUserMobileCard({ user, href }: { user: UserListItem; href: string }) {
+function AdminUserMobileCard({ user, metadata, metadataLoading, href }: { user: UserListItem; metadata?: UserMetadata; metadataLoading: boolean; href: string }) {
   const fullName = `${user.firstName} ${user.lastName}`
   return <article className="admin-user-mobile-card">
-    <UserAvatar firstName={user.firstName} lastName={user.lastName} className="admin-users-avatar"/>
-    <div className="admin-user-mobile-copy"><strong title={fullName}>{fullName}</strong><span title={`${ROLE_LABEL[user.role]} · ${user.documentNumber}`}>{ROLE_LABEL[user.role]} · {user.documentNumber}</span><small title={user.email}>{user.email}</small><MembershipStatusBadge role={user.role}/></div>
+    <UserAvatar firstName={user.firstName} lastName={user.lastName} photoUrl={metadata?.photoUrl} className="admin-users-avatar"/>
+    <div className="admin-user-mobile-copy"><strong title={fullName}>{fullName}</strong><span title={`${ROLE_LABEL[user.role]} · ${user.documentNumber}`}>{ROLE_LABEL[user.role]} · {user.documentNumber}</span><small title={user.email}>{user.email}</small><MembershipStatusBadge role={user.role} status={metadata?.membershipStatus} loading={metadataLoading}/></div>
     <div className="admin-user-mobile-actions"><span className={`badge ${user.status === 'ACTIVE' ? 'badge-info' : 'badge-disabled'}`}>{user.status === 'ACTIVE' ? 'Activa' : 'Desactivada'}</span><Link className="button button-secondary admin-user-mobile-link" aria-label={`Editar usuario ${fullName}`} to={href}>Editar</Link></div>
   </article>
 }
 
-function MembershipStatusBadge({ role }: { role: UserRole }) {
-  return <span className="admin-users-membership-empty" aria-label={role === 'MEMBER' ? 'Estado de cuota no informado' : 'Cuota no corresponde'}>—</span>
+function MembershipStatusBadge({ role, status, loading }: { role: UserRole; status?: MembershipStatus; loading: boolean }) {
+  if (role !== 'MEMBER') return <span className="admin-users-membership-empty" aria-label="Cuota no corresponde">—</span>
+  if (loading) return <span className="admin-users-membership-pending" aria-label="Cargando estado de cuota">Cargando…</span>
+  if (!status) return <span className="admin-users-membership-empty" aria-label="Estado de cuota no disponible">No disponible</span>
+  return <span className={`badge ${MEMBERSHIP_BADGE_CLASS[status]}`} aria-label={`Estado de cuota: ${MEMBERSHIP_LABEL[status]}`}>{MEMBERSHIP_LABEL[status]}</span>
 }
 
-function buildUsersQuery({ search, role, status, membershipStatus, initialPeriod, page }: { search: string; role: UserRole | ''; status: UserStatus | ''; membershipStatus: '' | 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'; initialPeriod: boolean; page: number }) {
+function buildUsersQuery({ search, role, status, membershipStatus, page }: { search: string; role: UserRole | ''; status: UserStatus | ''; membershipStatus: MembershipStatus | ''; page: number }) {
   const params = new URLSearchParams()
   if (search.trim()) params.set('search', search.trim())
   if (role) params.set('role', role)
   if (status) params.set('status', status)
   if (membershipStatus) params.set('membershipStatus', membershipStatus)
-  if (initialPeriod) params.set('initialPeriod', 'true')
   if (page > 1) params.set('page', String(page))
   const query = params.toString()
   return query ? `?${query}` : ''

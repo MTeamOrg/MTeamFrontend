@@ -25,6 +25,7 @@ for (const width of [1440, 390, 320]) {
       const body = path === '/auth/me' ? admin
         : path === '/users' && request.method() === 'GET' ? { items: users, page: 1, limit: 20, total: users.length }
           : path === '/users' && request.method() === 'POST' ? { ...userDetail(users[0]), id: 'created-fixture' }
+        : path === '/members' ? { items: [{ id: 'member-fixture', membershipStatus: 'EXPIRED' }], page: 1, limit: 1, total: 1 }
         : path.endsWith('/audit-logs') ? { items: [], page: 1, limit: 10, total: 0 }
           : path.startsWith('/users/') && id ? userDetail(users.find((user) => user.id === id) ?? users[0])
               : path === '/access-attempts' ? { items: [], page: 1, limit: 1, total: 0 }
@@ -36,7 +37,7 @@ for (const width of [1440, 390, 320]) {
     await expect(page).toHaveURL(/\/admin\/usuarios$/)
     await expect(page.getByRole('heading', { name: 'Usuarios', level: 1 }).filter({ visible: true })).toBeVisible()
     await expect(page.getByRole('link', { name: /Editar usuario Nombre de prueba/ }).filter({ visible: true }).first()).toBeVisible()
-    await expect(page.getByLabel('Estado de cuota no informado').filter({ visible: true }).first()).toBeVisible()
+    await expect(page.getByText('Vencida', { exact: true }).filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByPlaceholder('Buscar por nombre, documento o correo')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Crear cuenta', exact: true }).filter({ visible: true }).first()).toBeVisible()
     await page.screenshot({ path: `${process.env.TEMP}/admin-users-${width}.png`, fullPage: true })

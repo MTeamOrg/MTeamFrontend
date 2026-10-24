@@ -396,7 +396,6 @@ export const backendApi = {
     role?: UserRole
     status?: UserStatus
     membershipStatus?: MembershipStatus
-    initialPeriod?: boolean
     page?: number
     limit?: number
   }) => apiRequest<Page<UserListItem>>(`/users${queryString(filters)}`),
