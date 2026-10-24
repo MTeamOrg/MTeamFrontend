@@ -22,12 +22,18 @@ export function ChangePasswordPage({ optional = false }: { optional?: boolean })
     }
     setError('')
     setIsSubmitting(true)
+    let passwordChanged = false
     try {
       await changePassword({ currentPassword, newPassword })
+      passwordChanged = true
       const roleHome = session?.user.role === 'ADMIN' ? '/admin' : session?.user.role === 'TRAINER' ? '/entrenador' : '/socio'
-      navigate(roleHome, { replace: true })
+      await navigate(roleHome, { replace: true })
     } catch (caughtError) {
-      setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible cambiar la contraseña.')
+      setError(passwordChanged
+        ? 'La contraseña se cambió, pero no fue posible abrir el panel.'
+        : caughtError instanceof ApiError
+          ? caughtError.message
+          : 'No fue posible cambiar la contraseña.')
     } finally {
       setIsSubmitting(false)
     }
