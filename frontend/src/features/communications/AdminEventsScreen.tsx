@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState, type FormEvent, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type RefObject } from 'react'
 import { backendApi, type Event, type EventStatus } from '../../service/backend-api'
 import { formatDateTime, localDateTimeToGymOffset } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
@@ -69,6 +69,16 @@ export function AdminEventsScreen() {
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
   const titleInput = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!isFilterOpen) return
+    function closeFilters(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setIsFilterOpen(false)
+      filterButton.current?.focus()
+    }
+    document.addEventListener('keydown', closeFilters)
+    return () => document.removeEventListener('keydown', closeFilters)
+  }, [isFilterOpen])
   const loader = useCallback(async () => {
     const filters = { ...(search.trim() ? { search: search.trim() } : {}), ...(status ? { status } : {}) }
     if (!location) return backendApi.listEvents({ ...filters, page, limit: PAGE_SIZE })
@@ -180,7 +190,7 @@ export function AdminEventsScreen() {
     {actionError && <p role="alert" className="error-message">{actionError}</p>}
     {notice && <p role="status" className="success-message">{notice}</p>}
     <section className="admin-events-list" aria-label="Eventos">
-      <div className="admin-events-toolbar" onKeyDown={(event) => { if (event.key === 'Escape') { setIsFilterOpen(false); filterButton.current?.focus() } }}>
+      <div className="admin-events-toolbar">
         <label className="admin-events-search"><Icon name="search" size={19}/><span className="visually-hidden">Buscar evento</span><input aria-label="Buscar evento" type="search" maxLength={100} placeholder="Buscar evento" value={search} onChange={(event) => updateFilter(() => setSearch(event.target.value))}/></label>
         <button ref={filterButton} type="button" className="admin-events-filter-button" aria-label="Filtrar eventos" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
         {(!isMobile || isFilterOpen) && filterFields}

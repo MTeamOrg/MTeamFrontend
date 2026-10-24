@@ -200,6 +200,11 @@ describe('EventsScreen', () => {
     expect(screen.queryByLabelText('Filtrar por sede')).not.toBeInTheDocument()
     fireEvent.click(filterButton)
     expect(screen.getByLabelText('Filtrar por sede')).toBeInTheDocument()
+    fireEvent.keyDown(screen.getByLabelText('Filtrar por sede'), { key: 'Escape' })
+    expect(screen.queryByLabelText('Filtrar por sede')).not.toBeInTheDocument()
+    expect(filterButton).toHaveFocus()
+    fireEvent.click(filterButton)
+    expect(screen.getByLabelText('Filtrar por sede')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Buscar evento'), { target: { value: 'Otra' } })
   })
 

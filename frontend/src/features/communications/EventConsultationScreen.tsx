@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { backendApi, type Event, type EventDisplayStatus } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
@@ -36,6 +36,16 @@ export function EventConsultationScreen() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!isFilterOpen) return
+    function closeFilters(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setIsFilterOpen(false)
+      filterButton.current?.focus()
+    }
+    document.addEventListener('keydown', closeFilters)
+    return () => document.removeEventListener('keydown', closeFilters)
+  }, [isFilterOpen])
   const loader = useCallback(() => loadEvents(search), [search])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
   const events = data?.filter((event) => event.displayStatus === status) ?? []
@@ -57,9 +67,9 @@ export function EventConsultationScreen() {
     <div className="event-search-toolbar">
       <label className="event-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar evento</span><input type="search" maxLength={100} placeholder="Buscar evento" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
       <button ref={filterButton} type="button" className="event-filter-button" aria-label={`Filtrar eventos: ${STATUS_OPTIONS.find((option) => option.value === status)?.label}`} aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={20}/></button>
-      {isFilterOpen && <fieldset id={filterId} className="event-filter-panel" onKeyDown={(event) => { if (event.key === 'Escape') { setIsFilterOpen(false); filterButton.current?.focus() } }}>
+      {isFilterOpen && <fieldset id={filterId} className="event-filter-panel">
         <legend>Estado de los eventos</legend>
-        {STATUS_OPTIONS.map((option) => <label key={option.value}><input autoFocus={status === option.value} type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}
+        {STATUS_OPTIONS.map((option) => <label key={option.value}><input type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}
       </fieldset>}
     </div>
     {isLoading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !events.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>

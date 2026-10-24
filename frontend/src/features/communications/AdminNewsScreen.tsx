@@ -30,6 +30,16 @@ export function AdminNewsScreen() {
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
   const formTitle = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!isFilterOpen) return
+    function closeFilters(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setIsFilterOpen(false)
+      filterButton.current?.focus()
+    }
+    document.addEventListener('keydown', closeFilters)
+    return () => document.removeEventListener('keydown', closeFilters)
+  }, [isFilterOpen])
   const loader = useCallback(() => backendApi.listNewsPosts({ page, limit: 12, ...(search.trim() ? { search: search.trim() } : {}), ...(audience ? { audience } : {}), ...(status ? { status } : {}) }), [page, search, audience, status])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
 
@@ -107,7 +117,7 @@ export function AdminNewsScreen() {
     {actionError && <p role="alert" className="error-message">{actionError}</p>}
     {notice && <p role="status" className="success-message">{notice}</p>}
     <div className="admin-news-layout"><section className="admin-news-list" aria-label="Publicaciones">
-      <div className="admin-news-toolbar" onKeyDown={(event) => { if (event.key === 'Escape') { setIsFilterOpen(false); filterButton.current?.focus() } }}>
+      <div className="admin-news-toolbar">
         <label className="admin-news-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar novedad</span><input type="search" maxLength={100} placeholder="Buscar novedad" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
         <button ref={filterButton} type="button" className="admin-news-filter-button" aria-label="Filtrar novedades" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
         {(!isMobile || isFilterOpen) && <div id={filterId} className="admin-news-filters">

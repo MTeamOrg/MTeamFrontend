@@ -59,6 +59,7 @@ describe('AdminUsersScreen: flujos de gestión', () => {
     renderUsers()
     fireEvent.click((await screen.findAllByRole('button', { name: 'Crear cuenta' }))[0])
     const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('button', { name: 'Crear cuenta' })).toHaveAttribute('type', 'submit')
     const form = dialog.querySelector('form')!
     fireEvent.change(within(dialog).getByLabelText('Documento'), { target: { value: 'ABC' } })
     fireEvent.change(within(dialog).getByLabelText('Nombre'), { target: { value: 'Ana' } })
