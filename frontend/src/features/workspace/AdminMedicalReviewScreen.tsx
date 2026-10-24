@@ -2,10 +2,10 @@ import { useCallback, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type MedicalCertificateStatus } from '../../service/backend-api'
-import { formatDate, formatDateTime } from '../../service/date-time'
+import { formatDateTime } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
-import { MedicalCertificateFileButton } from './MedicalCertificateFileButton'
+import { MedicalCertificatePreview } from './MedicalCertificatePreview'
 import { PageHeader } from './PageHeader'
 
 const STATUS_LABEL: Record<MedicalCertificateStatus, string> = {
@@ -22,6 +22,18 @@ const STATUS_CLASS: Record<MedicalCertificateStatus, string> = {
 
 function membershipLabel(status: 'ACTIVE' | 'EXPIRED') {
   return status === 'ACTIVE' ? 'Activa' : 'Vencida'
+}
+
+function membershipBadgeClass(status: 'ACTIVE' | 'EXPIRED' | undefined) {
+  return status === 'ACTIVE' ? 'badge-purple' : status === 'EXPIRED' ? 'badge-pink' : 'badge-disabled'
+}
+
+function accountLabel(status: 'ACTIVE' | 'INACTIVE' | undefined) {
+  return status === 'ACTIVE' ? 'Activa' : status === 'INACTIVE' ? 'Inactiva' : 'Sin datos disponibles'
+}
+
+function accountBadgeClass(status: 'ACTIVE' | 'INACTIVE' | undefined) {
+  return status === 'INACTIVE' ? 'badge-pink' : 'badge-disabled'
 }
 
 export function AdminMedicalReviewScreen({ id }: { id: string }) {
@@ -81,9 +93,11 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
 
   const memberName = `${data.member.firstName} ${data.member.lastName}`
   const canReview = data.status === 'PENDING'
+  const title = canReview ? 'Revisar apto médico' : 'Ver apto médico'
+  const description = `${memberName} · DNI ${data.member.documentNumber} · cargado el ${formatDateTime(data.uploadedAt)}`
   return <div className="app-page medical-review-screen">
     <div className="medical-review-desktop-header">
-      <PageHeader title="Revisar apto médico" description="Verificá la documentación del socio antes de aprobarla."/>
+      <PageHeader title={title} description={description}/>
       <Link className="button button-secondary" to="/admin/aptos"><Icon name="back" size={18}/>Volver a aptos</Link>
     </div>
     {actionMessage && <p className="success-message" role="status">{actionMessage}</p>}
@@ -96,31 +110,35 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
           {data.reviewedAt && <p>Revisado el {formatDateTime(data.reviewedAt)}{data.reviewedBy ? ` por ${data.reviewedBy.firstName} ${data.reviewedBy.lastName}` : ''}</p>}
           <span className={`badge ${STATUS_CLASS[data.status]}`}>{STATUS_LABEL[data.status]}</span>
         </section>
-        <section className="surface-card medical-preview-card" aria-label="Vista previa del certificado">
-          <div className="medical-preview-canvas">
-            <Icon name="file" size={48}/>
-            <span>Documento de apto médico</span>
-            <MedicalCertificateFileButton id={data.id}/>
-          </div>
-        </section>
+        <MedicalCertificatePreview id={data.id}/>
       </div>
       <aside className="medical-review-side">
         <section className="surface-card medical-situation-card">
           <h2>Situación del socio</h2>
           <dl>
-            <div><dt>Cuota</dt><dd>{member.loading ? 'Cargando…' : member.data?.membership ? membershipLabel(member.data.membership.status) : 'Sin datos disponibles'}</dd></div>
-            <div><dt>Período inicial</dt><dd>Sin datos disponibles</dd></div>
-            <div><dt>Vencimiento</dt><dd>{member.data?.membership?.expiresAt ? formatDate(member.data.membership.expiresAt) : 'Sin datos disponibles'}</dd></div>
+            <div><dt>Cuota</dt><dd><span className={`badge medical-situation-badge ${membershipBadgeClass(member.data?.membership?.status)}`}>{member.loading ? 'Cargando…' : member.data?.membership ? membershipLabel(member.data.membership.status) : 'Sin datos disponibles'}</span></dd></div>
+            <div><dt>Período inicial</dt><dd><span className="badge medical-situation-badge badge-disabled">No disponible</span></dd></div>
+            {member.data && <div><dt>Cuenta</dt><dd><span className={`badge medical-situation-badge ${accountBadgeClass(member.data.status)}`}>{accountLabel(member.data.status)}</span></dd></div>}
           </dl>
+          <p className="medical-situation-help">Pasados los 20 días vas a necesitar un apto aprobado para poder ingresar.</p>
         </section>
-        {canReview && <button type="button" className="button button-primary medical-approve-button" disabled={submitting} onClick={() => void approve()}><Icon name="check" size={20}/>{submitting ? 'Guardando…' : 'Aprobar apto médico'}</button>}
-        <section className="surface-card medical-reject-card">
-          <h2>Rechazar</h2>
-          {canReview ? <form onSubmit={(event) => void reject(event)} noValidate>
+        {canReview ? <section className="surface-card medical-decision-card">
+          <h2>Decisión</h2>
+          <button type="button" className="button button-primary medical-approve-button" disabled={submitting} onClick={() => void approve()}><Icon name="check" size={20}/>{submitting ? 'Guardando…' : 'Aprobar apto médico'}</button>
+          <p className="medical-decision-help">Una vez aprobado, el apto no vence.</p>
+          <div className="medical-decision-divider"/>
+          <h3>Rechazar</h3>
+          <form onSubmit={(event) => void reject(event)} noValidate>
             <label className="medical-comment-field"><span className="sr-only">Observación para el socio</span><textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="Observación para el socio (obligatoria)…" required maxLength={1000} aria-label="Observación para el socio"/></label>
             <button type="submit" className="button button-danger" disabled={submitting}><Icon name="close" size={20}/>{submitting ? 'Guardando…' : 'Rechazar apto médico'}</button>
-          </form> : data.reviewComment && <p className="medical-review-comment">“{data.reviewComment}”</p>}
-        </section>
+          </form>
+        </section> : <section className="surface-card medical-decision-card medical-read-only-card">
+          <h2>Resultado</h2>
+          <span className={`badge ${STATUS_CLASS[data.status]}`}>{STATUS_LABEL[data.status]}</span>
+          {data.reviewComment && <p className="medical-review-comment">Observación: “{data.reviewComment}”</p>}
+          {data.reviewedAt && <p className="medical-review-comment">Revisado el {formatDateTime(data.reviewedAt)}{data.reviewedBy ? ` por ${data.reviewedBy.firstName} ${data.reviewedBy.lastName}` : ''}.</p>}
+          {!data.reviewComment && !data.reviewedAt && !data.reviewedBy && <p className="medical-review-comment">La API no informó datos adicionales de la decisión.</p>}
+        </section>}
       </aside>
     </div>
   </div>

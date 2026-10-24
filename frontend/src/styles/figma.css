@@ -697,3 +697,47 @@ body { background: var(--background); color: var(--black); }
   .desktop-only { display: none; }
   .mobile-only { display: inline; }
 }
+
+/* Admin medical certificates — desktop review board. Mobile rules stay in the existing responsive block. */
+@media (min-width: 701px) {
+  .medical-admin-screen > .page-header p { max-width: 900px; }
+  .medical-admin-stat-grid { gap: 20px; }
+  .medical-admin-metric { min-height: 144px; padding: 20px; gap: 12px; }
+  .medical-admin-metric .status-card-label { text-transform: uppercase; }
+  .medical-admin-screen > .medical-filter-toolbar { width: 100%; margin: 0; gap: 12px; flex-wrap: nowrap; }
+  .medical-admin-screen > .medical-filter-toolbar .search-shell { flex: 1 1 360px; min-width: 280px; height: 48px; }
+  .medical-admin-screen > .medical-filter-toolbar .medical-filter-fields { display: contents; }
+  .medical-admin-screen > .medical-filter-toolbar .medical-filter-fields > select { min-width: 170px; height: 48px; }
+  .medical-admin-screen > .medical-filter-toolbar .medical-upload-period-filter { min-width: 205px; }
+  .medical-admin-screen .medical-list-panel { padding: 0; overflow: hidden; }
+  .medical-admin-screen .medical-list-heading { display: none; }
+  .medical-admin-screen .medical-table-wrap { border: 0; border-radius: 16px; overflow: visible; }
+  .medical-admin-screen .medical-table { min-width: 0; }
+  .medical-admin-screen .medical-table th,
+  .medical-admin-screen .medical-table td { height: 70px; padding: 10px 20px; }
+  .medical-admin-screen .medical-table th { height: 50px; padding-block: 0; text-transform: uppercase; letter-spacing: .5px; }
+  .medical-admin-screen .medical-table th:nth-child(1) { width: 23%; }
+  .medical-admin-screen .medical-table th:nth-child(2) { width: 13%; }
+  .medical-admin-screen .medical-table th:nth-child(3) { width: 19%; }
+  .medical-admin-screen .medical-table th:nth-child(4) { width: 18%; }
+  .medical-admin-screen .medical-table th:nth-child(5) { width: 14%; }
+  .medical-admin-screen .medical-table th:nth-child(6) { width: 13%; }
+  .medical-admin-screen .medical-table td:nth-child(3) { color: var(--text-location); }
+  .medical-admin-screen .medical-table .medical-review-button {
+    min-width: 0; min-height: 40px; height: 40px; padding: 0 16px; font-size: 14px; white-space: nowrap;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 701px) {
+  .medical-admin-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .medical-admin-screen > .medical-filter-toolbar { flex-wrap: wrap; }
+  .medical-admin-screen > .medical-filter-toolbar .search-shell { flex-basis: 100%; }
+  .medical-admin-screen > .medical-filter-toolbar .medical-filter-fields { display: contents; }
+  .medical-admin-screen .medical-table th,
+  .medical-admin-screen .medical-table td { padding-inline: 10px; font-size: 11px; }
+  .medical-admin-screen .medical-table .medical-review-button { font-size: 12px; padding-inline: 12px; }
+}
+
+@media (max-width: 700px) {
+  .medical-admin-metric-desktop-only { display: none; }
+}
