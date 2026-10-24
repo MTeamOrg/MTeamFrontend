@@ -41,7 +41,7 @@ describe('detalle de usuarios del administrador', () => {
     ])
     renderWorkspace('/admin/usuarios?role=MEMBER&status=ACTIVE&page=2')
 
-    fireEvent.click((await screen.findAllByRole('link', { name: 'Ver detalle de Juan Manuel Pérez' }, { timeout: 5000 }))[0])
+    fireEvent.click((await screen.findAllByRole('link', { name: 'Editar usuario Juan Manuel Pérez' }, { timeout: 5000 }))[0])
 
     expect((await screen.findAllByRole('heading', { name: 'Juan Manuel Pérez' })).length).toBeGreaterThan(0)
     expect(screen.getByText('Historial de pagos')).toBeInTheDocument()
@@ -71,15 +71,24 @@ describe('detalle de usuarios del administrador', () => {
 
   it('mantiene la cabecera móvil, la búsqueda completa y el acceso al detalle', async () => {
     setMobileViewport(true)
-    stubApi([{ path: '/access-attempts', handler: () => ({ body: { items: [], total: 0 } }) },{ path: '/users', handler: () => ({ body: { items: [{ id: 'user-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com', role: 'MEMBER', status: 'ACTIVE' }], page: 1, limit: 20, total: 1 } }) }])
+    stubApi([{ path: '/access-attempts', handler: () => ({ body: { items: [], total: 0 } }) },{ path: '/users', handler: () => ({ body: { items: [{ id: 'user-1', firstName: 'Juan Manuel', lastName: 'Pérez', documentNumber: '40123456', email: 'juan@example.com', role: 'MEMBER', status: 'ACTIVE' }], page: 1, limit: 20, total: 1 } }) }, { path: '/users/user-1', handler: () => ({ body: userDetail }) }, { path: '/users/user-1/audit-logs', handler: () => ({ body: { items: [], page: 1, limit: 10, total: 0 } }) }, { path: '/members', handler: () => ({ body: { items: [{ id: 'user-1', membershipStatus: 'CURRENT' }], page: 1, limit: 1, total: 1 } }) }])
     renderWorkspace('/admin/usuarios')
 
     expect((await screen.findAllByRole('heading', { name: 'Usuarios' })).length).toBeGreaterThan(0)
-    expect((await screen.findAllByRole('link', { name: /Ver detalle de Juan Manuel/ })).length).toBeGreaterThan(0)
+    expect((await screen.findAllByRole('link', { name: /Editar usuario Juan Manuel/ })).length).toBeGreaterThan(0)
     expect(document.querySelector('.admin-users-mobile-create')).toBeInTheDocument()
     expect(document.querySelector('.admin-users-toolbar .search-shell input')).toBeInTheDocument()
     expect(document.querySelector('.admin-users-filter-toggle')).toBeInTheDocument()
-    expect(document.querySelector('.admin-user-mobile-link[href*="/admin/usuarios/user-1"]')).toBeInTheDocument()
+    const card = document.querySelector('.admin-user-mobile-card')!
+    expect(card).toHaveAttribute('href', '/admin/usuarios/user-1')
+    expect(card).toHaveTextContent('Socio · 40123456')
+    await waitFor(() => expect(card).toHaveTextContent('cuota al día'))
+    expect(card).not.toHaveTextContent('juan@example.com')
+    expect(card.querySelector('img')).not.toBeInTheDocument()
+    expect(card.querySelector('.admin-user-mobile-link')).toBeNull()
+
+    fireEvent.click(card)
+    expect(await screen.findByText('Historial de pagos')).toBeInTheDocument()
   })
 
   it('mantiene estados de error del detalle y permite reintentar', async () => {
