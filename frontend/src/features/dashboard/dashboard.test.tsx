@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser, type ApiRoute } from '../../test/test-utils'
-import { backendApi } from '../../service/backend-api'
 import { AdminDashboardScreen } from './AdminDashboardScreen'
 import { MemberDashboardScreen } from './MemberDashboardScreen'
 import { TrainerDashboardScreen } from './TrainerDashboardScreen'
@@ -47,7 +46,6 @@ describe('panel administrativo', () => {
   afterEach(() => {
     cleanup()
     vi.useRealTimers()
-    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
@@ -135,7 +133,7 @@ describe('panel administrativo', () => {
     expect(within(access).getAllByText('Permitido').length).toBeGreaterThan(0)
     const period = screen.getByRole('heading', { name: 'Período inicial de 20 días' }).closest('section')!
     expect(within(period).getByRole('status')).toHaveTextContent('5 socios')
-    expect(within(period).getByRole('link', { name: 'Ver socios en período inicial' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER')
+    expect(within(period).getByRole('link', { name: 'Ver socios en período inicial' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&initialPeriod=true')
     expect(screen.getByText(/La semana del/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Generar desde la semana anterior' })).toBeInTheDocument()
   })
@@ -160,46 +158,13 @@ describe('panel administrativo', () => {
     expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
   })
 
-  it('muestra la carga del cronograma sin bloquear el resto del panel', () => {
-    vi.spyOn(backendApi, 'getWeeklySchedule').mockImplementation(() => new Promise(() => {}))
-    stubApi(adminRoutes())
-    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    expect(screen.getByRole('heading', { name: 'Cronograma semanal' }).closest('section')).toHaveTextContent('Cargando cronograma…')
-    expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
-  })
-
-  it('permite generar el cronograma desde la semana anterior y muestra el resultado', async () => {
-    const fetchStub = stubApi([
-      { method: 'POST', path: '/weekly-schedules/schedule-current/copies', handler: () => ({ status: 201, body: { id: 'schedule-next', weekStartsOn: '2026-09-14', classes: [] } }) },
-      ...adminRoutes(),
-    ])
-    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    const button = await screen.findByRole('button', { name: 'Generar desde la semana anterior' })
-    fireEvent.click(button)
-    expect(await screen.findByText('Se generó el cronograma de la semana siguiente.')).toBeInTheDocument()
-    expect(requestsTo(fetchStub, 'POST', '/weekly-schedules/schedule-current/copies')[0].body).toEqual({ weekStartsOn: '2026-09-14' })
-    expect(button).not.toBeDisabled()
-  })
-
-  it('muestra el error de la operación de generación sin ocultar el botón de reintento', async () => {
-    stubApi([
-      { method: 'POST', path: '/weekly-schedules/schedule-current/copies', handler: () => ({ status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'No se pudo copiar el cronograma' } }) },
-      ...adminRoutes(),
-    ])
-    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
-    const card = (await screen.findByRole('button', { name: 'Generar desde la semana anterior' })).closest('section')!
-    fireEvent.click(within(card).getByRole('button', { name: 'Generar desde la semana anterior' }))
-    expect(await within(card).findByRole('alert')).toHaveTextContent('No se pudo copiar el cronograma')
-    expect(within(card).getByRole('button', { name: 'Generar desde la semana anterior' })).not.toBeDisabled()
-  })
-
   it('el código del panel no contiene datos simulados', () => {
     for (const source of [adminSource, dataSource]) {
       expect(source).not.toMatch(/mock|fake|sample|Math\.random|setTimeout|Juan|Lucas/i)
     }
   })
 
-  it('mobile MA1: resumen de hoy, métricas 2x2, soporte del panel, acciones, más secciones y últimos accesos', async () => {
+  it('mobile MA1: resumen de hoy, métricas 2x2, acciones, más secciones y últimos accesos', async () => {
     setMobileViewport(true)
     stubApi(adminRoutes())
     renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN', { firstName: 'Carla' }) })
@@ -209,13 +174,7 @@ describe('panel administrativo', () => {
     await screen.findByText('184 socios')
     expect(document.querySelectorAll('.status-grid > .status-card')).toHaveLength(4)
     const order = [...document.querySelectorAll('.dashboard-screen > *')].map((element) => element.querySelector('h2')?.textContent ?? element.className)
-    expect(order).toEqual(['dashboard-header', 'status-grid admin-metrics-grid', 'Acciones frecuentes', 'Período inicial de 20 días', 'Cronograma', 'Más secciones', 'Últimos accesos'])
-    const initialPeriod = screen.getByRole('heading', { name: 'Período inicial de 20 días' }).closest('section')!
-    expect(within(initialPeriod).getByRole('status')).toHaveTextContent('5 socios')
-    expect(within(initialPeriod).getByRole('link', { name: 'Ver socios en período inicial' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER')
-    const scheduleCard = screen.getByRole('heading', { name: 'Cronograma' }).closest('section')!
-    expect(within(scheduleCard).getByText('Sin generar')).toBeInTheDocument()
-    expect(within(scheduleCard).getByRole('button', { name: 'Generar desde la semana anterior' })).toBeInTheDocument()
+    expect(order).toEqual(['dashboard-header', 'status-grid admin-metrics-grid', 'Acciones frecuentes', 'Más secciones', 'Últimos accesos'])
     const more = screen.getByRole('heading', { name: 'Más secciones' }).closest('section')!
     expect(within(more).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/admin/accesos', '/admin/sedes', '/admin/eventos', '/admin/novedades', '/admin/preguntas-frecuentes'])
     expect(within(more).queryByText(/Cerrar sesión/)).not.toBeInTheDocument()
@@ -224,6 +183,7 @@ describe('panel administrativo', () => {
     expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')).toHaveAttribute('href', '/admin/aptos?status=PENDING')
     const access = screen.getByRole('heading', { name: 'Últimos accesos' }).closest('section')!
     expect(within(access).getByText('Juan Manuel Pérez')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Período inicial de 20 días' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Recaudación de los últimos 7 días' })).not.toBeInTheDocument()
   })
 })

@@ -71,8 +71,6 @@ export function AdminDashboardScreen({ onLogout }: { onLogout?: () => void } = {
       <DashboardHeader greeting={greeting} intro={`Resumen de hoy · ${formatNumericDate(gymDate())}`}/>
       {statusSection}
       <QuickActions title="Acciones frecuentes" actions={actions}/>
-      <InitialPeriodCard loading={metrics.loading} error={metrics.error} value={metrics.data?.initialPeriodMembers} retry={() => void metrics.reload()} isMobile/>
-      <ScheduleStatusCard loading={schedule.loading} error={schedule.error} data={schedule.data} retry={() => void schedule.reload()} isMobile/>
       <DashboardCard title="Más secciones">
         <div className="more-sections">{MORE_SECTIONS.map((action) => <ActionButton key={action.label} action={action}/>)}</div>
         {onLogout && <button type="button" className="button button-primary admin-mobile-logout" onClick={onLogout}><Icon name="logout" size={18}/>Cerrar sesión</button>}
@@ -103,9 +101,8 @@ function RevenueCard({ loading, error, data, retry }: { loading: boolean; error:
   return <DashboardCard title="Recaudación de los últimos 7 días" className="revenue-card" action={data && !loading && !error ? <strong className="revenue-total">{formatMoney(data.total)}</strong> : undefined}>{loading ? <LoadingState message="Cargando recaudación…"/> : error || !data ? <ErrorState message={error || 'No se pudo cargar la recaudación.'} retry={retry}/> : <div className="revenue-chart"><div className="revenue-bars" role="list" aria-label="Recaudación diaria">{data.days.map((day, index) => <div key={day.date} className="revenue-bar-slot" role="listitem" aria-label={`${formatNumericDate(day.date)}: ${formatMoney(day.amount)}`}><span className={index === data.days.length - 1 ? 'revenue-bar is-today' : 'revenue-bar'} style={{ height: max > 0 ? `${Math.max((day.amount / max) * 100, 4)}%` : '4%' }}/></div>)}</div><div className="revenue-dates" aria-hidden="true">{data.days.map((day) => <span key={day.date} className="revenue-bar-date">{formatDayMonth(day.date)}</span>)}</div></div>}</DashboardCard>
 }
 
-function InitialPeriodCard({ loading, error, value, retry, isMobile = false }: { loading: boolean; error: string; value: number | undefined; retry: () => void; isMobile?: boolean }) {
-  const memberCount = value ?? 0
-  return <DashboardCard title="Período inicial de 20 días" className={isMobile ? 'admin-mobile-support-card initial-period-card' : 'initial-period-card'}><div className="initial-period-summary" role="status">{loading ? <LoadingState message="Cargando período inicial…"/> : error ? <ErrorState message={error} retry={retry}/> : <><strong>{memberCount} {memberCount === 1 ? 'socio' : 'socios'}</strong><span>Socios que todavía pueden ingresar sin apto aprobado.</span><Link className="text-link" to="/admin/usuarios?role=MEMBER">Ver socios en período inicial</Link></>}</div></DashboardCard>
+function InitialPeriodCard({ loading, error, value, retry }: { loading: boolean; error: string; value: number | undefined; retry: () => void }) {
+  return <DashboardCard title="Período inicial de 20 días"><div className="initial-period-summary" role="status">{loading ? <LoadingState message="Cargando período inicial…"/> : error ? <ErrorState message={error} retry={retry}/> : <><strong>{value ?? 0} socios</strong><span>Socios que todavía pueden ingresar sin apto aprobado.</span><Link className="text-link" to="/admin/usuarios?role=MEMBER&initialPeriod=true">Ver socios en período inicial</Link></>}</div></DashboardCard>
 }
 
 function AccessAttemptsCard({ loading, error, data, retry, isMobile = false }: { loading: boolean; error: string; data: AccessAttempt[]; retry: () => void; isMobile?: boolean }) {
@@ -121,17 +118,15 @@ function AccessAttemptCard({ attempt }: { attempt: AccessAttempt }) {
   return <article className="access-attempt-card"><span className="access-attempt-avatar">{initials}</span><div className="access-attempt-copy"><strong>{name}</strong><small>{ROLE_LABEL[attempt.roleAtAttempt]} · {formatDateTime(attempt.attemptedAt)}</small><span>{attempt.branch?.name ?? 'Sede no disponible'}</span></div><span className={`badge ${attempt.result === 'ALLOWED' ? 'badge-info' : 'badge-primary'}`}>{resultLabel}</span></article>
 }
 
-function ScheduleStatusCard({ loading, error, data, retry, isMobile = false }: { loading: boolean; error: string; data: { current: WeeklySchedule; next: WeeklySchedule; nextWeekStartsOn: string } | null; retry: () => void; isMobile?: boolean }) {
+function ScheduleStatusCard({ loading, error, data, retry }: { loading: boolean; error: string; data: { current: WeeklySchedule; next: WeeklySchedule; nextWeekStartsOn: string } | null; retry: () => void }) {
   const [copying, setCopying] = useState(false)
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
-  const title = isMobile ? 'Cronograma' : 'Cronograma semanal'
-  if (loading) return <DashboardCard title={title} className={isMobile ? 'admin-mobile-support-card schedule-status-card' : 'schedule-status-card'}><LoadingState message="Cargando cronograma…"/></DashboardCard>
-  if (error || !data) return <DashboardCard title={title} className={isMobile ? 'admin-mobile-support-card schedule-status-card' : 'schedule-status-card'}><ErrorState message={error || 'No se pudo cargar el cronograma.'} retry={retry}/></DashboardCard>
+  if (loading) return <DashboardCard title="Cronograma semanal"><LoadingState message="Cargando cronograma…"/></DashboardCard>
+  if (error || !data) return <DashboardCard title="Cronograma semanal"><ErrorState message={error || 'No se pudo cargar el cronograma.'} retry={retry}/></DashboardCard>
   const scheduleData = data
   const nextMissing = scheduleData.next.id === null
-  const statusLabel = nextMissing ? 'Sin generar' : 'Generado'
   async function copySchedule() {
-    if (!scheduleData.current.id || copying) return
+    if (!scheduleData.current.id) return
     setCopying(true)
     setMessage(null)
     try {
@@ -144,5 +139,5 @@ function ScheduleStatusCard({ loading, error, data, retry, isMobile = false }: {
       setCopying(false)
     }
   }
-  return <DashboardCard title={title} className={isMobile ? 'admin-mobile-support-card schedule-status-card' : 'schedule-status-card'} action={isMobile ? <span className={`schedule-status-badge ${nextMissing ? 'is-missing' : 'is-generated'}`}>{statusLabel}</span> : undefined}><div className="schedule-status-summary"><span>La {weekRangeLabel(scheduleData.nextWeekStartsOn).toLowerCase()} {nextMissing ? 'todavía no fue generada.' : 'ya fue generada.'}</span>{nextMissing && scheduleData.current.id && <button type="button" className="button button-purple button-block" onClick={() => void copySchedule()} disabled={copying}>{copying ? 'Generando…' : 'Generar desde la semana anterior'}</button>}{message && <p className={message.tone === 'error' ? 'error-message' : 'success-message'} role={message.tone === 'error' ? 'alert' : 'status'}>{message.text}</p>}</div></DashboardCard>
+  return <DashboardCard title="Cronograma semanal"><div className="schedule-status-summary"><span>La {weekRangeLabel(scheduleData.nextWeekStartsOn).toLowerCase()} {nextMissing ? 'todavía no fue generada.' : 'ya fue generada.'}</span>{nextMissing && scheduleData.current.id && <button type="button" className="button button-purple button-block" onClick={() => void copySchedule()} disabled={copying}>{copying ? 'Generando…' : 'Generar desde la semana anterior'}</button>}{message && <p className={message.tone === 'error' ? 'error-message' : 'success-message'} role={message.tone === 'error' ? 'alert' : 'status'}>{message.text}</p>}</div></DashboardCard>
 }
