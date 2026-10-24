@@ -77,6 +77,17 @@ describe('authStorage', () => {
     expect(authStorage.read()?.user.status).toBe('ACTIVE')
   })
 
+  it('does not persist session updates containing markup in user-controlled fields', () => {
+    const session = authStorage.write(loginResponse, true)
+    const poisonedSession = {
+      ...session,
+      user: { ...session.user, firstName: '<script>alert(1)</script>' },
+    }
+
+    expect(authStorage.update(poisonedSession as typeof session)).toBeNull()
+    expect(authStorage.read()?.user.firstName).toBe('Ana')
+  })
+
   it('clears both browser storages', () => {
     authStorage.write(loginResponse, true)
     authStorage.clear()

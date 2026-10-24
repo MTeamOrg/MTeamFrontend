@@ -22,13 +22,51 @@ function isSafeText(value: unknown, maxLength: number): value is string {
     && !hasControlCharacters(value)
 }
 
+function isSafePersonName(value: unknown): value is string {
+  if (!isSafeText(value, 100)) return false
+  for (const character of value) {
+    if (!/^[\p{L}\p{M} .'-]$/u.test(character)) return false
+  }
+  return true
+}
+
+function hasValidEmailShape(email: string): boolean {
+  const atIndex = email.indexOf('@')
+  if (atIndex <= 0 || atIndex !== email.lastIndexOf('@')) return false
+
+  const localPart = email.slice(0, atIndex)
+  const domain = email.slice(atIndex + 1)
+  const allowedLocalCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.!#$%&'*+-/=?^_`{|}~"
+  if (localPart.length > 64 || localPart.startsWith('.') || localPart.endsWith('.') || localPart.includes('..')) return false
+  for (const character of localPart) {
+    if (!allowedLocalCharacters.includes(character)) return false
+  }
+
+  if (domain.length > 253) return false
+  const labels = domain.split('.')
+  if (labels.length < 2) return false
+  return labels.every(label => {
+    if (label.length === 0 || label.length > 63 || label.startsWith('-') || label.endsWith('-')) return false
+    for (const character of label) {
+      const isAsciiLetterOrDigit = (character >= 'a' && character <= 'z')
+        || (character >= 'A' && character <= 'Z')
+        || (character >= '0' && character <= '9')
+      if (!isAsciiLetterOrDigit && character !== '-') return false
+    }
+    return true
+  })
+}
+
 function isSafePhotoUrl(value: unknown): value is string | null | undefined {
   if (value === undefined || value === null) return true
   if (typeof value !== 'string' || value.length > 2048) return false
 
   try {
     const url = new URL(value)
-    return url.protocol === 'https:' || url.protocol === 'http:'
+    return (url.protocol === 'https:' || url.protocol === 'http:')
+      && url.hostname.length > 0
+      && !url.username
+      && !url.password
   } catch {
     return false
   }
@@ -39,10 +77,11 @@ export function parseAuthUser(value: unknown): AuthUser | null {
 
   const { id, firstName, lastName, email, role, status, isPasswordChangeRequired, photoUrl } = value
   if (!isSafeText(id, 128)
-    || !isSafeText(firstName, 100)
-    || !isSafeText(lastName, 100)
+    || !/^[a-zA-Z0-9_-]+$/.test(id)
+    || !isSafePersonName(firstName)
+    || !isSafePersonName(lastName)
     || !isSafeText(email, 254)
-    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    || !hasValidEmailShape(email)
     || (role !== 'MEMBER' && role !== 'TRAINER' && role !== 'ADMIN')
     || (status !== 'ACTIVE' && status !== 'INACTIVE')
     || typeof isPasswordChangeRequired !== 'boolean'
@@ -63,11 +102,11 @@ export function parseAuthUser(value: unknown): AuthUser | null {
 }
 
 function parseToken(value: unknown): string | null {
-  return typeof value === 'string'
-    && value.length <= MAX_TOKEN_LENGTH
-    && /^[\x21-\x7E]+$/.test(value)
-    ? value
-    : null
+  if (typeof value !== 'string' || value.length === 0 || value.length > MAX_TOKEN_LENGTH) return null
+  for (const character of value) {
+    if (!/^[a-zA-Z0-9._~-]$/.test(character)) return null
+  }
+  return value
 }
 
 export function parseLoginResponse(value: unknown): LoginResponse | null {

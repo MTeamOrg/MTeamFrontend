@@ -34,7 +34,11 @@ describe('auth runtime validation', () => {
       { ...validUser, role: 'SUPER_ADMIN' },
       { ...validUser, status: 'SUSPENDED' },
       { ...validUser, email: 'not-an-email' },
+      { ...validUser, email: 'name@-example.com' },
+      { ...validUser, email: 'name..part@example.com' },
       { ...validUser, firstName: 'Lara\nAdmin' },
+      { ...validUser, firstName: '<script>alert(1)</script>' },
+      { ...validUser, id: 'user-id<script>' },
       { ...validUser, photoUrl: 'javascript:alert(1)' },
       { ...validUser, isPasswordChangeRequired: 'false' },
     ])('rejects malformed or disallowed user data', value => {
@@ -57,6 +61,7 @@ describe('auth runtime validation', () => {
     it.each([
       { ...validLogin, accessToken: '' },
       { ...validLogin, accessToken: 'token with spaces' },
+      { ...validLogin, accessToken: '<script>' },
       { ...validLogin, tokenType: 'Basic' },
       { ...validLogin, expiresIn: 0 },
       { ...validLogin, expiresIn: 1.5 },
