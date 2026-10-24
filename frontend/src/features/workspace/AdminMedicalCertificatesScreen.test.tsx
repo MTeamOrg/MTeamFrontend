@@ -49,6 +49,7 @@ describe('bandeja administrativa de aptos médicos', () => {
     expect(screen.getByRole('link', { name: 'Revisar' })).toHaveClass('button-primary')
     expect(screen.getAllByRole('link', { name: 'Ver' })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: 'Ver' }).every((link) => link.classList.contains('button-secondary'))).toBe(true)
+    expect(screen.getByRole('link', { name: 'Revisar Nora Campos' })).toHaveAttribute('href', '/admin/aptos/cert-1')
     expect(requestsTo(fetchStub, 'GET', '/admin/dashboard/metrics')).toHaveLength(1)
     expect(requestsTo(fetchStub, 'GET', '/medical-certificates')).toHaveLength(2)
   })
@@ -94,6 +95,7 @@ describe('bandeja administrativa de aptos médicos', () => {
     await screen.findAllByText('Nora Campos')
     expect(document.querySelectorAll('.medical-admin-metric')).toHaveLength(4)
     expect(document.querySelectorAll('.medical-admin-metric-desktop-only')).toHaveLength(2)
+    expect(Array.from(document.querySelectorAll('.medical-metric-label-mobile')).map((label) => label.textContent)).toEqual(['Pendientes', 'Aprobados'])
   })
 
   it('muestra el error real de la API cuando la bandeja no carga', async () => {

@@ -100,8 +100,8 @@ export function AdminMedicalCertificatesScreen() {
   return <div className="app-page medical-admin-screen">
     {header}
     <div className="medical-admin-stat-grid">
-      <Metric label="Pendientes de revisión" value={metrics.data?.pending ?? null} unit="aptos" tone="purple" detail="Para revisar"/>
-      <Metric label="Aprobados" value={metrics.data?.approved ?? null} unit="aptos" tone="blue" detail="Sin fecha de vencimiento"/>
+      <Metric label="Pendientes de revisión" mobileLabel="Pendientes" value={metrics.data?.pending ?? null} unit="aptos" tone="purple" detail="Para revisar" mobileDetail="Para revisar"/>
+      <Metric label="Aprobados" mobileLabel="Aprobados" value={metrics.data?.approved ?? null} unit="aptos" tone="blue" detail="Sin fecha de vencimiento" mobileDetail="Sin vencimiento"/>
       <Metric label="Rechazados" value={metrics.data?.rejected ?? null} unit="aptos" tone="pink" detail="Esperando una nueva carga" isMobileHidden/>
       <Metric label="Socios en período inicial" value={metrics.data?.initialPeriodMembers ?? null} unit="socios" tone="purple" detail="Pueden ingresar sin apto" isMobileHidden/>
     </div>
@@ -153,10 +153,12 @@ export function AdminMedicalCertificatesScreen() {
   </div>
 }
 
-function Metric({ label, value, unit, tone, detail, isMobileHidden = false }: { label: string; value: number | null; unit: string; tone: 'purple' | 'blue' | 'pink' | 'black'; detail: string; isMobileHidden?: boolean }) {
+function Metric({ label, mobileLabel, value, unit, tone, detail, mobileDetail, isMobileHidden = false }: { label: string; mobileLabel?: string; value: number | null; unit: string; tone: 'purple' | 'blue' | 'pink' | 'black'; detail: string; mobileDetail?: string; isMobileHidden?: boolean }) {
   return <article className={`status-card medical-admin-metric tone-${tone}${isMobileHidden ? ' medical-admin-metric-desktop-only' : ''}`}>
-    <span className="status-card-label">{label}</span>
+    <span className="status-card-label medical-metric-label-desktop">{label}</span>
+    {mobileLabel && <span className="status-card-label medical-metric-label-mobile">{mobileLabel}</span>}
     <strong className={`status-card-value tone-${tone}`}>{value === null ? '—' : `${value} ${unit}`}</strong>
-    <span className="status-card-sub">{value === null ? 'No disponible' : detail}</span>
+    <span className="status-card-sub medical-metric-detail-desktop">{value === null ? 'No disponible' : detail}</span>
+    {mobileDetail && <span className="status-card-sub medical-metric-detail-mobile">{value === null ? 'No disponible' : mobileDetail}</span>}
   </article>
 }

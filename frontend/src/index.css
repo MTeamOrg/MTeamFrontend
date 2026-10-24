@@ -61,6 +61,7 @@
 .medical-admin-metric.tone-blue .status-card-value{color:var(--blue)}
 .medical-admin-metric.tone-pink .status-card-value{color:var(--pink)}
 .medical-admin-metric.tone-black .status-card-value{color:var(--black)}
+.medical-metric-label-mobile,.medical-metric-detail-mobile{display:none}
 .medical-list-panel{padding:20px;min-width:0}
 .medical-list-heading{margin-bottom:16px}
 .medical-list-heading h2{margin:0 0 7px;font-size:22px}
@@ -146,23 +147,22 @@
   .medical-admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .medical-admin-metric{min-height:84px;gap:6px;padding:14px;border-radius:14px}
   .medical-admin-metric .status-card-label{font-size:10px}.medical-admin-metric .status-card-value{font-size:16px}.medical-admin-metric .status-card-sub{font-size:11px}
-  .medical-list-panel{padding:0;border:0;background:transparent;box-shadow:none}
-  .medical-list-heading{display:none}
-  .medical-filter-toolbar{gap:7px;margin:0 0 14px}
-  .medical-filter-toolbar .search-shell{flex:1;min-width:0;height:42px}
-  .medical-filter-toggle{display:flex}
+  .medical-admin-screen .medical-list-panel{padding:0;border:0;background:transparent;box-shadow:none}
+  .medical-admin-screen .medical-list-heading{display:none}
+  .medical-filter-toolbar{position:relative;display:block;gap:7px;margin:0 0 14px}
+  .medical-filter-toolbar .search-shell{display:flex;width:100%;min-width:0;height:42px;padding-right:50px}
+  .medical-filter-toggle{position:absolute;top:0;right:0;display:flex;width:42px;height:42px;border:0;border-left:1px solid var(--input-border);border-radius:0 8px 8px 0;background:transparent}
   .medical-filter-fields{display:none;width:100%;gap:7px;align-items:center}
-  .medical-filter-fields.is-open{display:flex;flex-wrap:wrap}
+  .medical-filter-fields.is-open{display:grid;margin-top:8px}
   .medical-filter-fields>select{flex:1 1 100%;min-width:0;height:36px;font-size:10px}
-  .medical-filter-fields .medical-date-filter{width:100%;justify-content:space-between}
-  .medical-filter-fields .medical-date-filter input{width:min(70%,220px)}
   .medical-table-wrap{display:none}
   .medical-mobile-list{display:grid;gap:12px}
   .medical-mobile-item{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:68px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--white);box-shadow:var(--card-shadow)}
   .medical-member-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--blue);color:var(--white);font-size:11px;font-weight:600}
   .medical-mobile-item:nth-child(odd) .medical-member-avatar{background:#8c9299}.medical-mobile-item:nth-child(4) .medical-member-avatar{background:var(--purple)}
   .medical-mobile-item>div{display:grid;gap:4px;min-width:0}.medical-mobile-item strong{font-size:12px}.medical-mobile-item small{overflow:hidden;color:var(--text-secondary);font-size:9px;text-overflow:ellipsis;white-space:nowrap}
-  .medical-mobile-item>.badge{font-size:9px}.medical-mobile-item-link{position:absolute;inset:0;opacity:0}
+  .medical-mobile-item>.badge{font-size:9px}.medical-mobile-item-link{position:absolute;inset:0;opacity:0}.medical-mobile-item:focus-within{outline:2px solid var(--pink);outline-offset:2px}
+  .medical-metric-label-desktop,.medical-metric-detail-desktop{display:none}.medical-metric-label-mobile,.medical-metric-detail-mobile{display:inline}
   .medical-review-desktop-header{display:none}
   .medical-review-grid{grid-template-columns:1fr;gap:14px}
   .medical-review-main,.medical-review-side{gap:14px}
