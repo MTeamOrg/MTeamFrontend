@@ -1,13 +1,12 @@
 import type { AuthSession, LoginResponse } from './auth-types'
+import { parseAuthSession, parseLoginResponse } from './auth-validation'
 
 const AUTH_STORAGE_KEY = 'mteam.auth'
 
 function parseSession(value: string | null): AuthSession | null {
   if (!value) return null
   try {
-    const session = JSON.parse(value) as AuthSession
-    if (session.expiresAt <= Date.now()) return null
-    return session
+    return parseAuthSession(JSON.parse(value))
   } catch {
     return null
   }
@@ -22,15 +21,20 @@ export const authStorage = {
     return persistent ?? temporary
   },
   write(response: LoginResponse, remember: boolean): AuthSession {
-    const session = { ...response, expiresAt: Date.now() + response.expiresIn * 1000 }
+    const safeResponse = parseLoginResponse(response)
+    if (!safeResponse) throw new Error('El servidor devolvió una respuesta de autenticación inválida.')
+    const session: AuthSession = { ...safeResponse, expiresAt: Date.now() + safeResponse.expiresIn * 1000 }
     this.clear()
     const storage = remember ? localStorage : sessionStorage
     storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session))
     return session
   },
-  update(session: AuthSession) {
+  update(session: AuthSession): AuthSession | null {
+    const safeSession = parseAuthSession(session)
+    if (!safeSession) return null
     const storage = localStorage.getItem(AUTH_STORAGE_KEY) ? localStorage : sessionStorage
-    storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session))
+    storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession))
+    return safeSession
   },
   clear() {
     localStorage.removeItem(AUTH_STORAGE_KEY)

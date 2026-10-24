@@ -16,8 +16,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!currentSession || currentSession.accessToken !== accessToken) return
     photoRevisionRef.current += 1
     const nextSession = { ...currentSession, user: { ...currentSession.user, photoUrl } }
-    authStorage.update(nextSession)
-    setSession(nextSession)
+    const safeSession = authStorage.update(nextSession)
+    if (safeSession) setSession(safeSession)
   }, [accessToken])
 
   useEffect(() => {
@@ -47,8 +47,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
           photoUrl: photoRevisionRef.current === photoRevision ? identity.photoUrl : currentSession.user.photoUrl,
         },
       }
-      authStorage.update(nextSession)
-      setSession(nextSession)
+      const safeSession = authStorage.update(nextSession)
+      if (safeSession) setSession(safeSession)
     }).catch(() => undefined)
     return () => { active = false }
   }, [accessToken, isPasswordChangeRequired])
@@ -79,8 +79,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         ...session,
         user: { ...session.user, isPasswordChangeRequired: false },
       }
-      authStorage.update(nextSession)
-      setSession(nextSession)
+      const safeSession = authStorage.update(nextSession)
+      if (safeSession) setSession(safeSession)
     },
   }), [session, updateProfilePhoto])
 
