@@ -41,7 +41,7 @@ describe('detalle de usuarios del administrador', () => {
     ])
     renderWorkspace('/admin/usuarios?role=MEMBER&status=ACTIVE&page=2')
 
-    fireEvent.click((await screen.findAllByRole('link', { name: 'Ver detalle de Juan Manuel Pérez' }, { timeout: 5000 }))[0])
+    fireEvent.click((await screen.findAllByRole('link', { name: 'Editar usuario Juan Manuel Pérez' }, { timeout: 5000 }))[0])
 
     expect((await screen.findAllByRole('heading', { name: 'Juan Manuel Pérez' })).length).toBeGreaterThan(0)
     expect(screen.getByText('Historial de pagos')).toBeInTheDocument()
@@ -75,7 +75,7 @@ describe('detalle de usuarios del administrador', () => {
     renderWorkspace('/admin/usuarios')
 
     expect((await screen.findAllByRole('heading', { name: 'Usuarios' })).length).toBeGreaterThan(0)
-    expect((await screen.findAllByRole('link', { name: /Ver detalle de Juan Manuel/ })).length).toBeGreaterThan(0)
+    expect((await screen.findAllByRole('link', { name: /Editar usuario Juan Manuel/ })).length).toBeGreaterThan(0)
     expect(document.querySelector('.admin-users-mobile-create')).toBeInTheDocument()
     expect(document.querySelector('.admin-users-toolbar .search-shell input')).toBeInTheDocument()
     expect(document.querySelector('.admin-users-filter-toggle')).toBeInTheDocument()

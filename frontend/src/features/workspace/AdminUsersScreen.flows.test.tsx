@@ -5,7 +5,7 @@ import { renderWithSession, requestsTo, stubApi, testUser } from '../../test/tes
 import { AdminUsersScreen } from './AdminUsersScreen'
 
 const newUser = { id: 'created-user', firstName: 'Ana', lastName: 'Gómez', documentNumber: '40123456', email: 'ana@example.com', role: 'MEMBER', status: 'ACTIVE' }
-const userPage = (items = [newUser], total = items.length) => ({ items, page: 1, limit: 20, total })
+const userPage = (items: typeof newUser[] = [newUser], total = items.length) => ({ items, page: 1, limit: 20, total })
 
 function renderUsers(route = '/admin/usuarios') {
   return renderWithSession(<Routes><Route path="/admin/usuarios/*" element={<AdminUsersScreen/>}/></Routes>, { user: testUser('ADMIN'), route })
@@ -129,5 +129,35 @@ describe('AdminUsersScreen: flujos de gestión', () => {
     expect(requestsTo(fetchStub, 'POST', '/users')[0]?.body).toMatchObject({
       role: 'TRAINER', specialty: 'Musculación', description: 'Entrenador de sala',
     })
+  })
+
+  it('mantiene alineadas las columnas, reserva la acción y muestra cuota solo cuando llega en la respuesta', async () => {
+    stubApi([{ path: '/users', handler: () => ({ body: userPage([
+      { id: 'long-user', firstName: 'Nombre de prueba extraordinariamente extenso', lastName: 'Apellido de prueba con muchos caracteres', documentNumber: 'DOCUMENTO-DE-PRUEBA-000000000000', email: 'correo-de-prueba-con-un-alias-muy-extenso@example.test', role: 'MEMBER', status: 'ACTIVE' },
+      { id: 'trainer-user', firstName: 'Entrenador de prueba', lastName: 'Con apellido extenso', documentNumber: 'TRAINER-DOCUMENT-000000', email: 'trainer-with-a-long-email@example.test', role: 'TRAINER', status: 'INACTIVE' },
+    ]) }) }])
+    renderUsers()
+
+    expect(await screen.findByRole('columnheader', { name: 'Usuario' })).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual(['Usuario', 'Documento', 'Correo', 'Rol', 'Cuota', 'Estado', 'Acción'])
+    expect(screen.getAllByLabelText('Estado de cuota no informado').length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText('Cuota no corresponde').length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: /Editar usuario Nombre de prueba/ }).length).toBeGreaterThan(0)
+    expect(screen.getAllByTitle('Nombre de prueba extraordinariamente extenso Apellido de prueba con muchos caracteres').length).toBeGreaterThan(0)
+    expect(screen.getAllByTitle('correo-de-prueba-con-un-alias-muy-extenso@example.test').length).toBeGreaterThan(0)
+    expect(screen.getByText('Mostrando 1–2 de 2 usuarios')).toBeInTheDocument()
+  })
+
+  it('conserva la paginación real del listado', async () => {
+    const fetchStub = stubApi([{ path: '/users', handler: (url) => ({ body: {
+      items: [{ ...newUser, id: `user-${url.searchParams.get('page') ?? '1'}`, firstName: `Persona página ${url.searchParams.get('page') ?? '1'}` }],
+      page: Number(url.searchParams.get('page') ?? 1), limit: 1, total: 2,
+    } }) }])
+    renderUsers()
+
+    expect(await screen.findByText('Mostrando 1–1 de 2 usuarios')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }))
+    await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/users').at(-1)?.url.searchParams.get('page')).toBe('2'))
+    expect(await screen.findByText('Mostrando 2–2 de 2 usuarios')).toBeInTheDocument()
   })
 })
