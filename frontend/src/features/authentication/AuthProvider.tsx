@@ -47,8 +47,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           photoUrl: photoRevisionRef.current === photoRevision ? identity.photoUrl : currentSession.user.photoUrl,
         },
       }
-      const safeSession = authStorage.update(nextSession)
-      if (safeSession) setSession(safeSession)
+      setSession(nextSession)
     }).catch(() => undefined)
     return () => { active = false }
   }, [accessToken, isPasswordChangeRequired])

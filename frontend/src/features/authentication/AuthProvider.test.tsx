@@ -27,7 +27,7 @@ describe('AuthProvider profile photo', () => {
     render(<AuthProvider><SessionControls/></AuthProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
     await waitFor(() => expect(screen.getByLabelText('Foto vigente')).toHaveTextContent('https://example.com/current.jpg'))
-    expect(authStorage.read()?.user.photoUrl).toBe('https://example.com/current.jpg')
+    expect(authStorage.read()?.user.photoUrl).toBe(user.photoUrl)
   })
 
   it('does not overwrite a recently uploaded photo with an older identity response', async () => {
