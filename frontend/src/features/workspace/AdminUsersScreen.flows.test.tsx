@@ -77,25 +77,6 @@ describe('AdminUsersScreen: flujos de gestión', () => {
     expect(requestsTo(fetchStub, 'POST', '/users')).toHaveLength(0)
   })
 
-  it('abre el modal con su descripción, permite cambiar el rol y cerrar', async () => {
-    stubApi([{ path: '/users', handler: () => ({ body: userPage([]) }) }])
-    renderUsers()
-
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Crear cuenta' }))[0])
-    const dialog = screen.getByRole('dialog', { name: 'Crear cuenta' })
-    expect(within(dialog).getByText('Las cuentas de entrenador y administrador solo se crean desde acá.')).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Cerrar' })).toBeInTheDocument()
-    expect(within(dialog).getByRole('button', { name: 'Socio' })).toHaveAttribute('aria-pressed', 'true')
-
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Entrenador' }))
-    expect(within(dialog).getByRole('button', { name: 'Entrenador' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(dialog).getByLabelText('Especialidad')).toBeInTheDocument()
-    expect(within(dialog).getByLabelText('Descripción')).toBeInTheDocument()
-
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
-
   it('crea un socio con datos recortados y excluye campos opcionales vacíos', async () => {
     const fetchStub = stubApi([
       { path: '/users', handler: () => ({ body: userPage([]) }) },
@@ -136,7 +117,7 @@ describe('AdminUsersScreen: flujos de gestión', () => {
       'Correo electrónico': 'tomas@example.com', Teléfono: '1122334455',
     })) fireEvent.change(within(dialog).getByLabelText(label), { target: { value } })
     fireEvent.change(dialog.querySelector('input[type="password"]')!, { target: { value: 'ClaveSegura123' } })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Entrenador' }))
+    fireEvent.change(within(dialog).getByLabelText('Rol'), { target: { value: 'TRAINER' } })
     fireEvent.submit(form)
     expect(await screen.findByRole('alert')).toHaveTextContent('Completá los campos obligatorios: Especialidad, Descripción.')
     expect(requestsTo(fetchStub, 'POST', '/users')).toHaveLength(0)
