@@ -42,6 +42,16 @@ const ACTION_LABEL: Record<string, string> = {
   PASSWORD_RESET: 'Contraseña restablecida',
 }
 
+function isValidEmail(value: string) {
+  const atIndex = value.indexOf('@')
+  const domainDotIndex = value.lastIndexOf('.')
+  return atIndex > 0
+    && value.indexOf('@', atIndex + 1) === -1
+    && domainDotIndex > atIndex + 1
+    && domainDotIndex < value.length - 1
+    && !/\s/.test(value)
+}
+
 export function UserDetailScreen({ id, onMemberLoaded }: { id: string; onMemberLoaded?: (user: AdminUserDetail | null) => void }) {
   const location = useLocation()
   const loader = useCallback(() => backendApi.getUser(id), [id])
@@ -195,7 +205,7 @@ function UserEditorDialog({ user, onClose, onUpdated, onBranchesUpdated }: { use
     try {
       const common = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), documentNumber: form.documentNumber.trim(), birthDate: form.birthDate, email: form.email.trim(), phone: form.phone.trim() }
       if (Object.values(common).some((value) => !value) || (user.role === 'TRAINER' && (!form.specialty.trim() || !form.description.trim()))) throw new Error('Completá todos los campos obligatorios.')
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(common.email)) throw new Error('Ingresá un correo electrónico válido.')
+      if (!isValidEmail(common.email)) throw new Error('Ingresá un correo electrónico válido.')
       if (!/\d/.test(common.documentNumber)) throw new Error('El documento debe contener al menos un número.')
       if (common.birthDate > gymDate()) throw new Error('La fecha de nacimiento no puede ser futura.')
       onUpdated(await backendApi.updateUser(user.id, { ...common, ...(user.role === 'MEMBER' ? { emergencyContactName: form.emergencyContactName.trim(), emergencyContactPhone: form.emergencyContactPhone.trim() } : {}), ...(user.role === 'TRAINER' ? { specialty: form.specialty.trim(), description: form.description.trim() } : {}), ...(form.reason.trim() ? { reason: form.reason.trim() } : {}) }))

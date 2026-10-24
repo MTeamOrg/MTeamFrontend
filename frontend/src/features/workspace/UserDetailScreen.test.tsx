@@ -94,6 +94,9 @@ describe('UserDetailScreen administrative editing', () => {
   it.each([
     ['Nombre *', '   ', 'Completá todos los campos obligatorios.'],
     ['Correo electrónico *', 'invalid', 'Ingresá un correo electrónico válido.'],
+    ['Correo electrónico *', 'ana@@example.com', 'Ingresá un correo electrónico válido.'],
+    ['Correo electrónico *', 'ana@exa mple.com', 'Ingresá un correo electrónico válido.'],
+    ['Correo electrónico *', 'ana@example.', 'Ingresá un correo electrónico válido.'],
     ['Documento *', 'ABC', 'El documento debe contener al menos un número.'],
     ['Fecha de nacimiento *', '2999-01-01', 'La fecha de nacimiento no puede ser futura.'],
   ])('validates %s before sending a request', async (label, value, message) => {
