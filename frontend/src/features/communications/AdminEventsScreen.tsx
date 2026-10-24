@@ -78,7 +78,8 @@ export function AdminEventsScreen() {
   }, [location, page, search, status])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
 
-  const knownLocations = Array.from(new Set((data?.items ?? []).map((event) => event.location))).sort()
+  const knownLocations = Array.from(new Set((data?.items ?? []).map((event) => event.location)))
+    .sort((left, right) => left.localeCompare(right, 'es-AR', { sensitivity: 'base' }))
 
   function startCreate() {
     setEditing(null)

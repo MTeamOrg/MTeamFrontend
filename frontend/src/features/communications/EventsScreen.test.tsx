@@ -83,6 +83,18 @@ describe('EventsScreen', () => {
     await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/events').at(-1)?.url.searchParams.get('limit')).toBe('100'))
   })
 
+  it('ordena las ubicaciones con las reglas alfabéticas del español argentino', async () => {
+    const events = ['Ñuñez', 'Caballito', 'Álvarez', 'Olivos', 'Núñez', 'Almagro']
+      .map((location, index) => eventRecord({ id: `location-${index}`, location }))
+    stubApi([{ path: '/events', handler: () => ({ body: eventPage(events) }) }])
+    renderWithSession(<EventsScreen isAdmin/>, { user: testUser('ADMIN') })
+
+    const locationFilter = await screen.findByLabelText('Filtrar por sede') as HTMLSelectElement
+    expect(Array.from(locationFilter.options, (option) => option.textContent)).toEqual([
+      'Sede: todas', 'Almagro', 'Álvarez', 'Caballito', 'Núñez', 'Ñuñez', 'Olivos',
+    ])
+  })
+
   it('crea un borrador usando el horario local del gimnasio y recarga la lista', async () => {
     let savedEvent: Event | null = null
     const fetchStub = stubApi([
