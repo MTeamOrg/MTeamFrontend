@@ -2,7 +2,7 @@ import { useCallback, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { backendApi, type MedicalCertificateStatus } from '../../service/backend-api'
-import { formatDate, formatDateTime } from '../../service/date-time'
+import { formatDateTime } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
 import { MedicalCertificatePreview } from './MedicalCertificatePreview'
@@ -24,8 +24,16 @@ function membershipLabel(status: 'ACTIVE' | 'EXPIRED') {
   return status === 'ACTIVE' ? 'Activa' : 'Vencida'
 }
 
+function membershipBadgeClass(status: 'ACTIVE' | 'EXPIRED' | undefined) {
+  return status === 'ACTIVE' ? 'badge-purple' : status === 'EXPIRED' ? 'badge-pink' : 'badge-disabled'
+}
+
 function accountLabel(status: 'ACTIVE' | 'INACTIVE' | undefined) {
   return status === 'ACTIVE' ? 'Activa' : status === 'INACTIVE' ? 'Inactiva' : 'Sin datos disponibles'
+}
+
+function accountBadgeClass(status: 'ACTIVE' | 'INACTIVE' | undefined) {
+  return status === 'INACTIVE' ? 'badge-pink' : 'badge-disabled'
 }
 
 export function AdminMedicalReviewScreen({ id }: { id: string }) {
@@ -108,10 +116,10 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
         <section className="surface-card medical-situation-card">
           <h2>Situación del socio</h2>
           <dl>
-            <div><dt>Cuota</dt><dd>{member.loading ? 'Cargando…' : member.data?.membership ? membershipLabel(member.data.membership.status) : 'Sin datos disponibles'}</dd></div>
-            {member.data?.membership?.expiresAt && <div><dt>Vencimiento</dt><dd>{formatDate(member.data.membership.expiresAt)}</dd></div>}
-            {member.data && <div><dt>Cuenta</dt><dd>{accountLabel(member.data.status)}</dd></div>}
+            <div><dt>Cuota</dt><dd><span className={`badge medical-situation-badge ${membershipBadgeClass(member.data?.membership?.status)}`}>{member.loading ? 'Cargando…' : member.data?.membership ? membershipLabel(member.data.membership.status) : 'Sin datos disponibles'}</span></dd></div>
+            {member.data && <div><dt>Cuenta</dt><dd><span className={`badge medical-situation-badge ${accountBadgeClass(member.data.status)}`}>{accountLabel(member.data.status)}</span></dd></div>}
           </dl>
+          <p className="medical-situation-help">Pasados los 20 días vas a necesitar un apto aprobado para poder ingresar.</p>
         </section>
         {canReview ? <section className="surface-card medical-decision-card">
           <h2>Decisión</h2>

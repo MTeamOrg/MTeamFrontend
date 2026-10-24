@@ -101,9 +101,32 @@ describe('revisión administrativa de aptos médicos', () => {
     expect(screen.getByText('Cuenta')).toBeInTheDocument()
     expect(screen.getAllByText('Activa')).toHaveLength(2)
     expect(screen.queryByText('Período inicial')).not.toBeInTheDocument()
+    expect(screen.queryByText('Vencimiento')).not.toBeInTheDocument()
+    expect(screen.getByText(/Pasados los 20 días/)).toBeInTheDocument()
+    const situationCard = screen.getByText('Situación del socio').closest('section')
+    expect(situationCard?.querySelectorAll('.medical-situation-badge')).toHaveLength(2)
+    expect(situationCard?.querySelector('.badge-purple')).not.toBeNull()
     expect(requestsTo(fetchStub, 'GET', '/users/member-1')).toHaveLength(1)
     expect(screen.queryByText('member-1')).not.toBeInTheDocument()
     expect(screen.queryByText(/El backend|La respuesta actual/)).not.toBeInTheDocument()
+  })
+
+  it('indica los datos no disponibles sin inventar el período inicial', async () => {
+    stubApi([
+      { path: '/medical-certificates/cert-1', handler: () => ({ body: pending }) },
+      { path: '/medical-certificates/cert-1/file', handler: () => ({ body: preview }) },
+      { path: '/users/member-1', handler: () => ({ body: { status: 'ACTIVE', membership: null } }) },
+    ])
+    renderWithSession(<AdminMedicalReviewScreen id="cert-1"/>, { user: testUser('ADMIN') })
+
+    expect(await screen.findByText('Situación del socio')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByText('Sin datos disponibles')).toHaveLength(1))
+    expect(screen.getByText('Cuenta')).toBeInTheDocument()
+    expect(screen.queryByText('Período inicial')).not.toBeInTheDocument()
+    expect(screen.getByText(/Pasados los 20 días/)).toBeInTheDocument()
+    const situationCard = screen.getByText('Situación del socio').closest('section')
+    expect(situationCard?.querySelectorAll('.medical-situation-badge')).toHaveLength(2)
+    expect(situationCard?.querySelector('.badge-disabled')).not.toBeNull()
   })
 
   it.each(['PENDING', 'APPROVED', 'REJECTED'] as const)('mantiene visible el estado %s en detalle móvil', async (status) => {

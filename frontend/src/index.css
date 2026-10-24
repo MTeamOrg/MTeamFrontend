@@ -104,7 +104,7 @@
 .medical-decision-card{order:1}
 .medical-situation-card dl{display:grid;gap:0;margin:0}
 .medical-situation-card dl>div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
-.medical-situation-card dt{color:var(--text-secondary);font-size:14px}.medical-situation-card dd{margin:0;font-size:14px;text-align:right}
+.medical-situation-card dt{color:var(--text-secondary);font-size:14px}.medical-situation-card dd{display:flex;align-items:center;justify-content:flex-end;min-width:0;margin:0;font-size:14px;text-align:right}.medical-situation-badge{min-height:30px;padding:0 12px;border-radius:999px;font-size:13px;overflow:hidden;text-overflow:ellipsis}.medical-situation-help{margin:0;color:var(--text-secondary);font-size:13px;line-height:1.45}
 .medical-approve-button{width:100%}
 .medical-decision-card form{display:grid;gap:10px}
 .medical-decision-card h3{margin:0;font-size:16px}
@@ -193,7 +193,7 @@
   .medical-situation-card,.medical-decision-card{padding:16px;gap:10px;border-radius:14px}
   .medical-situation-card{order:1}
   .medical-decision-card{order:2}
-  .medical-situation-card dl>div{padding:8px 0}.medical-situation-card dt,.medical-situation-card dd{font-size:11px}
+  .medical-situation-card dl>div{padding:8px 0}.medical-situation-card dt,.medical-situation-card dd{font-size:11px}.medical-situation-badge{min-height:28px;padding:0 10px;font-size:11px}.medical-situation-help{font-size:11px;line-height:1.45}
   .medical-approve-button{min-height:44px;font-size:14px}
   .medical-comment-field textarea{min-height:74px;font-size:11px}.medical-decision-card .button{min-height:44px;font-size:13px}
   .medical-review-comment{font-size:11px}
