@@ -6,7 +6,7 @@ import { backendApi, type CreateUserInput, type MembershipStatus, type UserListI
 import { describeApiError } from '../../service/api-errors'
 import { gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 import { PageHeader } from './PageHeader'
 import { UserAvatar } from './UserAvatar'
 
@@ -19,6 +19,11 @@ type UserMetadata = { photoUrl: string | null; membershipStatus?: MembershipStat
 type UserMetadataMap = Record<string, UserMetadata>
 
 const EMPTY_USER: CreateUserInput = { firstName: '', lastName: '', documentNumber: '', birthDate: '', email: '', phone: '', password: '', role: 'MEMBER' }
+const ROLE_OPTIONS: ReadonlyArray<{ value: UserRole; label: string; mobileLabel: string }> = [
+  { value: 'MEMBER', label: 'Socio', mobileLabel: 'Socio' },
+  { value: 'TRAINER', label: 'Entrenador', mobileLabel: 'Entrenador' },
+  { value: 'ADMIN', label: 'Administrador', mobileLabel: 'Admin' },
+]
 const EMPTY_USERS: UserListItem[] = []
 const EMPTY_METADATA: UserMetadataMap = {}
 const MEMBERSHIP_LABEL: Record<MembershipStatus, string> = { CURRENT: 'Al día', EXPIRING_SOON: 'Próxima a vencer', EXPIRED: 'Vencida' }
@@ -167,13 +172,39 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       onCreated()
     } catch (value) { setError(describeApiError(value, 'No se pudo crear la cuenta.', FIELD_LABELS)) } finally { setSaving(false) }
   }
-  return <Dialog title="Crear una cuenta" onClose={onClose}><form onSubmit={(event) => void submit(event)}><div className="dialog-fields"><Input label="Nombre" value={form.firstName} maxLength={100} onChange={(value) => change('firstName', value)}/><Input label="Apellido" value={form.lastName} maxLength={100} onChange={(value) => change('lastName', value)}/><Input label="Documento" value={form.documentNumber} maxLength={30} onChange={(value) => change('documentNumber', value)}/><Input label="Fecha de nacimiento" type="date" value={form.birthDate} max={gymDate()} onChange={(value) => change('birthDate', value)}/><Input label="Correo electrónico" type="email" value={form.email} maxLength={255} onChange={(value) => change('email', value)}/><Input label="Teléfono" type="tel" value={form.phone} maxLength={30} onChange={(value) => change('phone', value)}/><Input label="Contraseña temporal" type="password" value={form.password} minLength={8} maxLength={72} hint="Entre 8 y 72 caracteres." onChange={(value) => change('password', value)}/><label className="read-field"><span>Rol</span><select value={form.role} onChange={(event) => change('role', event.target.value)}><option value="MEMBER">Socio</option><option value="TRAINER">Entrenador</option><option value="ADMIN">Administrador</option></select></label>{form.role === 'MEMBER' && <><Input label="Contacto de emergencia" required={false} maxLength={200} value={form.emergencyContactName ?? ''} onChange={(value) => change('emergencyContactName', value)}/><Input label="Teléfono de emergencia" type="tel" required={false} maxLength={30} value={form.emergencyContactPhone ?? ''} onChange={(value) => change('emergencyContactPhone', value)}/></>}{form.role === 'TRAINER' && <><Input label="Especialidad" maxLength={150} value={form.specialty ?? ''} onChange={(value) => change('specialty', value)}/><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)}/></>}</div>{error && <p className="error-message" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div></form></Dialog>
+  return <Dialog title="Crear cuenta" description="Las cuentas de entrenador y administrador solo se crean desde acá." className="admin-create-account-dialog" onClose={onClose}>
+    <form className="admin-create-account-form" onSubmit={(event) => void submit(event)}>
+      <div className="admin-create-account-fields">
+        <Input label="Nombre" className="admin-create-account-field-first-name" value={form.firstName} maxLength={100} onChange={(value) => change('firstName', value)}/>
+        <Input label="Apellido" className="admin-create-account-field-last-name" value={form.lastName} maxLength={100} onChange={(value) => change('lastName', value)}/>
+        <Input label="Documento" className="admin-create-account-field-document" value={form.documentNumber} maxLength={30} onChange={(value) => change('documentNumber', value)}/>
+        <Input label="Correo electrónico" className="admin-create-account-field-email" type="email" value={form.email} maxLength={255} icon="mail" onChange={(value) => change('email', value)}/>
+      </div>
+      <RoleSelector role={form.role} onChange={(value) => setForm((current) => ({ ...current, role: value }))}/>
+      <div className="admin-create-account-required-fields">
+        <Input label="Fecha de nacimiento" className="admin-create-account-field-birth-date" type="date" value={form.birthDate} max={gymDate()} onChange={(value) => change('birthDate', value)}/>
+        <Input label="Teléfono" className="admin-create-account-field-phone" type="tel" value={form.phone} maxLength={30} icon="phone" onChange={(value) => change('phone', value)}/>
+      </div>
+      <div className="admin-create-account-password">
+        <Input label="Contraseña temporal" type="password" value={form.password} minLength={8} maxLength={72} hint="Entre 8 y 72 caracteres." onChange={(value) => change('password', value)}/>
+      </div>
+      <div className="admin-create-account-notice" role="note"><Icon name="alert" size={24}/><p>La contraseña será temporal y el usuario deberá cambiarla en su primer inicio de sesión.</p></div>
+      {form.role === 'MEMBER' && <div className="admin-create-account-extra-fields"><Input label="Contacto de emergencia" required={false} maxLength={200} value={form.emergencyContactName ?? ''} onChange={(value) => change('emergencyContactName', value)}/><Input label="Teléfono de emergencia" type="tel" required={false} maxLength={30} value={form.emergencyContactPhone ?? ''} onChange={(value) => change('emergencyContactPhone', value)}/></div>}
+      {form.role === 'TRAINER' && <div className="admin-create-account-extra-fields"><Input label="Especialidad" maxLength={150} value={form.specialty ?? ''} onChange={(value) => change('specialty', value)}/><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)}/></div>}
+      {error && <p className="error-message" role="alert">{error}</p>}
+      <div className="dialog-actions admin-create-account-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div>
+    </form>
+  </Dialog>
 }
 
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return <div className="dialog-backdrop" role="presentation"><section className="workspace-dialog" role="dialog" aria-modal="true" aria-label={title}><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}>×</button><span className="eyebrow">M-TEAM</span><h2>{title}</h2>{children}</section></div>
+function RoleSelector({ role, onChange }: { role: UserRole; onChange: (role: UserRole) => void }) {
+  return <fieldset className="admin-create-account-role"><legend>Rol</legend><div className="admin-create-account-role-options">{ROLE_OPTIONS.map((option) => <button key={option.value} type="button" className={`admin-create-account-role-option${role === option.value ? ' is-selected' : ''}`} aria-label={option.label} aria-pressed={role === option.value} onClick={() => onChange(option.value)}><span className="admin-create-account-role-label-desktop">{option.label}</span><span className="admin-create-account-role-label-mobile" aria-hidden="true">{option.mobileLabel}</span></button>)}</div></fieldset>
 }
 
-function Input({ label, value, onChange, type = 'text', required = true, minLength, maxLength, max, hint }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean; minLength?: number; maxLength?: number; max?: string; hint?: string }) {
-  return <label className="read-field"><span>{label}</span><input type={type} required={required} minLength={minLength} maxLength={maxLength} max={max} value={value} onChange={(event) => onChange(event.target.value)}/>{hint && <small className="field-hint">{hint}</small>}</label>
+function Dialog({ title, description, className = '', onClose, children }: { title: string; description?: string; className?: string; onClose: () => void; children: ReactNode }) {
+  return <div className="dialog-backdrop" role="presentation"><section className={`workspace-dialog ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby="workspace-dialog-title" aria-describedby={description ? 'workspace-dialog-description' : undefined}><header className="workspace-dialog-header"><div><h2 id="workspace-dialog-title">{title}</h2>{description && <p id="workspace-dialog-description">{description}</p>}</div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" size={28}/></button></header>{children}</section></div>
+}
+
+function Input({ label, value, onChange, type = 'text', required = true, minLength, maxLength, max, hint, icon, className = '' }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean; minLength?: number; maxLength?: number; max?: string; hint?: string; icon?: IconName; className?: string }) {
+  return <label className={`read-field admin-create-account-field ${className}`.trim()}><span>{label}</span><span className="admin-create-account-input-shell">{icon && <Icon name={icon} size={24}/>}<input type={type} required={required} minLength={minLength} maxLength={maxLength} max={max} value={value} onChange={(event) => onChange(event.target.value)}/></span>{hint && <small className="field-hint">{hint}</small>}</label>
 }
