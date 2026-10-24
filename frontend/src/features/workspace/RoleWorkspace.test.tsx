@@ -87,6 +87,17 @@ describe('shell autenticado', () => {
     expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
   })
 
+  it('muestra volver al panel desde accesos en celular', () => {
+    setMobileViewport(true)
+    stubApi([
+      { path: '/access-attempts', handler: () => ({ body: { items: [], page: 1, limit: 20, total: 0 } }) },
+      { path: '/admin/branches', handler: () => ({ body: { items: [], page: 1, limit: 100, total: 0 } }) },
+    ])
+    renderWorkspace('/admin/accesos', 'ADMIN')
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
+    expect(document.querySelector('.app-topbar-title')).toHaveTextContent('Accesos')
+  })
+
   it('abre preguntas frecuentes dentro del rol y marca ayuda como sección activa', () => {
     renderWorkspace('/socio/preguntas-frecuentes', 'MEMBER')
     expect(screen.getAllByRole('heading', { name: 'Preguntas frecuentes' }).length).toBeGreaterThan(0)
