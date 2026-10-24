@@ -90,9 +90,9 @@ describe('EventsScreen', () => {
     renderWithSession(<EventsScreen isAdmin/>, { user: testUser('ADMIN') })
 
     const locationFilter = await screen.findByLabelText('Filtrar por sede') as HTMLSelectElement
-    expect(Array.from(locationFilter.options, (option) => option.textContent)).toEqual([
+    await waitFor(() => expect(Array.from(locationFilter.options, (option) => option.textContent)).toEqual([
       'Sede: todas', 'Almagro', 'Álvarez', 'Caballito', 'Núñez', 'Ñuñez', 'Olivos',
-    ])
+    ]))
   })
 
   it('crea un borrador usando el horario local del gimnasio y recarga la lista', async () => {

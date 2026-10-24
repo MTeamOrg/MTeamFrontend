@@ -121,8 +121,8 @@ describe('revisión administrativa de aptos médicos', () => {
     renderWithSession(<AdminMedicalReviewScreen id="cert-1"/>, { user: testUser('ADMIN') })
 
     expect(await screen.findByText('Situación del socio')).toBeInTheDocument()
+    expect(await screen.findByText('Cuenta')).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByText('Sin datos disponibles')).toHaveLength(1))
-    expect(screen.getByText('Cuenta')).toBeInTheDocument()
     expect(screen.getByText('Período inicial')).toBeInTheDocument()
     expect(screen.getByText('No disponible')).toBeInTheDocument()
     expect(screen.getByText(/Pasados los 20 días/)).toBeInTheDocument()
