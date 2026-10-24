@@ -117,6 +117,7 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
           <h2>Situación del socio</h2>
           <dl>
             <div><dt>Cuota</dt><dd><span className={`badge medical-situation-badge ${membershipBadgeClass(member.data?.membership?.status)}`}>{member.loading ? 'Cargando…' : member.data?.membership ? membershipLabel(member.data.membership.status) : 'Sin datos disponibles'}</span></dd></div>
+            <div><dt>Período inicial</dt><dd><span className="badge medical-situation-badge badge-disabled">No disponible</span></dd></div>
             {member.data && <div><dt>Cuenta</dt><dd><span className={`badge medical-situation-badge ${accountBadgeClass(member.data.status)}`}>{accountLabel(member.data.status)}</span></dd></div>}
           </dl>
           <p className="medical-situation-help">Pasados los 20 días vas a necesitar un apto aprobado para poder ingresar.</p>
