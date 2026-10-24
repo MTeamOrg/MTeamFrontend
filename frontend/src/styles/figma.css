@@ -610,7 +610,7 @@ body { background: var(--background); color: var(--black); }
 .user-detail-list-card { padding-bottom: 8px; }
 .user-detail-payment-list, .user-detail-medical-list, .user-detail-class-list, .user-detail-audit-list { display: grid; }
 .user-detail-payment-row, .user-detail-medical-row, .user-detail-class-row, .user-detail-audit-row { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px 0; border-top: 1px solid #eceef0; }
-.user-detail-payment-row > div, .user-detail-medical-row > div:first-child, .user-detail-class-row > div, .user-detail-audit-row { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.user-detail-payment-row > div, .user-detail-medical-row > div:first-child, .user-detail-class-row > div { display: grid; gap: 4px; min-width: 0; flex: 1; }
 .user-detail-payment-row > strong:last-of-type { white-space: nowrap; font-size: 13px; }
 .user-detail-payment-icon { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--background); color: var(--text-muted); }
 .user-detail-payment-row > .badge, .user-detail-medical-row > .badge { flex: none; }
@@ -620,8 +620,13 @@ body { background: var(--background); color: var(--black); }
 .user-detail-medical-actions .text-link { margin: 0; font-size: 12px; }
 .user-detail-class-row { align-items: flex-start; }
 .user-detail-class-row > svg { flex: none; color: var(--purple); }
-.user-detail-audit-row { grid-template-columns: minmax(0, 1fr) auto; }
-.user-detail-audit-row small { grid-column: 1 / -1; }
+.user-detail-audit-row { display: grid; grid-template-columns: minmax(128px, .8fr) minmax(0, 1.6fr) minmax(150px, 1fr); align-items: start; gap: 16px; min-width: 0; padding: 16px 0; border-top: 1px solid #eceef0; }
+.user-detail-audit-row > time, .user-detail-audit-action, .user-detail-audit-actor { min-width: 0; overflow-wrap: anywhere; }
+.user-detail-audit-row > time { color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.user-detail-audit-action { display: grid; gap: 4px; }
+.user-detail-audit-action strong { font-size: 14px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.user-detail-audit-reason { color: var(--text-secondary); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.user-detail-audit-actor { color: var(--text-secondary); font-size: 12px; line-height: 1.45; text-align: right; }
 .user-detail-note p, .dialog-help { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .dialog-help { margin: 0 0 16px; }
 .mobile-only { display: none; }
@@ -633,6 +638,7 @@ body { background: var(--background); color: var(--black); }
 @media (max-width: 700px) {
   .admin-users-screen > .page-header { display: none; }
   .admin-users-screen { padding-bottom: 42px; }
+  .user-detail-screen { padding-bottom: 96px; }
   .admin-users-mobile-create { position: fixed; top: 10px; right: 18px; display: grid; place-items: center; width: 34px; height: 34px; margin: 0; border: 0; border-radius: 8px; background: var(--pink); color: var(--white); cursor: pointer; z-index: 10; }
   .admin-users-toolbar { position: relative; display: block; width: 100%; margin-top: 0; }
   .admin-users-toolbar .search-shell { width: 100%; min-width: 0; height: 42px; padding-right: 50px; }
@@ -678,6 +684,9 @@ body { background: var(--background); color: var(--black); }
   .user-detail-simple-list span, .user-detail-payment-row small, .user-detail-medical-row small, .user-detail-class-row small, .user-detail-audit-row small { font-size: 9px; }
   .user-detail-payment-row, .user-detail-medical-row, .user-detail-class-row, .user-detail-audit-row { gap: 8px; padding: 12px 0; }
   .user-detail-payment-row strong, .user-detail-medical-row strong, .user-detail-class-row strong, .user-detail-audit-row strong { font-size: 10px; }
+  .user-detail-audit-row { grid-template-columns: 1fr; gap: 4px; }
+  .user-detail-audit-row > time, .user-detail-audit-reason, .user-detail-audit-actor { font-size: 10px; line-height: 1.4; }
+  .user-detail-audit-actor { text-align: left; }
   .user-detail-payment-row > strong:last-of-type { font-size: 10px; }
   .user-detail-payment-row > .badge, .user-detail-medical-row > .badge { font-size: 8px; }
   .user-detail-payment-icon { width: 28px; height: 28px; }
