@@ -276,6 +276,73 @@ body { background: var(--background); color: var(--black); }
   .admin-payments-screen .admin-payment-side { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Administrator access history: accurate totals from the paginated API and responsive history views. */
+.admin-access-screen { min-width: 0; }
+.access-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.access-summary-card { min-width: 0; min-height: 124px; display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+.access-summary-card-label { color: var(--text-secondary); font-size: 12px; font-weight: 500; letter-spacing: .72px; text-transform: uppercase; }
+.access-summary-card-value { color: var(--black); font-size: 22px; line-height: 1.25; }
+.access-summary-card.tone-blue .access-summary-card-value { color: var(--blue); }
+.access-summary-card.tone-pink .access-summary-card-value { color: var(--pink); }
+.access-summary-card-sub { display: flex; align-items: center; gap: 8px; min-height: 18px; color: var(--text-muted); font-size: 12px; }
+.access-summary-card-sub svg { flex: none; }
+.access-summary-card.tone-blue .access-summary-card-sub svg { color: var(--blue); }
+.access-summary-card.tone-pink .access-summary-card-sub svg { color: var(--pink); }
+.access-summary-error { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--background); color: var(--text-secondary); font-size: 13px; }
+.admin-access-screen .access-history-filters { display: grid; grid-template-columns: minmax(250px, 1.45fr) repeat(5, minmax(116px, .65fr)); gap: 12px; width: 100%; margin: 0; align-items: center; }
+.admin-access-screen .access-history-filters .search-shell { width: 100%; min-width: 0; height: 44px; }
+.access-filter-fields { display: contents; }
+.admin-access-screen .access-history-filters select { width: 100%; height: 44px; min-width: 0; padding: 0 12px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); font-size: 14px; }
+.access-date-filter { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--text-secondary); font-size: 12px; }
+.access-date-filter span { flex: none; }
+.access-date-filter input { width: 100%; min-width: 0; height: 44px; padding: 0 8px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--white); color: var(--text-secondary); font-size: 12px; }
+.access-history-filter-toggle { display: none; }
+.access-history-table-wrap { overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+.access-history-table { table-layout: fixed; }
+.access-history-table td:first-child { color: var(--black); }
+.access-user-name { display: block; font-weight: 600; }
+.access-result-badge { display: inline-flex; max-width: 100%; align-items: center; padding: 7px 10px; border-radius: 999px; font-size: 13px; line-height: 1.2; white-space: normal; }
+.access-result-badge.is-allowed { background: var(--blue-tint); color: var(--blue); }
+.access-result-badge.is-denied { background: var(--pink-tint); color: var(--pink); }
+.access-mobile-list { display: none; }
+
+@media (max-width: 700px) {
+  .admin-access-screen { padding-bottom: 42px; }
+  .admin-access-screen > .page-header { display: none; }
+  .access-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .access-summary-card { min-height: 84px; gap: 6px; padding: 14px; border-radius: 14px; }
+  .access-summary-card--allowed { display: none; }
+  .access-summary-card-label { font-size: 10px; letter-spacing: .6px; }
+  .access-summary-card-value { font-size: 16px; }
+  .access-summary-card-sub { min-height: 0; font-size: 11px; }
+  .admin-access-screen .access-history-filters { position: relative; display: block; width: 100%; margin: 0; }
+  .admin-access-screen .access-history-filters .search-shell { width: 100%; height: 44px; padding-right: 52px; }
+  .access-history-filter-toggle { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-left: 1px solid var(--input-border); border-radius: 0 8px 8px 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .access-history-filter-toggle:focus-visible { outline: 2px solid var(--pink); outline-offset: -2px; }
+  .access-filter-fields { display: none; width: 100%; }
+  .access-filter-fields.is-open { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
+  .admin-access-screen .access-history-filters select { width: 100%; height: 42px; font-size: 12px; }
+  .access-date-filter { justify-content: space-between; width: 100%; font-size: 11px; }
+  .access-date-filter input { width: min(70%, 220px); height: 42px; font-size: 11px; }
+  .admin-access-screen .access-history-table-wrap { display: none; }
+  .access-mobile-list { display: grid; gap: 12px; }
+  .access-mobile-card { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; min-height: 68px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--white); box-shadow: var(--card-shadow); }
+  .access-mobile-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--blue); color: var(--white); font-size: 11px; font-weight: 600; }
+  .access-mobile-card:nth-child(2n) .access-mobile-avatar { background: var(--purple); }
+  .access-mobile-card:nth-child(3n) .access-mobile-avatar { background: var(--pink); }
+  .access-mobile-content { display: grid; gap: 4px; min-width: 0; }
+  .access-mobile-content strong { overflow: hidden; color: var(--black); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+  .access-mobile-content > span { overflow: hidden; color: var(--text-secondary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+  .access-mobile-card .access-result-badge { justify-self: end; padding: 6px 9px; font-size: 10px; }
+  .access-history-pagination { align-items: flex-start; gap: 10px; flex-direction: column; padding-bottom: 24px; }
+  .access-history-pagination .button { min-height: 36px; height: 36px; padding: 0 12px; font-size: 11px; }
+}
+
+@media (max-width: 1100px) and (min-width: 701px) {
+  .admin-access-screen .access-history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-access-screen .access-history-filters > .search-shell { grid-column: 1 / -1; }
+}
+
 @media (max-width: 700px) {
   .admin-payments-screen { gap: 14px; }
   .admin-payments-screen > .page-header { display: none; }
@@ -376,13 +443,11 @@ body { background: var(--background); color: var(--black); }
     vertical-align: middle;
   }
 
-  .admin-access-screen .data-table th:nth-child(1) { width: 19%; }
-  .admin-access-screen .data-table th:nth-child(2) { width: 12%; }
-  .admin-access-screen .data-table th:nth-child(3) { width: 9%; }
-  .admin-access-screen .data-table th:nth-child(4) { width: 12%; }
-  .admin-access-screen .data-table th:nth-child(5) { width: 16%; }
-  .admin-access-screen .data-table th:nth-child(6) { width: 16%; }
-  .admin-access-screen .data-table th:nth-child(7) { width: 16%; }
+  .admin-access-screen .data-table th:nth-child(1) { width: 28%; }
+  .admin-access-screen .data-table th:nth-child(2) { width: 14%; }
+  .admin-access-screen .data-table th:nth-child(3) { width: 19%; }
+  .admin-access-screen .data-table th:nth-child(4) { width: 19%; }
+  .admin-access-screen .data-table th:nth-child(5) { width: 20%; }
 
   .admin-users-screen .data-table th:nth-child(1) { width: 22%; }
   .admin-users-screen .data-table th:nth-child(2) { width: 12%; }
