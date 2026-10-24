@@ -632,17 +632,11 @@ body { background: var(--background); color: var(--black); }
   .medical-admin-stat-grid { gap: 20px; }
   .medical-admin-metric { min-height: 144px; padding: 20px; gap: 12px; }
   .medical-admin-metric .status-card-label { text-transform: uppercase; }
-  .medical-admin-screen > .medical-filter-toolbar { width: 100%; margin: 0; gap: 12px; flex-wrap: wrap; }
+  .medical-admin-screen > .medical-filter-toolbar { width: 100%; margin: 0; gap: 12px; flex-wrap: nowrap; }
   .medical-admin-screen > .medical-filter-toolbar .search-shell { flex: 1 1 360px; min-width: 280px; height: 48px; }
   .medical-admin-screen > .medical-filter-toolbar .medical-filter-fields { display: contents; }
   .medical-admin-screen > .medical-filter-toolbar .medical-filter-fields > select { min-width: 170px; height: 48px; }
-  .medical-admin-screen > .medical-filter-toolbar .medical-date-filter {
-    height: 48px; padding: 0 12px; border: 1px solid var(--input-border); border-radius: 8px;
-    background: var(--white); color: var(--text-secondary); font-size: 13px;
-  }
-  .medical-admin-screen > .medical-filter-toolbar .medical-date-filter input {
-    width: 132px; height: auto; padding: 0; border: 0; background: transparent; color: var(--black); font-size: 13px;
-  }
+  .medical-admin-screen > .medical-filter-toolbar .medical-upload-period-filter { min-width: 205px; }
   .medical-admin-screen .medical-list-panel { padding: 0; overflow: hidden; }
   .medical-admin-screen .medical-list-heading { display: none; }
   .medical-admin-screen .medical-table-wrap { border: 0; border-radius: 16px; overflow: visible; }
@@ -667,7 +661,6 @@ body { background: var(--background); color: var(--black); }
   .medical-admin-screen > .medical-filter-toolbar { flex-wrap: wrap; }
   .medical-admin-screen > .medical-filter-toolbar .search-shell { flex-basis: 100%; }
   .medical-admin-screen > .medical-filter-toolbar .medical-filter-fields { display: contents; }
-  .medical-admin-screen > .medical-filter-toolbar .medical-date-filter input { width: 118px; }
   .medical-admin-screen .medical-table th,
   .medical-admin-screen .medical-table td { padding-inline: 10px; font-size: 11px; }
   .medical-admin-screen .medical-table .medical-review-button { font-size: 12px; padding-inline: 12px; }
