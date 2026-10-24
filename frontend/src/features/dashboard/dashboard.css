@@ -67,11 +67,7 @@
 .initial-period-summary, .schedule-status-summary { display: grid; gap: 10px; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
 .initial-period-summary strong { color: var(--black); font-size: 17px; }
 .initial-period-summary .text-link { font-size: 12px; }
-.initial-period-detail-note, .initial-period-empty, .schedule-status-note { color: var(--text-muted); font-size: 12px; line-height: 1.45; }
 .schedule-status-summary .button { margin-top: 2px; font-size: 12px; }
-.schedule-status-badge { display: inline-flex; align-items: center; min-height: 21px; padding: 0 9px; border-radius: 999px; font-size: 10px; font-weight: 500; white-space: nowrap; }
-.schedule-status-badge.is-missing { background: var(--pink-tint); color: var(--pink); }
-.schedule-status-badge.is-generated { background: var(--blue-tint); color: var(--blue); }
 .access-attempt-list { display: grid; }
 .access-attempt-card { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px 0; border-top: 1px solid var(--border); }
 .access-attempt-avatar { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--purple); color: var(--white); font-size: 10px; font-weight: 700; }
@@ -124,14 +120,6 @@
   .access-attempt-copy small, .access-attempt-copy span { font-size: 9px; }
   .access-attempt-card > .badge { font-size: 8px; }
   .initial-period-summary, .schedule-status-summary { font-size: 11px; }
-  .admin-mobile-support-card { gap: 10px; }
-  .admin-mobile-support-card .dashboard-card-header { align-items: flex-start; }
-  .admin-mobile-support-card .dashboard-card-header h2 { font-size: 14px; }
-  .admin-mobile-support-card .initial-period-summary strong { font-size: 15px; }
-  .admin-mobile-support-card .initial-period-summary .text-link { font-size: 11px; }
-  .admin-mobile-support-card .initial-period-detail-note, .admin-mobile-support-card .initial-period-empty, .admin-mobile-support-card .schedule-status-note { font-size: 10px; }
-  .admin-mobile-support-card .schedule-status-summary .button { min-height: 38px; font-size: 11px; }
-  .schedule-status-badge { min-height: 19px; padding: 0 8px; font-size: 9px; }
 }
 
 /* Trainer home: preserve existing workspace navigation and other role dashboards. */
