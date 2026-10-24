@@ -32,7 +32,7 @@ export function RegisterPage() {
     setIsSubmitting(true)
     try {
       await authService.register(form)
-      navigate('/iniciar-sesion', { replace: true, state: { accountCreated: true } })
+      await navigate('/iniciar-sesion', { replace: true, state: { accountCreated: true } })
     } catch (caughtError) {
       setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible crear la cuenta.')
     } finally {
