@@ -39,4 +39,15 @@ describe('ActionButton', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
     expect(button).toBeDisabled()
   })
+
+  it('shows the confirmed success state and keeps the action disabled', () => {
+    render(<ActionButton isSuccess successLabel="¡Listo!" loadingLabel="Guardando…">Guardar</ActionButton>)
+
+    const button = screen.getByRole('button', { name: '¡Listo!' })
+    expect(button).toBeDisabled()
+    expect(button).toHaveClass('action-button-success')
+    expect(button).toHaveAttribute('aria-live', 'polite')
+    expect(button.querySelector('.action-success-icon')).toBeInTheDocument()
+    expect(button.querySelector('.action-spinner')).not.toBeInTheDocument()
+  })
 })

@@ -8,6 +8,8 @@ import { RecoveryDialog } from './RecoveryDialog'
 import { useAuth } from './use-auth'
 import { ActionButton } from '../../components/ActionButton'
 
+type LoginStatus = 'idle' | 'loading' | 'success'
+
 export function LoginPage() {
   const { session, login } = useAuth()
   const navigate = useNavigate()
@@ -16,7 +18,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loginStatus, setLoginStatus] = useState<LoginStatus>('idle')
   const [isRecoveryOpen, setIsRecoveryOpen] = useState(false)
   const isSubmitLockedRef = useRef(false)
 
@@ -30,16 +32,17 @@ export function LoginPage() {
     if (isSubmitLockedRef.current) return
     isSubmitLockedRef.current = true
     setError('')
-    setIsSubmitting(true)
+    setLoginStatus('loading')
     try {
       const nextSession = await login({ email, password }, remember)
+      setLoginStatus('success')
       const roleHome = nextSession.user.role === 'ADMIN' ? '/admin' : nextSession.user.role === 'TRAINER' ? '/entrenador' : '/socio'
       await navigate(nextSession.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome, { replace: true })
     } catch (caughtError) {
       setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible iniciar sesión.')
+      setLoginStatus('idle')
     } finally {
       isSubmitLockedRef.current = false
-      setIsSubmitting(false)
     }
   }
 
@@ -61,7 +64,7 @@ export function LoginPage() {
           <label className="checkbox"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /> Mantener la sesión iniciada</label>
           <button className="muted-link recovery-link" type="button" onClick={() => { setIsRecoveryOpen(true) }}>¿Olvidaste tu contraseña?</button>
         </div>
-        <ActionButton className="primary-button" type="submit" isLoading={isSubmitting} loadingLabel="Entrando…">Iniciar sesión</ActionButton>
+        <ActionButton className="primary-button" type="submit" isLoading={loginStatus === 'loading'} isSuccess={loginStatus === 'success'} loadingLabel="Entrando…" successLabel="¡Listo!">Iniciar sesión</ActionButton>
         <div className="form-divider"><span>o</span></div>
         <p className="form-footer">¿Todavía no tenés cuenta? <Link to="/crear-cuenta">Crear cuenta</Link></p>
       </form>

@@ -3,21 +3,25 @@ import { useDelayedLoading } from '../hooks/use-delayed-loading'
 
 type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean
+  isSuccess?: boolean
   loadingLabel: string
+  successLabel?: string
   children: ReactNode
 }
 
-export function ActionButton({ isLoading = false, loadingLabel, children, className, disabled, ...props }: ActionButtonProps) {
+export function ActionButton({ isLoading = false, isSuccess = false, loadingLabel, successLabel = 'Listo', children, className, disabled, ...props }: ActionButtonProps) {
   const showLoadingFeedback = useDelayedLoading(isLoading)
-  const classes = ['action-button', className].filter(Boolean).join(' ')
+  const showSuccessFeedback = isSuccess && !isLoading
+  const classes = ['action-button', isSuccess && 'action-button-success', className].filter(Boolean).join(' ')
 
   return <button
     {...props}
     className={classes}
-    disabled={disabled || isLoading}
+    disabled={disabled || isLoading || isSuccess}
     aria-busy={isLoading || undefined}
-    aria-label={showLoadingFeedback ? loadingLabel : props['aria-label']}
+    aria-live={isLoading || isSuccess ? 'polite' : undefined}
+    aria-label={showLoadingFeedback ? loadingLabel : showSuccessFeedback ? successLabel : props['aria-label']}
   >
-    {showLoadingFeedback ? <><span className="action-spinner" aria-hidden="true"/><span>{loadingLabel}</span></> : children}
+    {showLoadingFeedback ? <><span className="action-spinner" aria-hidden="true"/><span>{loadingLabel}</span></> : showSuccessFeedback ? <><span className="action-success-icon" aria-hidden="true">✓</span><span>{successLabel}</span></> : children}
   </button>
 }
