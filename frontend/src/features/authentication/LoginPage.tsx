@@ -70,7 +70,7 @@ export function LoginPage() {
           <label className="checkbox"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /> Mantener la sesión iniciada</label>
           <button className="muted-link recovery-link" type="button" onClick={() => { setIsRecoveryOpen(true) }}>¿Olvidaste tu contraseña?</button>
         </div>
-        <ActionButton className="primary-button" type="submit" isLoading={loginStatus === 'loading'} isSuccess={loginStatus === 'success'} loadingLabel="Entrando…" successLabel="¡Listo!">Iniciar sesión</ActionButton>
+        <ActionButton className="primary-button login-button" type="submit" isLoading={loginStatus === 'loading'} isSuccess={loginStatus === 'success'} loadingDelayMs={0} loadingLabel="Entrando…" successLabel="¡Listo!">Iniciar sesión</ActionButton>
         <div className="form-divider"><span>o</span></div>
         <p className="form-footer">¿Todavía no tenés cuenta? <Link to="/crear-cuenta">Crear cuenta</Link></p>
       </form>

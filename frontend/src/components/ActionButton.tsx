@@ -5,12 +5,13 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean
   isSuccess?: boolean
   loadingLabel: string
+  loadingDelayMs?: number
   successLabel?: string
   children: ReactNode
 }
 
-export function ActionButton({ isLoading = false, isSuccess = false, loadingLabel, successLabel = 'Listo', children, className, disabled, ...props }: ActionButtonProps) {
-  const showLoadingFeedback = useDelayedLoading(isLoading)
+export function ActionButton({ isLoading = false, isSuccess = false, loadingLabel, loadingDelayMs, successLabel = 'Listo', children, className, disabled, ...props }: ActionButtonProps) {
+  const showLoadingFeedback = useDelayedLoading(isLoading, loadingDelayMs)
   const showSuccessFeedback = isSuccess && !isLoading
   const classes = ['action-button', isSuccess && 'action-button-success', className].filter(Boolean).join(' ')
 

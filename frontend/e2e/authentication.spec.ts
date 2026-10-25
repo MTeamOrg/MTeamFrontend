@@ -18,6 +18,21 @@ test.beforeEach(async ({ page }) => {
     if (request.method() === 'POST' && requestUrl.pathname.endsWith('/auth/login')) {
       const body = request.postDataJSON() as { email?: string; password?: string }
 
+      if (body.email === 'slow-admin.e2e@m-team.test' && body.password === 'TestPassword123!') {
+        await new Promise((resolve) => setTimeout(resolve, 600))
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            accessToken: 'e2e-slow-token-not-valid-outside-this-test',
+            tokenType: 'Bearer',
+            expiresIn: 3600,
+            user: { ...admin, email: body.email },
+          }),
+        })
+        return
+      }
+
       if (body.email === admin.email && body.password === 'TestPassword123!') {
         await route.fulfill({
           status: 200,
@@ -68,4 +83,24 @@ test('muestra el error del backend cuando las credenciales no son válidas', asy
 
   await expect(page.getByRole('alert')).toContainText('Correo o contraseña incorrectos')
   await expect(page).toHaveURL(/\/iniciar-sesion$/)
+})
+
+test('muestra un spinner blanco animado durante un login lento', async ({ page }) => {
+  await page.goto('/iniciar-sesion')
+  await page.locator('input[type="email"]').fill('slow-admin.e2e@m-team.test')
+  await page.locator('input[type="password"]').fill('TestPassword123!')
+
+  const button = page.locator('button.login-button')
+  await button.click()
+
+  await expect(button).toHaveAttribute('aria-busy', 'true')
+  const spinner = button.locator('.action-spinner')
+  await expect(spinner).toBeVisible()
+  await expect(button).toContainText(/Entrando/)
+  await expect.poll(() => spinner.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { animationName: style.animationName, width: style.width, height: style.height, borderTopColor: style.borderTopColor }
+  })).toEqual(expect.objectContaining({ animationName: 'login-spin', width: '18px', height: '18px' }))
+
+  await expect(page).toHaveURL(/\/admin$/)
 })

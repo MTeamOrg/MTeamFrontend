@@ -50,4 +50,15 @@ describe('ActionButton', () => {
     expect(button.querySelector('.action-success-icon')).toBeInTheDocument()
     expect(button.querySelector('.action-spinner')).not.toBeInTheDocument()
   })
+
+  it('can show the spinner immediately when the action needs instant feedback', () => {
+    vi.useFakeTimers()
+    render(<ActionButton isLoading loadingDelayMs={0} loadingLabel="Entrando…">Iniciar sesión</ActionButton>)
+
+    const button = screen.getByRole('button', { name: 'Iniciar sesión' })
+    act(() => vi.advanceTimersByTime(0))
+
+    expect(button.querySelector('.action-spinner')).toBeInTheDocument()
+    expect(button).toHaveAccessibleName('Entrando…')
+  })
 })

@@ -111,6 +111,7 @@ describe('LoginPage', () => {
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-busy', 'true')
     await waitFor(() => expect(screen.getByText('Entrando…')).toBeInTheDocument())
+    expect(button.querySelector('.action-spinner')).toBeInTheDocument()
 
     resolveLogin(buildSession())
     expect(await screen.findByText('Inicio de socio')).toBeInTheDocument()
