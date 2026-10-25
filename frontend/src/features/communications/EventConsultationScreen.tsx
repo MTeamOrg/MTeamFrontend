@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { backendApi, type Event, type EventDisplayStatus } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { useDebouncedValue } from '../../hooks/use-debounced-value'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
@@ -31,13 +31,13 @@ async function loadEvents(search: string) {
 }
 
 export function EventConsultationScreen() {
-  const [search, setSearch] = useState('')
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [status, setStatus] = useState<EventDisplayStatus>('UPCOMING')
   const [page, setPage] = useState(1)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
-  const debouncedSearch = useDebouncedValue(search)
   useEffect(() => {
     if (!isFilterOpen) return
     function closeFilters(event: KeyboardEvent) {
@@ -48,9 +48,13 @@ export function EventConsultationScreen() {
     document.addEventListener('keydown', closeFilters)
     return () => document.removeEventListener('keydown', closeFilters)
   }, [isFilterOpen])
-  const loader = useCallback(() => loadEvents(debouncedSearch), [debouncedSearch])
+  const loader = useCallback(() => {
+    void searchRequestKey
+    return loadEvents(submittedSearch)
+  }, [searchRequestKey, submittedSearch])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
-  const isSearchLoading = isLoading && data !== null
+  const isSearchLoading = isSearchPending || (isLoading && data !== null)
+  useEffect(() => syncLoading(isLoading), [isLoading, syncLoading])
   const events = data?.filter((event) => event.displayStatus === status) ?? []
   const lastPage = Math.max(1, Math.ceil(events.length / PAGE_SIZE))
   const currentPage = Math.min(page, lastPage)
@@ -68,7 +72,7 @@ export function EventConsultationScreen() {
       {STATUS_OPTIONS.map((option) => <button key={option.value} type="button" aria-pressed={status === option.value} onClick={() => selectStatus(option.value)}>{option.label}</button>)}
     </div>
     <div className="event-search-toolbar">
-      <label className="event-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar evento</span><input type="search" maxLength={100} placeholder="Buscar evento" value={search} aria-busy={isSearchLoading} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
+      <label className="event-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar evento</span><input type="search" maxLength={100} placeholder="Buscar evento" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }}/></label>
       <button ref={filterButton} type="button" className="event-filter-button" aria-label={`Filtrar eventos: ${STATUS_OPTIONS.find((option) => option.value === status)?.label}`} aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={20}/></button>
       {isFilterOpen && <fieldset id={filterId} className="event-filter-panel">
         <legend>Estado de los eventos</legend>

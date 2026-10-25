@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { useDebouncedValue } from '../../hooks/use-debounced-value'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { addDays, formatDateTime, formatTime, gymDate } from '../../service/date-time'
 import { backendApi, type AccessAttemptResult } from '../../service/backend-api'
@@ -49,7 +49,8 @@ const REASON_LABELS: Record<string, string> = {
 }
 
 export function AdminAccessAttemptsScreen() {
-  const [search, setSearch] = useState('')
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [role, setRole] = useState<UserRole | ''>('')
   const [result, setResult] = useState<AccessResult>('')
   const [branchId, setBranchId] = useState('')
@@ -58,21 +59,24 @@ export function AdminAccessAttemptsScreen() {
   const [period, setPeriod] = useState<AccessPeriod>('TODAY')
   const [page, setPage] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const debouncedSearch = useDebouncedValue(search)
   const isMobile = useIsMobile()
-  const loader = useCallback(() => backendApi.listAccessAttempts({
+  const loader = useCallback(() => {
+    void searchRequestKey
+    return backendApi.listAccessAttempts({
     page,
     limit: PAGE_SIZE,
     role: role || undefined,
     result: result || undefined,
     branchId: branchId || undefined,
-    search: debouncedSearch.trim() || undefined,
+    search: submittedSearch.trim() || undefined,
     ...getHistoryDateRange(isMobile, period, from, to),
-  }), [branchId, debouncedSearch, from, isMobile, page, period, result, role, to])
+    })
+  }, [branchId, from, isMobile, page, period, result, role, searchRequestKey, submittedSearch, to])
   const summaryLoader = useCallback(() => loadAccessSummary(getAccessPeriodRange(period)), [period])
   const branchesLoader = useCallback(() => backendApi.listAdminBranches({ page: 1, limit: 100 }), [])
   const { data, loading, error, reload } = useApiResource(loader)
-  const isSearchLoading = loading && data !== null
+  const isSearchLoading = isSearchPending || (loading && data !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
   const summary = useApiResource(summaryLoader)
   const { data: branches } = useApiResource(branchesLoader)
 
@@ -80,7 +84,7 @@ export function AdminAccessAttemptsScreen() {
     <PageHeader title="Accesos" description={ACCESS_DESCRIPTION}/>
     <AccessSummary summary={summary.data} loading={summary.loading} error={summary.error} period={period}/>
     <div className="toolbar access-history-filters">
-      <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar por usuario o documento" placeholder="Buscar por usuario o documento" value={search} aria-busy={isSearchLoading} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label>
+      <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar por usuario o documento" placeholder="Buscar por usuario o documento" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }}/></label>
       <button type="button" className="access-history-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
       <div className={`access-filter-fields${filtersOpen ? ' is-open' : ''}`}>
         <label className="visually-hidden" htmlFor="access-branch">Sede</label><select id="access-branch" aria-label="Filtrar por sede" value={branchId} onChange={(event) => { setPage(1); setBranchId(event.target.value) }}><option value="">Sede: todas</option>{branches?.items.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select>

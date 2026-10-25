@@ -116,6 +116,7 @@ describe('pantalla administrativa de accesos', () => {
     await screen.findByText('No hay intentos de ingreso que coincidan con los filtros.')
 
     fireEvent.change(screen.getByLabelText('Buscar por usuario o documento'), { target: { value: ' Marta ' } })
+    fireEvent.keyDown(screen.getByLabelText('Buscar por usuario o documento'), { key: 'Enter', code: 'Enter' })
     fireEvent.change(screen.getByLabelText('Filtrar por sede'), { target: { value: 'branch-1' } })
     fireEvent.change(screen.getByLabelText('Filtrar por rol'), { target: { value: 'MEMBER' } })
     fireEvent.change(screen.getByLabelText('Filtrar por resultado'), { target: { value: 'DENIED' } })

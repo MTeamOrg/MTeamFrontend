@@ -38,6 +38,7 @@ describe.each(['MEMBER', 'TRAINER'] as const)('event consultation for %s', (role
     renderEvents()
     await screen.findByRole('heading', { name: EVENTS[0].title })
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar evento' }), { target: { value: '  sin coincidencias  ' } })
+    fireEvent.keyDown(screen.getByRole('searchbox', { name: 'Buscar evento' }), { key: 'Enter', code: 'Enter' })
     expect(await screen.findByText('No hay eventos para los filtros seleccionados.')).toBeInTheDocument()
     const { url } = requestsTo(fetchStub, 'GET', '/events').at(-1)!
     expect(url.searchParams.get('search')).toBe('sin coincidencias')

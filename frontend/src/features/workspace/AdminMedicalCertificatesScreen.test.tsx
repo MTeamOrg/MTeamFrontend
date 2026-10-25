@@ -59,6 +59,7 @@ describe('bandeja administrativa de aptos médicos', () => {
     renderWithSession(<AdminMedicalCertificatesScreen/>, { user: testUser('ADMIN') })
     await screen.findByText('No hay certificados que coincidan con los filtros.')
     fireEvent.change(screen.getByLabelText('Buscar por socio o documento'), { target: { value: 'Lucas' } })
+    fireEvent.keyDown(screen.getByLabelText('Buscar por socio o documento'), { key: 'Enter', code: 'Enter' })
     fireEvent.change(screen.getByLabelText('Filtrar por estado'), { target: { value: 'REJECTED' } })
     fireEvent.change(screen.getByLabelText('Filtrar por fecha de carga'), { target: { value: 'LAST_7_DAYS' } })
     await waitFor(() => {

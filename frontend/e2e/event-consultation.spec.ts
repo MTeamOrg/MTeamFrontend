@@ -35,9 +35,11 @@ for (const role of ['MEMBER', 'TRAINER'] as const) {
         await expect(page.getByRole('navigation', { name: 'Navegación inferior' })).toHaveCount(1)
         if (role === 'TRAINER') await expect(page.getByRole('navigation', { name: 'Navegación inferior' }).getByRole('link', { name: 'Eventos' })).toHaveAttribute('aria-current', 'page')
         await page.getByRole('searchbox', { name: 'Buscar evento' }).fill('actividad 2')
+        await page.getByRole('searchbox', { name: 'Buscar evento' }).press('Enter')
         await expect(page.getByRole('article')).toHaveCount(1)
         await expect(page.getByRole('heading', { name: 'Encuentro de actividad 2' })).toBeVisible()
         await page.getByRole('searchbox').clear()
+        await page.getByRole('searchbox').press('Enter')
         await expect(page.getByRole('article')).toHaveCount(3)
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)

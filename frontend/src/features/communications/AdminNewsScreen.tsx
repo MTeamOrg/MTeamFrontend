@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type R
 import { backendApi, type NewsPost, type PublicationAudience, type PublicationStatus } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { useDebouncedValue } from '../../hooks/use-debounced-value'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
@@ -17,7 +17,8 @@ const STATUS_LABELS: Record<PublicationStatus, string> = { DRAFT: 'Borrador', PU
 export function AdminNewsScreen() {
   const isMobile = useIsMobile()
   const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [audience, setAudience] = useState<PublicationAudience | ''>('')
   const [status, setStatus] = useState<PublicationStatus | ''>('')
   const [editing, setEditing] = useState<NewsPost | null>(null)
@@ -33,7 +34,6 @@ export function AdminNewsScreen() {
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
   const formTitle = useRef<HTMLInputElement>(null)
-  const debouncedSearch = useDebouncedValue(search)
   useEffect(() => {
     if (!isFilterOpen) return
     function closeFilters(event: KeyboardEvent) {
@@ -44,9 +44,13 @@ export function AdminNewsScreen() {
     document.addEventListener('keydown', closeFilters)
     return () => document.removeEventListener('keydown', closeFilters)
   }, [isFilterOpen])
-  const loader = useCallback(() => backendApi.listNewsPosts({ page, limit: 12, ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}), ...(audience ? { audience } : {}), ...(status ? { status } : {}) }), [audience, debouncedSearch, page, status])
+  const loader = useCallback(() => {
+    void searchRequestKey
+    return backendApi.listNewsPosts({ page, limit: 12, ...(submittedSearch.trim() ? { search: submittedSearch.trim() } : {}), ...(audience ? { audience } : {}), ...(status ? { status } : {}) })
+  }, [audience, page, searchRequestKey, status, submittedSearch])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
-  const isSearchLoading = isLoading && data !== null
+  const isSearchLoading = isSearchPending || (isLoading && data !== null)
+  useEffect(() => syncLoading(isLoading), [isLoading, syncLoading])
 
   function startCreate() {
     setEditing(null); setForm(EMPTY_FORM); setFormError(''); setNotice(''); setIsFormOpen(true); setIsFilterOpen(false)
@@ -124,7 +128,7 @@ export function AdminNewsScreen() {
     {notice && <p role="status" className="success-message">{notice}</p>}
     <div className="admin-news-layout"><section className="admin-news-list" aria-label="Publicaciones">
       <div className="admin-news-toolbar">
-        <label className="admin-news-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar novedad</span><input type="search" maxLength={100} placeholder="Buscar novedad" value={search} aria-busy={isSearchLoading} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
+        <label className="admin-news-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar novedad</span><input type="search" maxLength={100} placeholder="Buscar novedad" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }}/></label>
         <button ref={filterButton} type="button" className="admin-news-filter-button" aria-label="Filtrar novedades" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
         {(!isMobile || isFilterOpen) && <div id={filterId} className="admin-news-filters">
           <label><span className="visually-hidden">Filtrar por audiencia</span><select value={audience} onChange={(event) => { setAudience(event.target.value as PublicationAudience | ''); setPage(1) }}><option value="">Audiencia: todas</option>{Object.entries(AUDIENCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>

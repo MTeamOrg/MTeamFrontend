@@ -95,6 +95,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await page.getByLabel('Filtrar por resultado').selectOption('DENIED')
     await page.getByLabel('Desde').fill(FILTER_DATE)
     await page.getByLabel('Hasta').fill(FILTER_DATE)
+    await page.getByLabel('Buscar por usuario o documento').press('Enter')
 
     const deniedRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
     await expect(deniedRow).toHaveCount(1)
@@ -114,6 +115,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await page.getByLabel('Filtrar por estado').selectOption('PENDING')
     await page.getByLabel('Fecha desde').fill(FILTER_DATE)
     await page.getByLabel('Fecha hasta').fill(FILTER_DATE)
+    await page.getByLabel('Buscar por socio o documento').press('Enter')
 
     const certificateRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
     await expect(certificateRow).toHaveCount(1)

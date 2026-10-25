@@ -78,9 +78,9 @@ it('uses API search, audience and status filters', async () => {
   renderNews()
   await screen.findByRole('button', { name: POST.title })
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: ' equipo ' } })
+  fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Enter', code: 'Enter' })
   fireEvent.change(screen.getByLabelText('Filtrar por audiencia'), { target: { value: 'TRAINERS' } })
   fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'INACTIVE' } })
-  await new Promise((resolve) => setTimeout(resolve, 450))
   await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/news-posts').at(-1)?.url.searchParams.get('status')).toBe('INACTIVE'))
   const url = requestsTo(fetchStub, 'GET', '/news-posts').at(-1)!.url
   expect(url.searchParams.get('search')).toBe('equipo')

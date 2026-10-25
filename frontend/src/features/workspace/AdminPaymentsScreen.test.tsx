@@ -43,7 +43,7 @@ describe('pagos y cuota del administrador', () => {
     expect(screen.getByRole('heading', { name: 'Últimos pagos' })).toBeInTheDocument()
   })
 
-  it('debouncea la búsqueda y conserva la pantalla mientras llega la respuesta', async () => {
+  it('busca al presionar Enter, evita duplicados y conserva la pantalla mientras llega la respuesta', async () => {
     stubPaymentsApi()
     renderWithSession(<AdminPaymentsScreen />, { user: testUser('ADMIN') })
     await screen.findByText('Juan Manuel Pérez')
@@ -52,14 +52,16 @@ describe('pagos y cuota del administrador', () => {
     const listPayments = vi.spyOn(backendApi, 'listPayments').mockImplementation(() => new Promise((resolve) => { resolveSearch = resolve }))
     const searchInput = screen.getByRole('textbox', { name: 'Buscar por socio o documento' })
     searchInput.focus()
-    fireEvent.change(searchInput, { target: { value: 's' } })
-    fireEvent.change(searchInput, { target: { value: 'so' } })
-    fireEvent.change(searchInput, { target: { value: 'soc' } })
+    fireEvent.change(searchInput, { target: { value: 'J' } })
+    fireEvent.change(searchInput, { target: { value: 'Ju' } })
+    fireEvent.change(searchInput, { target: { value: 'Juan' } })
 
     expect(listPayments).not.toHaveBeenCalled()
     expect(searchInput).toHaveFocus()
-    await new Promise((resolve) => setTimeout(resolve, 450))
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' })
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' })
     await waitFor(() => expect(listPayments).toHaveBeenCalledTimes(1))
+    expect(listPayments).toHaveBeenCalledWith(expect.objectContaining({ memberId: 'member-1', page: 1, limit: 100 }))
 
     expect(searchInput).toHaveAttribute('aria-busy', 'true')
     expect(screen.getByRole('heading', { name: 'Pagos y cuota' })).toBeInTheDocument()
@@ -68,6 +70,11 @@ describe('pagos y cuota del administrador', () => {
 
     resolveSearch(page([DEFAULT_PAYMENT]) as Awaited<ReturnType<typeof backendApi.listPayments>>)
     await waitFor(() => expect(searchInput).toHaveAttribute('aria-busy', 'false'))
+    fireEvent.change(searchInput, { target: { value: '' } })
+    expect(listPayments).toHaveBeenCalledTimes(1)
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' })
+    await waitFor(() => expect(listPayments).toHaveBeenCalledTimes(2))
+    expect(listPayments).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, limit: 20 }))
   })
 
   it('expone el detalle completo de valores largos sin perder la acción', async () => {

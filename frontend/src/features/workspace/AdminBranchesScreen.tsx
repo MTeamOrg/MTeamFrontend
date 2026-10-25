@@ -1,6 +1,6 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
-import { useDebouncedValue } from '../../hooks/use-debounced-value'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { backendApi, type Branch, type BranchInput } from '../../service/backend-api'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
@@ -19,28 +19,32 @@ const EMPTY_BRANCH: BranchInput = {
 type BranchFilter = 'all' | 'active' | 'inactive'
 
 export function AdminBranchesScreen() {
-  const [search, setSearch] = useState('')
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [activeFilter, setActiveFilter] = useState<BranchFilter>('all')
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<Branch | 'new' | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [togglingBranchId, setTogglingBranchId] = useState<string | null>(null)
-  const debouncedSearch = useDebouncedValue(search)
-  const loader = useCallback(() => backendApi.listAdminBranches({
-    search: debouncedSearch.trim() || undefined,
-    isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
-    page,
-    limit: 20,
-  }), [activeFilter, debouncedSearch, page])
+  const loader = useCallback(() => {
+    void searchRequestKey
+    return backendApi.listAdminBranches({
+      search: submittedSearch.trim() || undefined,
+      isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
+      page,
+      limit: 20,
+    })
+  }, [activeFilter, page, searchRequestKey, submittedSearch])
   const { data, loading, error, reload } = useApiResource(loader)
-  const isSearchLoading = loading && data !== null
+  const isSearchLoading = isSearchPending || (loading && data !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
 
   return <div className="app-page admin-branches-screen">
     <PageHeader title="Sedes" description="Las sedes desactivadas dejan de mostrarse y no pueden asignarse a nuevas clases, pero conservan su historial."/>
     <button type="button" className="button button-primary admin-branches-mobile-create" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
     <div className="admin-list-main">
       <div className="toolbar admin-list-toolbar admin-branches-toolbar">
-        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Buscar por nombre o dirección" value={search} aria-busy={isSearchLoading} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label>
+        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Buscar por nombre o dirección" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }}/></label>
         <button type="button" className="admin-branches-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
         <div className={`admin-branches-filter-fields${filtersOpen ? ' is-open' : ''}`}>
           <select aria-label="Filtrar sedes por estado" value={activeFilter} onChange={(event) => { setPage(1); setActiveFilter(event.target.value as BranchFilter) }}>
