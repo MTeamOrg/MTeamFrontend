@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '../authentication/AuthProvider'
@@ -26,7 +26,7 @@ describe.each(['MEMBER', 'TRAINER'] as const)('profile navigation for %s', (role
       { path: '/auth/me', handler: () => ({ body: profile }) },
       { path: '/users/me', handler: () => ({ body: profile }) },
       { method: 'PUT', path: '/users/me/photo', handler: () => {
-        profile = { ...profile, photoUrl: 'https://example.com/new-photo.jpg' }
+        profile = { ...profile, photoUrl: 'https://example.com/profile-photo/test-user?v=after' }
         return { body: profile }
       } },
       { path: '/members/me/membership', handler: () => ({ body: { currentPrice: null, status: 'EXPIRED', daysRemaining: 0 } }) },
@@ -38,26 +38,26 @@ describe.each(['MEMBER', 'TRAINER'] as const)('profile navigation for %s', (role
     return { user, fetchStub }
   }
 
-  it.each([false, true])('loads the photo, updates navigation after upload and preserves it after reload (persistent=%s)', async (isPersistent) => {
-    const { user, fetchStub } = setup('https://example.com/current-photo.jpg', isPersistent)
+  it.each([false, true])('loads the photo, replaces the same stored object and preserves it after reload (persistent=%s)', async (isPersistent) => {
+    const { user, fetchStub } = setup('https://example.com/profile-photo/test-user?v=before', isPersistent)
     const view = renderWorkspace(role)
     const sidebar = document.querySelector('.app-sidebar-user') as HTMLElement
     const profileCard = await screen.findByRole('region', { name: 'Resumen del perfil' })
     const photoName = `Foto de perfil de ${user.firstName} ${user.lastName}`
-    await waitFor(() => expect(within(sidebar).getByRole('img', { name: photoName })).toHaveAttribute('src', 'https://example.com/current-photo.jpg'))
-    expect(within(profileCard).getByRole('img', { name: photoName })).toHaveAttribute('src', 'https://example.com/current-photo.jpg')
+    await waitFor(() => expect(within(sidebar).getByRole('img', { name: photoName })).toHaveAttribute('src', 'https://example.com/profile-photo/test-user?v=before'))
+    expect(within(profileCard).getByRole('img', { name: photoName })).toHaveAttribute('src', 'https://example.com/profile-photo/test-user?v=before')
     fireEvent.change(await screen.findByLabelText(/Cambiar fotografía/), { target: { files: [new File(['image'], 'photo.png', { type: 'image/png' })] } })
-    await waitFor(() => expect(within(sidebar).getByRole('img')).toHaveAttribute('src', 'https://example.com/new-photo.jpg'))
-    expect(within(profileCard).getByRole('img')).toHaveAttribute('src', 'https://example.com/new-photo.jpg')
-    expect(authStorage.read()?.user.photoUrl).toBe('https://example.com/new-photo.jpg')
+    await waitFor(() => expect(within(sidebar).getByRole('img')).toHaveAttribute('src', 'https://example.com/profile-photo/test-user?v=after'))
+    expect(within(profileCard).getByRole('img')).toHaveAttribute('src', 'https://example.com/profile-photo/test-user?v=after')
+    expect(authStorage.read()?.user.photoUrl).toBe('https://example.com/profile-photo/test-user?v=after')
     expect(fetchStub.mock.calls.filter(([input, init]) => String(input).endsWith('/users/me/photo') && init?.method === 'PUT')).toHaveLength(1)
     const upload = fetchStub.mock.calls.find(([, init]) => init?.method === 'PUT')?.[1]?.body
     expect(upload).toBeInstanceOf(FormData)
     expect((upload as FormData).get('file')).toBeInstanceOf(File)
     view.unmount()
     renderWorkspace(role)
-    await waitFor(() => expect(within(document.querySelector('.app-sidebar-user') as HTMLElement).getByRole('img')).toHaveAttribute('src', 'https://example.com/new-photo.jpg'))
-    expect(within(await screen.findByRole('region', { name: 'Resumen del perfil' })).getByRole('img')).toHaveAttribute('src', 'https://example.com/new-photo.jpg')
+    await waitFor(() => expect(within(document.querySelector('.app-sidebar-user') as HTMLElement).getByRole('img')).toHaveAttribute('src', 'https://example.com/profile-photo/test-user?v=after'))
+    expect(within(await screen.findByRole('region', { name: 'Resumen del perfil' })).getByRole('img')).toHaveAttribute('src', 'https://example.com/profile-photo/test-user?v=after')
   })
 
   it('falls back to initials in the profile and navigation when the image fails', async () => {
@@ -84,6 +84,25 @@ describe.each(['MEMBER', 'TRAINER'] as const)('profile navigation for %s', (role
     expect(within(document.querySelector('.app-sidebar-user') as HTMLElement).getByRole('img')).toHaveAccessibleName(/Iniciales/)
     expect(within(screen.getByRole('region', { name: 'Resumen del perfil' })).getByRole('img')).toHaveAccessibleName(/Iniciales/)
     expect(authStorage.read()?.user.photoUrl).toBeUndefined()
+  })
+
+  it('keeps the upload control busy until the replacement response arrives', async () => {
+    const { fetchStub } = setup()
+    const originalFetch = fetchStub.getMockImplementation()!
+    let releaseUpload!: () => void
+    fetchStub.mockImplementation((input, init) => init?.method === 'PUT'
+      ? new Promise<Response>((resolve) => {
+        releaseUpload = () => { void originalFetch(input, init).then(resolve) }
+      })
+      : originalFetch(input, init))
+    renderWorkspace(role)
+    await screen.findByRole('region', { name: 'Resumen del perfil' })
+    const input = await screen.findByLabelText(/Cambiar.*graf/)
+    fireEvent.change(input, { target: { files: [new File(['image'], 'photo.png', { type: 'image/png' })] } })
+    expect(await screen.findByText(/Subiendo/)).toBeInTheDocument()
+    expect(input).toBeDisabled()
+    await act(async () => releaseUpload())
+    await waitFor(() => expect(input).not.toBeDisabled())
   })
 
   it.each([204, 503])('logs out from the last profile control and clears both storage locations (HTTP %s)', async (status) => {
