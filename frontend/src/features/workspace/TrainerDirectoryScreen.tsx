@@ -16,7 +16,7 @@ export function TrainerDirectoryScreen() {
       <Link className="button button-secondary" to="/socio"><span aria-hidden="true">←</span>Volver al inicio</Link>
     </PageHeader>
     {loading
-      ? <LoadingState/>
+      ? <LoadingState message="Cargando entrenadores…"/>
       : error
         ? <ErrorState message={error} retry={() => void reload()}/>
         : !data?.items.length

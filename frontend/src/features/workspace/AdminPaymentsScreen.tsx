@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { ActionButton } from '../../components/ActionButton'
 import { backendApi, type MemberListItem, type PaymentPreview, type PaymentReportItem, type PaymentStatus } from '../../service/backend-api'
 import { addDays, formatDate, formatDateTime, gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
@@ -19,7 +20,7 @@ function PaymentCellText({ value }: { value: string }) {
   return <span className="payment-cell-text" title={value} aria-label={value}>{value}</span>
 }
 
-function PaymentMobileCard({ payment, onVoid }: { payment: PaymentReportItem; onVoid: () => void }) {
+function PaymentMobileCard({ payment, onVoid, isVoiding }: { payment: PaymentReportItem; onVoid: () => void; isVoiding: boolean }) {
   const memberName = `${payment.member.firstName} ${payment.member.lastName}`
   const heading = `${memberName} · ${mobilePaymentDate(payment.accreditedAt)}`
   const details = payment.status === 'VOIDED'
@@ -32,11 +33,11 @@ function PaymentMobileCard({ payment, onVoid }: { payment: PaymentReportItem; on
       <strong title={heading} aria-label={heading}>{heading}</strong>
       <span title={details} aria-label={details}>{details}</span>
     </div>
-    <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span><PaymentActions payment={payment} onVoid={onVoid} /></div>
+    <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span><PaymentActions payment={payment} onVoid={onVoid} isVoiding={isVoiding} /></div>
   </article>
 }
 
-function PaymentTableRow({ payment, onVoid }: { payment: PaymentReportItem; onVoid: () => void }) {
+function PaymentTableRow({ payment, onVoid, isVoiding }: { payment: PaymentReportItem; onVoid: () => void; isVoiding: boolean }) {
   const memberName = `${payment.member.firstName} ${payment.member.lastName}`
   const receiptNumber = payment.receiptNumber || '—'
   const statusLabel = payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'
@@ -49,7 +50,7 @@ function PaymentTableRow({ payment, onVoid }: { payment: PaymentReportItem; onVo
     <td><PaymentCellText value={payment.method} /></td>
     <td><PaymentCellText value={formatDate(payment.expiresAt)} /></td>
     <td className="payment-status-cell"><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{statusLabel}</span></td>
-    <td className="payment-action-cell"><PaymentActions payment={payment} onVoid={onVoid} desktop /></td>
+    <td className="payment-action-cell"><PaymentActions payment={payment} onVoid={onVoid} isVoiding={isVoiding} desktop /></td>
   </tr>
 }
 
@@ -64,6 +65,7 @@ export function AdminPaymentsScreen() {
   const [status, setStatus] = useState<PaymentStatus | ''>('')
   const [dateRange, setDateRange] = useState<'last30' | 'month' | 'all'>('last30')
   const [paymentOpen, setPaymentOpen] = useState(false)
+  const [voidingPaymentId, setVoidingPaymentId] = useState<string | null>(null)
   const from = dateRange === 'month' ? monthStart : dateRange === 'last30' ? lastThirtyDaysStart : ''
   const loader = useCallback(async () => {
     const [payments, todaySummary, monthSummary, currentPrice, prices, metrics] = await Promise.all([
@@ -81,7 +83,7 @@ export function AdminPaymentsScreen() {
   const header = <PageHeader title="Pagos y cuota" description="El valor vigente de la cuota y todos los pagos acreditados. Cada acreditación abre 30 días de vigencia."><button type="button" className="button button-primary payment-header-register" aria-label="Registrar pago" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button></PageHeader>
   const dialog = paymentOpen && <PaymentDialog currentPrice={data?.currentPrice?.amount ?? null} onClose={() => setPaymentOpen(false)} onSaved={() => { setPaymentOpen(false); void reload() }} />
 
-  if (loading) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState /></div>{dialog}</div>
+  if (loading) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState message="Cargando pagos…" /></div>{dialog}</div>
   if (error || !data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()} /></div>{dialog}</div>
 
   return <div className="app-page admin-payments-screen">
@@ -109,7 +111,7 @@ export function AdminPaymentsScreen() {
       </section>
       <section className="payment-mobile-history">
         <h2>Últimos pagos</h2>
-        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <PaymentMobileCard key={payment.id} payment={payment} onVoid={() => void voidPayment(payment.id)} />)}</div>}
+        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <PaymentMobileCard key={payment.id} payment={payment} isVoiding={voidingPaymentId === payment.id} onVoid={() => void voidPayment(payment.id)} />)}</div>}
       </section>
     </section>
 
@@ -123,7 +125,7 @@ export function AdminPaymentsScreen() {
     <div className="admin-payments-layout">
       <section className="payment-list-panel">
         <div className="payment-desktop-history">
-          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Comprobante</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th aria-label="Acción"></th></tr></thead><tbody>{data.payments.items.map((payment) => <PaymentTableRow key={payment.id} payment={payment} onVoid={() => void voidPayment(payment.id)} />)}</tbody></table></div>}
+          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Comprobante</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th aria-label="Acción"></th></tr></thead><tbody>{data.payments.items.map((payment) => <PaymentTableRow key={payment.id} payment={payment} isVoiding={voidingPaymentId === payment.id} onVoid={() => void voidPayment(payment.id)} />)}</tbody></table></div>}
           <div className="table-pagination payment-pagination"><span>Página {page}</span><div><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
         </div>
       </section>
@@ -140,8 +142,10 @@ export function AdminPaymentsScreen() {
     if (!window.confirm('¿Confirmás la anulación de este pago? El pago quedará en el historial y se recalculará la vigencia.')) return
     const reason = window.prompt('Ingresá el motivo de la anulación:')?.trim()
     if (!reason) return
+    setVoidingPaymentId(id)
     try { await backendApi.voidPayment(id, reason); await reload() }
     catch (value) { window.alert(value instanceof Error ? value.message : 'No se pudo anular el pago.') }
+    finally { setVoidingPaymentId(null) }
   }
 }
 
@@ -149,16 +153,16 @@ function canVoidPayment(payment: { status: PaymentStatus; expiresAt: string }) {
   return payment.status === 'ACCREDITED' && new Date(payment.expiresAt).getTime() > Date.now()
 }
 
-function PaymentActions({ payment, onVoid, desktop = false }: { payment: { id: string; status: PaymentStatus; expiresAt: string; member: { firstName: string; lastName: string } }; onVoid: () => void; desktop?: boolean }) {
+function PaymentActions({ payment, onVoid, isVoiding, desktop = false }: { payment: { id: string; status: PaymentStatus; expiresAt: string; member: { firstName: string; lastName: string } }; onVoid: () => void; isVoiding: boolean; desktop?: boolean }) {
   const canVoid = canVoidPayment(payment)
   if (desktop) return canVoid
-    ? <button type="button" className="payment-desktop-void" aria-label={`Anular pago de ${payment.member.firstName} ${payment.member.lastName}`} onClick={onVoid}><Icon name="close" size={16} />Anular</button>
+    ? <ActionButton type="button" className="payment-desktop-void" isLoading={isVoiding} loadingLabel="Anulando…" aria-label={`Anular pago de ${payment.member.firstName} ${payment.member.lastName}`} onClick={onVoid}><Icon name="close" size={16} />Anular</ActionButton>
     : null
 
   return <details className="payment-mobile-actions">
     <summary className="payment-mobile-more" aria-label={`Acciones de ${payment.member.firstName} ${payment.member.lastName}`}><Icon name="more" size={19} /></summary>
     <div className="payment-mobile-menu">
-      {canVoid ? <button type="button" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); onVoid() }}>Anular pago</button> : <span>Sin acciones disponibles</span>}
+      {canVoid ? <ActionButton type="button" isLoading={isVoiding} loadingLabel="Anulando…" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); onVoid() }}>Anular pago</ActionButton> : <span>Sin acciones disponibles</span>}
     </div>
   </details>
 }
@@ -170,7 +174,7 @@ function PriceForm({ current, onSaved }: { current: string | null; onSaved: () =
   const [saving, setSaving] = useState(false)
   const requestKey = useRef<{ payload: string; key: string } | null>(null)
   async function submit(event: FormEvent) {
-    event.preventDefault(); setSaving(true); setNotice('')
+    event.preventDefault(); if (saving) return; setSaving(true); setNotice('')
     const effectiveDateTime = `${effectiveFrom}T00:00:00-03:00`
     const payload = JSON.stringify({ amount: Number(amount), effectiveFrom: effectiveDateTime })
     const idempotencyKey = requestKey.current?.payload === payload
@@ -181,7 +185,7 @@ function PriceForm({ current, onSaved }: { current: string | null; onSaved: () =
     catch (value) { setNotice(value instanceof Error ? value.message : 'No se pudo registrar el valor.') }
     finally { setSaving(false) }
   }
-  return <section className="surface-card payment-price-card"><h2>Cambiar el valor de la cuota</h2><form onSubmit={submit}><label className="read-field"><span>Nuevo valor</span><input aria-label="Nuevo valor" type="number" min="0.01" max="9999999999.99" step="0.01" placeholder={current ? money(current) : '$ 0'} value={amount} onChange={(event) => setAmount(event.target.value)} required /></label><label className="read-field"><span>Vigente desde</span><input aria-label="Vigente desde" type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} required /></label><p className="payment-price-alert"><Icon name="alert" size={20} /><span>Los pagos ya acreditados no cambian. Solo los aumentos notifican a los socios activos; el sistema determina los destinatarios al guardar.</span></p>{notice && <p className="notice-inline" role="status">{notice}</p>}<button type="submit" className="button button-primary button-block" disabled={saving}>{saving ? 'Guardando…' : 'Guardar nuevo valor'}</button></form></section>
+  return <section className="surface-card payment-price-card"><h2>Cambiar el valor de la cuota</h2><form onSubmit={submit}><label className="read-field"><span>Nuevo valor</span><input aria-label="Nuevo valor" type="number" min="0.01" max="9999999999.99" step="0.01" placeholder={current ? money(current) : '$ 0'} value={amount} onChange={(event) => setAmount(event.target.value)} required /></label><label className="read-field"><span>Vigente desde</span><input aria-label="Vigente desde" type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} required /></label><p className="payment-price-alert"><Icon name="alert" size={20} /><span>Los pagos ya acreditados no cambian. Solo los aumentos notifican a los socios activos; el sistema determina los destinatarios al guardar.</span></p>{notice && <p className="notice-inline" role="status">{notice}</p>}<ActionButton type="submit" className="button button-primary button-block" isLoading={saving} loadingLabel="Guardando nuevo valor">Guardar nuevo valor</ActionButton></form></section>
 }
 
 function PaymentDialog({ currentPrice, onClose, onSaved }: { currentPrice: string | null; onClose: () => void; onSaved: () => void }) {
@@ -194,13 +198,14 @@ function PaymentDialog({ currentPrice, onClose, onSaved }: { currentPrice: strin
   const [receiptNumber, setReceiptNumber] = useState('')
   const [preview, setPreview] = useState<PaymentPreview | null>(null)
   const [notice, setNotice] = useState('')
+  const [previewing, setPreviewing] = useState(false)
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const requestKey = useRef<{ payload: string; key: string } | null>(null)
   const selected = useMemo(() => members?.items.find((member) => member.id === memberId), [memberId, members])
   const body = () => ({ memberId, amount: Number(amount), method, ...(receiptNumber.trim() ? { receiptNumber: receiptNumber.trim() } : {}) })
   const invalidatePreview = () => { setPreview(null); setNotice('') }
-  async function previewPayment(event: FormEvent) { event.preventDefault(); setNotice(''); try { setPreview(await backendApi.previewPayment(body())) } catch (value) { setNotice(value instanceof Error ? value.message : 'No se pudo generar el resumen.') } }
+  async function previewPayment(event: FormEvent) { event.preventDefault(); if (previewing || saving) return; setPreviewing(true); setNotice(''); try { setPreview(await backendApi.previewPayment(body())) } catch (value) { setNotice(value instanceof Error ? value.message : 'No se pudo generar el resumen.') } finally { setPreviewing(false) } }
   async function confirmPayment() {
     if (savingRef.current) return
     savingRef.current = true
@@ -223,5 +228,5 @@ function PaymentDialog({ currentPrice, onClose, onSaved }: { currentPrice: strin
       setSaving(false)
     }
   }
-  return <div className="dialog-backdrop payment-dialog-backdrop" role="presentation"><section className="workspace-dialog payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-dialog-title"><header className="payment-dialog-header"><div><h2 id="payment-dialog-title">Registrar y acreditar un pago</h2><p>Revisá el resumen antes de confirmar: la acreditación genera una nueva vigencia de 30 días.</p></div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" /></button></header><form onSubmit={previewPayment}><div className="payment-dialog-body"><label className="read-field payment-member-field"><span>Socio</span><span className="payment-member-search"><Icon name="search" size={20} /><input aria-label="Buscar socio" value={search} onChange={(event) => { setSearch(event.target.value); setMemberId(''); invalidatePreview() }} placeholder="Buscar por nombre o documento" /></span><select aria-label="Socio" value={memberId} onChange={(event) => { setMemberId(event.target.value); invalidatePreview() }} required><option value="">Seleccioná un socio</option>{members?.items.map((member: MemberListItem) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName} · DNI {member.documentNumber}</option>)}</select></label><div className="payment-dialog-row"><label className="read-field"><span>Importe</span><input aria-label="Importe" type="number" min="0.01" max="9999999999.99" step="0.01" value={amount} onChange={(event) => { setAmount(event.target.value); invalidatePreview() }} required /></label><label className="read-field"><span>Medio de pago</span><select aria-label="Medio de pago" value={method} onChange={(event) => { setMethod(event.target.value); invalidatePreview() }} required><option>Efectivo</option><option>Débito</option><option>Transferencia</option></select></label></div><label className="read-field"><span>Número de comprobante</span><input aria-label="Número de comprobante" value={receiptNumber} maxLength={100} onChange={(event) => { setReceiptNumber(event.target.value); invalidatePreview() }} placeholder="0001-0456" /></label>{loading && <LoadingState message="Buscando socios…" />}{error && <ErrorState message={error} retry={() => void reload()} />}{selected && <div className="payment-operation-summary"><span className="payment-summary-title">RESUMEN DE LA OPERACIÓN</span><p><span>Socio</span><strong>{selected.firstName} {selected.lastName}</strong></p><p><span>Valor vigente de la cuota</span><strong>{money(currentPrice)}</strong></p><p><span>Vencimiento actual</span><strong>{formatDate(selected.expiresAt)}</strong></p><div className="payment-summary-divider" /><p className="payment-new-expiration"><span>Nuevo vencimiento</span><strong>{preview ? formatDate(preview.estimatedExpiresAt) : 'Pendiente de validar'}</strong></p><small>Los días restantes del vencimiento anterior no se acumulan.</small></div>}{notice && <p className="error-message" role="alert">{notice}</p>}</div><footer className="dialog-actions payment-dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button>{preview ? <button type="button" className="button button-primary" disabled={saving} onClick={() => void confirmPayment()}><Icon name="check" size={20} />{saving ? 'Acreditando…' : 'Confirmar y acreditar'}</button> : <button type="submit" className="button button-primary" disabled={!selected}><Icon name="check" size={20} />Revisar y acreditar</button>}</footer></form></section></div>
+  return <div className="dialog-backdrop payment-dialog-backdrop" role="presentation"><section className="workspace-dialog payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-dialog-title"><header className="payment-dialog-header"><div><h2 id="payment-dialog-title">Registrar y acreditar un pago</h2><p>Revisá el resumen antes de confirmar: la acreditación genera una nueva vigencia de 30 días.</p></div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" /></button></header><form onSubmit={previewPayment}><div className="payment-dialog-body"><label className="read-field payment-member-field"><span>Socio</span><span className="payment-member-search"><Icon name="search" size={20} /><input aria-label="Buscar socio" value={search} onChange={(event) => { setSearch(event.target.value); setMemberId(''); invalidatePreview() }} placeholder="Buscar por nombre o documento" /></span><select aria-label="Socio" value={memberId} onChange={(event) => { setMemberId(event.target.value); invalidatePreview() }} required><option value="">Seleccioná un socio</option>{members?.items.map((member: MemberListItem) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName} · DNI {member.documentNumber}</option>)}</select></label><div className="payment-dialog-row"><label className="read-field"><span>Importe</span><input aria-label="Importe" type="number" min="0.01" max="9999999999.99" step="0.01" value={amount} onChange={(event) => { setAmount(event.target.value); invalidatePreview() }} required /></label><label className="read-field"><span>Medio de pago</span><select aria-label="Medio de pago" value={method} onChange={(event) => { setMethod(event.target.value); invalidatePreview() }} required><option>Efectivo</option><option>Débito</option><option>Transferencia</option></select></label></div><label className="read-field"><span>Número de comprobante</span><input aria-label="Número de comprobante" value={receiptNumber} maxLength={100} onChange={(event) => { setReceiptNumber(event.target.value); invalidatePreview() }} placeholder="0001-0456" /></label>{loading && <LoadingState message="Buscando socios…" />}{error && <ErrorState message={error} retry={() => void reload()} />}{selected && <div className="payment-operation-summary"><span className="payment-summary-title">RESUMEN DE LA OPERACIÓN</span><p><span>Socio</span><strong>{selected.firstName} {selected.lastName}</strong></p><p><span>Valor vigente de la cuota</span><strong>{money(currentPrice)}</strong></p><p><span>Vencimiento actual</span><strong>{formatDate(selected.expiresAt)}</strong></p><div className="payment-summary-divider" /><p className="payment-new-expiration"><span>Nuevo vencimiento</span><strong>{preview ? formatDate(preview.estimatedExpiresAt) : 'Pendiente de validar'}</strong></p><small>Los días restantes del vencimiento anterior no se acumulan.</small></div>}{notice && <p className="error-message" role="alert">{notice}</p>}</div><footer className="dialog-actions payment-dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button>{preview ? <ActionButton type="button" className="button button-primary" isLoading={saving} loadingLabel="Acreditando…" onClick={() => void confirmPayment()}><Icon name="check" size={20} />Confirmar y acreditar</ActionButton> : <ActionButton type="submit" className="button button-primary" isLoading={previewing} loadingLabel="Revisando…" disabled={!selected}><Icon name="check" size={20} />Revisar y acreditar</ActionButton>}</footer></form></section></div>
 }

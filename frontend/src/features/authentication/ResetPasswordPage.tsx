@@ -5,6 +5,7 @@ import { AuthLayout } from './AuthLayout'
 import { PasswordField } from './PasswordField'
 import { RecoveryDialog } from './RecoveryDialog'
 import { authService } from './auth-service'
+import { ActionButton } from '../../components/ActionButton'
 
 export function ResetPasswordPage() {
   const [token] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '')
@@ -46,7 +47,7 @@ export function ResetPasswordPage() {
           </> : <>
             <PasswordField label="Nueva contraseña" value={newPassword} onChange={event => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} maxLength={72} required disabled={isSubmitting} />
             <PasswordField label="Confirmar nueva contraseña" value={confirmation} onChange={event => setConfirmation(event.target.value)} autoComplete="new-password" minLength={8} maxLength={72} required disabled={isSubmitting} />
-            <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Guardar contraseña'}</button>
+            <ActionButton className="primary-button" type="submit" isLoading={isSubmitting} loadingLabel="Guardando…">Guardar contraseña</ActionButton>
           </>}
         </>}
         <Link to="/iniciar-sesion">Volver a iniciar sesión</Link>

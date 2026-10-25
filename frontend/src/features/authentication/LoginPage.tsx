@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import mailIcon from '../../assets/icons/mail.svg'
 import { ApiError } from '../../service/api-client'
@@ -6,6 +6,11 @@ import { AuthLayout } from './AuthLayout'
 import { PasswordField } from './PasswordField'
 import { RecoveryDialog } from './RecoveryDialog'
 import { useAuth } from './use-auth'
+import { ActionButton } from '../../components/ActionButton'
+
+type LoginStatus = 'idle' | 'loading' | 'success'
+
+const SUCCESS_FEEDBACK_DURATION_MS = 240
 
 export function LoginPage() {
   const { session, login } = useAuth()
@@ -15,26 +20,35 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loginStatus, setLoginStatus] = useState<LoginStatus>('idle')
   const [isRecoveryOpen, setIsRecoveryOpen] = useState(false)
+  const isSubmitLockedRef = useRef(false)
 
-  if (session) {
+  if (session && loginStatus === 'idle') {
     const roleHome = session.user.role === 'ADMIN' ? '/admin' : session.user.role === 'TRAINER' ? '/entrenador' : '/socio'
     return <Navigate to={session.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome} replace />
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitLockedRef.current) return
+    isSubmitLockedRef.current = true
     setError('')
-    setIsSubmitting(true)
+    setLoginStatus('loading')
+    let navigationStarted = false
     try {
       const nextSession = await login({ email, password }, remember)
+      setLoginStatus('success')
       const roleHome = nextSession.user.role === 'ADMIN' ? '/admin' : nextSession.user.role === 'TRAINER' ? '/entrenador' : '/socio'
+      await new Promise<void>((resolve) => window.setTimeout(resolve, SUCCESS_FEEDBACK_DURATION_MS))
+      navigationStarted = true
       await navigate(nextSession.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome, { replace: true })
     } catch (caughtError) {
       setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible iniciar sesión.')
+      setLoginStatus('idle')
+      navigationStarted = false
     } finally {
-      setIsSubmitting(false)
+      if (!navigationStarted) isSubmitLockedRef.current = false
     }
   }
 
@@ -56,7 +70,7 @@ export function LoginPage() {
           <label className="checkbox"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /> Mantener la sesión iniciada</label>
           <button className="muted-link recovery-link" type="button" onClick={() => { setIsRecoveryOpen(true) }}>¿Olvidaste tu contraseña?</button>
         </div>
-        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}</button>
+        <ActionButton className="primary-button login-button" type="submit" isLoading={loginStatus === 'loading'} isSuccess={loginStatus === 'success'} loadingDelayMs={0} loadingLabel="Entrando…" successLabel="¡Listo!">Iniciar sesión</ActionButton>
         <div className="form-divider"><span>o</span></div>
         <p className="form-footer">¿Todavía no tenés cuenta? <Link to="/crear-cuenta">Crear cuenta</Link></p>
       </form>

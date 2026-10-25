@@ -70,7 +70,7 @@ describe.each(['MEMBER', 'TRAINER'] as const)('event consultation for %s', (role
     let resolveEvents!: (value: { items: Event[]; page: number; limit: number; total: number }) => void
     vi.spyOn(backendApi, 'listEvents').mockImplementation(() => new Promise((resolve) => { resolveEvents = resolve }))
     renderEvents()
-    expect(screen.getByRole('status')).toHaveTextContent('Cargando datos')
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando eventos…')
     await waitFor(() => expect(backendApi.listEvents).toHaveBeenCalled())
     resolveEvents({ items: [], page: 1, limit: 100, total: 0 })
     expect(await screen.findByText('No hay eventos para los filtros seleccionados.')).toBeInTheDocument()

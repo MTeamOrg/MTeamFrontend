@@ -24,7 +24,7 @@ export function NewsConsultationScreen() {
       <Link to={hrefFor(role, 'novedades')} aria-current="page">Novedades</Link>
       <Link to={hrefFor(role, 'eventos')}>Eventos</Link>
     </nav>}
-    {isLoading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay novedades publicadas para mostrar."/> : <>
+    {isLoading ? <LoadingState message="Cargando novedades…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay novedades publicadas para mostrar."/> : <>
       <div className="news-consultation-list">{data.items.map((post) => <ConsultationNewsCard key={post.id} post={post}/>)}</div>
       {data.total > data.limit && <nav className="table-pagination news-pagination" aria-label="Páginas de novedades">
         <span>Página {data.page} de {Math.ceil(data.total / data.limit)}</span>

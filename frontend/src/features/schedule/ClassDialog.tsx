@@ -7,6 +7,7 @@ import {
   type ScheduledClassUpdate,
 } from '../../service/backend-api'
 import { addDays, localDateTimeToGymOffset } from '../../service/date-time'
+import { ActionButton } from '../../components/ActionButton'
 import { Icon } from '../workspace/Icon'
 import { SCHEDULE_DAYS, hasStarted } from './schedule-model'
 
@@ -28,6 +29,7 @@ export function ClassDialog({ weekStartsOn, branches, trainers, scheduledClass, 
   const [trainerId, setTrainerId] = useState(scheduledClass?.trainer?.id ?? '')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [savingAction, setSavingAction] = useState<'save' | 'delete' | null>(null)
   const title = editing ? 'Editar clase' : 'Nueva clase'
   const branchOptions = scheduledClass && !branches.some((branch) => branch.id === scheduledClass.branch.id)
     ? [...branches, scheduledClass.branch]
@@ -46,6 +48,7 @@ export function ClassDialog({ weekStartsOn, branches, trainers, scheduledClass, 
       return
     }
     setSaving(true)
+    setSavingAction('save')
     try {
       if (scheduledClass) {
         const changes: ScheduledClassUpdate = {}
@@ -72,12 +75,14 @@ export function ClassDialog({ weekStartsOn, branches, trainers, scheduledClass, 
       setError(value instanceof Error ? value.message : 'No se pudo guardar la clase.')
     } finally {
       setSaving(false)
+      setSavingAction(null)
     }
   }
 
   async function remove() {
     if (!scheduledClass || !window.confirm(`¿Confirmás la eliminación de ${scheduledClass.activity} (${scheduledClass.startTime})?`)) return
     setSaving(true)
+    setSavingAction('delete')
     setError('')
     try {
       await backendApi.deleteScheduledClass(scheduledClass.id)
@@ -86,6 +91,7 @@ export function ClassDialog({ weekStartsOn, branches, trainers, scheduledClass, 
       setError(value instanceof Error ? value.message : 'No se pudo eliminar la clase.')
     } finally {
       setSaving(false)
+      setSavingAction(null)
     }
   }
 
@@ -110,9 +116,9 @@ export function ClassDialog({ weekStartsOn, branches, trainers, scheduledClass, 
         </fieldset>
         {error && <p className="error-message" role="alert">{error}</p>}
         <div className="dialog-actions">
-          {editing && !locked && <button type="button" className="button button-danger class-dialog-delete" disabled={saving} onClick={() => void remove()}><Icon name="trash" size={20}/>Eliminar</button>}
+          {editing && !locked && <ActionButton type="button" className="button button-danger class-dialog-delete" isLoading={saving && savingAction === 'delete'} loadingLabel="Eliminando…" disabled={savingAction === 'save'} onClick={() => void remove()}><Icon name="trash" size={20}/>Eliminar</ActionButton>}
           <button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button>
-          {!locked && <button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Crear clase'}</button>}
+          {!locked && <ActionButton type="submit" className="button button-primary" isLoading={saving && savingAction === 'save'} loadingLabel="Guardando…" disabled={savingAction === 'delete'}>{editing ? 'Guardar cambios' : 'Crear clase'}</ActionButton>}
         </div>
       </form>
     </section>

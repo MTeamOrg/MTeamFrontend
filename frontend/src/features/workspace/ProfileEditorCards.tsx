@@ -1,5 +1,7 @@
 import { useId, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { ActionButton } from '../../components/ActionButton'
+import { useDelayedLoading } from '../../hooks/use-delayed-loading'
 import type { UserRole } from '../authentication/auth-types'
 import { backendApi, type OwnProfile } from '../../service/backend-api'
 import { Icon } from './Icon'
@@ -23,6 +25,7 @@ export function ContactDataCard({ profile, role, onUpdated, onCancel }: { profil
 
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (isSaving) return
     setNotice('')
     setError('')
     const errors: Record<string, string> = {}
@@ -73,7 +76,7 @@ export function ContactDataCard({ profile, role, onUpdated, onCancel }: { profil
       {error && <p className="error-message" role="alert">{error}</p>}
       <div className="profile-form-actions">
         <button type="button" className="button button-secondary" onClick={cancel}>Cancelar</button>
-        <button type="submit" className="button button-primary" disabled={isSaving}>{isSaving ? 'Guardando…' : 'Guardar cambios'}</button>
+        <ActionButton type="submit" className="button button-primary" isLoading={isSaving} loadingLabel="Guardando…">Guardar cambios</ActionButton>
       </div>
       {role === 'MEMBER' && <Link className="button button-secondary profile-mobile-medical-button" to="/socio/apto-medico"><Icon name="file" size={18}/>Apto médico</Link>}
     </form>
@@ -83,6 +86,7 @@ export function ContactDataCard({ profile, role, onUpdated, onCancel }: { profil
 export function ProfileIdentityCard({ profile, role, onUpdated }: { profile: OwnProfile; role: UserRole; onUpdated: (profile: OwnProfile) => void }) {
   const [photoSaving, setPhotoSaving] = useState(false)
   const [error, setError] = useState('')
+  const showPhotoLoadingFeedback = useDelayedLoading(photoSaving)
 
   async function changePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -112,7 +116,7 @@ export function ProfileIdentityCard({ profile, role, onUpdated }: { profile: Own
     <h2>{profile.firstName} {profile.lastName}</h2>
     {role === 'TRAINER' && <p className="trainer-profile-specialty">{profile.trainerProfile?.specialty || 'Especialidad no informada'}</p>}
     <span className="member-status">{role === 'MEMBER' ? 'Socio' : role === 'TRAINER' ? 'Entrenador' : 'Administrador'} · Cuenta {profile.status === 'ACTIVE' ? 'activa' : 'inactiva'}</span>
-    <label className="button button-secondary profile-photo-action" htmlFor="profile-photo"><Icon name="image" size={18}/>{photoSaving ? 'Subiendo…' : 'Cambiar fotografía'}</label>
+    <label className={`button button-secondary profile-photo-action${photoSaving ? ' action-button' : ''}`} htmlFor="profile-photo" aria-busy={photoSaving || undefined} aria-disabled={photoSaving || undefined}>{showPhotoLoadingFeedback ? <><span className="action-spinner" aria-hidden="true"/>Subiendo…</> : <><Icon name="image" size={18}/>Cambiar fotografía</>}</label>
     <input id="profile-photo" className="sr-only" type="file" accept="image/jpeg,image/png" onChange={changePhoto} disabled={photoSaving}/>
     <small className="field-hint">JPG o PNG · máximo 5 MB</small>
     {error && <p className="error-message" role="alert">{error}</p>}

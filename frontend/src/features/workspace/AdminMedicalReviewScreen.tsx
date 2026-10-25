@@ -5,6 +5,7 @@ import { backendApi, type MedicalCertificateStatus } from '../../service/backend
 import { formatDateTime } from '../../service/date-time'
 import { ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
+import { ActionButton } from '../../components/ActionButton'
 import { MedicalCertificatePreview } from './MedicalCertificatePreview'
 import { PageHeader } from './PageHeader'
 
@@ -46,9 +47,12 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
   const [actionError, setActionError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submittingAction, setSubmittingAction] = useState<'approve' | 'reject' | null>(null)
 
   async function approve() {
+    if (submitting) return
     setSubmitting(true)
+    setSubmittingAction('approve')
     setActionError('')
     setActionMessage('')
     try {
@@ -59,11 +63,13 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
       setActionError(value instanceof Error ? value.message : 'No se pudo aprobar el certificado.')
     } finally {
       setSubmitting(false)
+      setSubmittingAction(null)
     }
   }
 
   async function reject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (submitting) return
     const comment = reviewComment.trim()
     if (!comment) {
       setActionError('La observación es obligatoria para rechazar el certificado.')
@@ -74,6 +80,7 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
       return
     }
     setSubmitting(true)
+    setSubmittingAction('reject')
     setActionError('')
     setActionMessage('')
     try {
@@ -84,11 +91,12 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
       setActionError(value instanceof Error ? value.message : 'No se pudo rechazar el certificado.')
     } finally {
       setSubmitting(false)
+      setSubmittingAction(null)
     }
   }
 
   const header = <PageHeader title="Revisar apto médico" description="Verificá la documentación del socio antes de aprobarla."/> 
-  if (loading) return <div className="app-page medical-review-screen">{header}<div className="app-card"><LoadingState/></div></div>
+  if (loading) return <div className="app-page medical-review-screen">{header}<div className="app-card"><LoadingState message="Cargando revisión de aptos…"/></div></div>
   if (error || !data) return <div className="app-page medical-review-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar el certificado médico.'} retry={() => void reload()}/></div></div>
 
   const memberName = `${data.member.firstName} ${data.member.lastName}`
@@ -124,13 +132,13 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
         </section>
         {canReview ? <section className="surface-card medical-decision-card">
           <h2>Decisión</h2>
-          <button type="button" className="button button-primary medical-approve-button" disabled={submitting} onClick={() => void approve()}><Icon name="check" size={20}/>{submitting ? 'Guardando…' : 'Aprobar apto médico'}</button>
+          <ActionButton type="button" className="button button-primary medical-approve-button" isLoading={submittingAction === 'approve'} loadingLabel="Guardando…" disabled={submittingAction === 'reject'} onClick={() => void approve()}><Icon name="check" size={20}/>Aprobar apto médico</ActionButton>
           <p className="medical-decision-help">Una vez aprobado, el apto no vence.</p>
           <div className="medical-decision-divider"/>
           <h3>Rechazar</h3>
           <form onSubmit={(event) => void reject(event)} noValidate>
             <label className="medical-comment-field"><span className="sr-only">Observación para el socio</span><textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="Observación para el socio (obligatoria)…" required maxLength={1000} aria-label="Observación para el socio"/></label>
-            <button type="submit" className="button button-danger" disabled={submitting}><Icon name="close" size={20}/>{submitting ? 'Guardando…' : 'Rechazar apto médico'}</button>
+            <ActionButton type="submit" className="button button-danger" isLoading={submittingAction === 'reject'} loadingLabel="Guardando…" disabled={submittingAction === 'approve'}><Icon name="close" size={20}/>Rechazar apto médico</ActionButton>
           </form>
         </section> : <section className="surface-card medical-decision-card medical-read-only-card">
           <h2>Resultado</h2>

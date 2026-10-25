@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ActionButton } from '../../components/ActionButton'
 import { backendApi } from '../../service/backend-api'
 import { Icon } from './Icon'
 
@@ -28,9 +29,9 @@ export function MedicalCertificateFileButton({ id, compact = false, label, signe
   }
 
   return <span className="medical-file-link">
-    <button type="button" className="button button-secondary" onClick={() => void openFile()} disabled={loading}>
-      <Icon name="eye" size={16}/>{loading ? 'Abriendo…' : label ?? (compact ? 'Ver archivo' : 'Ver documento')}
-    </button>
+    <ActionButton type="button" className="button button-secondary" isLoading={loading} loadingLabel="Abriendo…" onClick={() => void openFile()}>
+      <Icon name="eye" size={16}/>{label ?? (compact ? 'Ver archivo' : 'Ver documento')}
+    </ActionButton>
     {error && <small className="error-message" role="alert">{error}</small>}
   </span>
 }

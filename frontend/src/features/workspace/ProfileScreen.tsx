@@ -47,7 +47,7 @@ export function ProfileScreen({ role, onPasswordChange, onLogout }: { role: User
   return <div className={`app-page profile-page${role === 'TRAINER' ? ' trainer-profile-page' : ''}`}>
     <PageHeader title="Mi perfil" description={role === 'TRAINER' ? 'Tu perfil profesional, tus datos de contacto y las sedes donde trabajás.' : 'Tus datos, el estado de tu cuota y el historial de pagos, todo en un solo lugar.'}/>
     {loading
-      ? <div className="app-card"><LoadingState/></div>
+      ? <div className="app-card"><LoadingState message="Cargando perfil…"/></div>
       : error || !data
         ? <div className="app-card"><ErrorState message={error || 'No se pudo cargar el perfil.'} retry={() => void reload()}/></div>
         : <ProfileContent
