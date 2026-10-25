@@ -4,6 +4,7 @@ import { ApiError } from '../../service/api-client'
 import { AuthLayout } from './AuthLayout'
 import { PasswordField } from './PasswordField'
 import { useAuth } from './use-auth'
+import { ActionButton } from '../../components/ActionButton'
 
 export function ChangePasswordPage({ optional = false }: { optional?: boolean }) {
   const { session, changePassword, logout } = useAuth()
@@ -16,6 +17,7 @@ export function ChangePasswordPage({ optional = false }: { optional?: boolean })
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) return
     if (newPassword !== confirmation) {
       setError('Las contraseñas nuevas no coinciden.')
       return
@@ -47,7 +49,7 @@ export function ChangePasswordPage({ optional = false }: { optional?: boolean })
         <PasswordField label="Contraseña actual" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" required />
         <PasswordField label="Nueva contraseña" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} required />
         <PasswordField label="Confirmar nueva contraseña" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" minLength={8} required />
-        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Guardar contraseña'}</button>
+        <ActionButton className="primary-button" type="submit" isLoading={isSubmitting} loadingLabel="Guardando…">Guardar contraseña</ActionButton>
         <button className="secondary-button" type="button" onClick={() => void logout()}>Cerrar sesión</button>
       </form>
     </AuthLayout>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../service/api-client'
 import { authService } from './auth-service'
 import './recovery-dialog.css'
+import { ActionButton } from '../../components/ActionButton'
 
 export function RecoveryDialog({ initialEmail, onClose }: { initialEmail: string; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -54,7 +55,7 @@ export function RecoveryDialog({ initialEmail, onClose }: { initialEmail: string
         {!canResend && <p>Podés volver a solicitar un enlace en un minuto.</p>}
         <div className="dialog-actions">
           <button className="button button-secondary" type="button" onClick={onClose}>Volver</button>
-          <button className="button button-primary" type="submit" disabled={isSubmitting || !canResend}>{isSubmitting ? 'Enviando…' : notice ? 'Enviar otro enlace' : 'Enviar enlace'}</button>
+          <ActionButton className="button button-primary" type="submit" isLoading={isSubmitting} loadingLabel="Enviando…" disabled={!canResend}>{notice ? 'Enviar otro enlace' : 'Enviar enlace'}</ActionButton>
         </div>
       </form>
     </dialog>

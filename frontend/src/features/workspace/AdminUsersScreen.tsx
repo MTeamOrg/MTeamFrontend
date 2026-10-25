@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Link, useSearchParams } from 'react-router-dom'
 import type { UserRole, UserStatus } from '../authentication/auth-types'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { ActionButton } from '../../components/ActionButton'
 import { backendApi, type CreateUserInput, type MembershipStatus, type UserListItem } from '../../service/backend-api'
 import { describeApiError } from '../../service/api-errors'
 import { gymDate } from '../../service/date-time'
@@ -166,6 +167,7 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const change = (field: keyof CreateUserInput, value: string) => setForm((current) => ({ ...current, [field]: value }))
   async function submit(event: FormEvent) {
     event.preventDefault(); setError('')
+    if (saving) return
     const blank = REQUIRED_FIELDS[form.role].filter((field) => !(form[field] ?? '').trim())
     if (blank.length) { setError(`Completá los campos obligatorios: ${blank.map((field) => FIELD_LABELS[field]).join(', ')}.`); return }
     if (!/\d/.test(form.documentNumber)) { setError('El documento debe contener al menos un número.'); return }
@@ -201,7 +203,7 @@ function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       {form.role === 'TRAINER' && <div className="admin-create-account-extra-fields"><Input label="Especialidad" maxLength={150} value={form.specialty ?? ''} onChange={(value) => change('specialty', value)} /><Input label="Descripción" value={form.description ?? ''} onChange={(value) => change('description', value)} /></div>}
 
       {error && <p className="error-message admin-create-account-error" role="alert">{error}</p>}
-      <div className="dialog-actions admin-create-account-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Creando…' : 'Crear cuenta'}</button></div>
+      <div className="dialog-actions admin-create-account-actions"><button type="button" className="button button-secondary" disabled={saving} onClick={onClose}>Cancelar</button><ActionButton type="submit" className="button button-primary" isLoading={saving} loadingLabel="Creando cuenta…">Crear cuenta</ActionButton></div>
     </form>
   </Dialog>
 }

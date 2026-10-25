@@ -6,6 +6,7 @@ import { useIsMobile } from '../../hooks/use-is-mobile'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
+import { ActionButton } from '../../components/ActionButton'
 import './admin-news.css'
 
 const EMPTY_FORM = { title: '', content: '', audience: 'ALL' as PublicationAudience }
@@ -26,7 +27,8 @@ export function AdminNewsScreen() {
   const [actionError, setActionError] = useState('')
   const [notice, setNotice] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [savingAction, setSavingAction] = useState<'save' | 'publish' | null>(null)
+  const [updatingStatus, setUpdatingStatus] = useState<{ id: string; status: 'PUBLISHED' | 'INACTIVE' } | null>(null)
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
   const formTitle = useRef<HTMLInputElement>(null)
@@ -58,9 +60,10 @@ export function AdminNewsScreen() {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSaving || updatingStatus) return
     const shouldPublish = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'publish'
     if (shouldPublish && !window.confirm('¿Querés publicar esta novedad?')) return
-    setIsSaving(true); setFormError(''); setNotice('')
+    setIsSaving(true); setSavingAction(shouldPublish ? 'publish' : 'save'); setFormError(''); setNotice('')
     try {
       // PATCH imageUrl:null removes a stored image, so preserve it by omitting the field.
       const body = { ...form, ...(editing?.imageUrl ? {} : { imageUrl: null }) }
@@ -76,18 +79,18 @@ export function AdminNewsScreen() {
       await reload()
     } catch (value) {
       setFormError(value instanceof Error ? value.message : 'No se pudo guardar la novedad.')
-    } finally { setIsSaving(false) }
+    } finally { setIsSaving(false); setSavingAction(null) }
   }
 
   async function changeStatus(post: NewsPost, nextStatus: 'PUBLISHED' | 'INACTIVE') {
     if (!window.confirm(nextStatus === 'INACTIVE' ? '¿Querés desactivar esta novedad?' : '¿Querés publicar esta novedad?')) return
-    setIsUpdatingStatus(true); setActionError(''); setNotice('')
+    setUpdatingStatus({ id: post.id, status: nextStatus }); setActionError(''); setNotice('')
     try {
       const updated = await backendApi.updateNewsPostStatus(post.id, nextStatus)
       if (editing?.id === post.id) setEditing(updated)
       await reload()
     } catch (value) { setActionError(value instanceof Error ? value.message : 'No se pudo actualizar la novedad.') }
-    finally { setIsUpdatingStatus(false) }
+    finally { setUpdatingStatus(null) }
   }
 
   const formContent = <form className="admin-news-form" onSubmit={(event) => void save(event)}>
@@ -97,17 +100,17 @@ export function AdminNewsScreen() {
     <fieldset className="admin-news-audience"><legend>Audiencia</legend>{Object.entries(AUDIENCE_LABELS).map(([value, label]) => <label key={value}><input type="radio" name="news-audience" value={value} checked={form.audience === value} onChange={() => setForm({ ...form, audience: value as PublicationAudience })}/><span>{label}</span></label>)}</fieldset>
     {formError && <p className="error-message" role="alert">{formError}</p>}
     <div className="admin-news-form-actions">
-      <button type="submit" className="button button-secondary" disabled={isSaving || isUpdatingStatus}>{isSaving ? 'Guardando…' : editing && editing.status !== 'DRAFT' ? 'Guardar cambios' : 'Guardar borrador'}</button>
-      {editing?.status !== 'PUBLISHED' && <button type="submit" value="publish" className="button button-primary" disabled={isSaving || isUpdatingStatus}>Publicar</button>}
+      <ActionButton type="submit" className="button button-secondary" isLoading={isSaving && savingAction === 'save'} loadingLabel="Guardando…" disabled={isSaving || Boolean(updatingStatus)}>{editing && editing.status !== 'DRAFT' ? 'Guardar cambios' : 'Guardar borrador'}</ActionButton>
+      {editing?.status !== 'PUBLISHED' && <ActionButton type="submit" value="publish" className="button button-primary" isLoading={isSaving && savingAction === 'publish'} loadingLabel="Publicando…" disabled={isSaving || Boolean(updatingStatus)}>Publicar</ActionButton>}
     </div>
     {(editing || isMobile) && <button type="button" className="text-link admin-news-cancel" disabled={isSaving} onClick={cancelForm}>Cancelar</button>}
   </form>
 
   function postActions(post: NewsPost) {
     return <details className="admin-news-actions"><summary aria-label={`Acciones de ${post.title}`}><Icon name="more" size={20}/></summary><div>
-      <button type="button" disabled={isSaving || isUpdatingStatus} onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); startEdit(post) }}>Editar</button>
-      {post.status !== 'PUBLISHED' && <button type="button" disabled={isSaving || isUpdatingStatus} onClick={() => void changeStatus(post, 'PUBLISHED')}>Publicar</button>}
-      {post.status === 'PUBLISHED' && <button type="button" disabled={isSaving || isUpdatingStatus} onClick={() => void changeStatus(post, 'INACTIVE')}>Desactivar</button>}
+      <button type="button" disabled={isSaving || Boolean(updatingStatus)} onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); startEdit(post) }}>Editar</button>
+      {post.status !== 'PUBLISHED' && <ActionButton type="button" isLoading={updatingStatus?.id === post.id && updatingStatus.status === 'PUBLISHED'} loadingLabel="Publicando…" disabled={isSaving || Boolean(updatingStatus)} onClick={() => void changeStatus(post, 'PUBLISHED')}>Publicar</ActionButton>}
+      {post.status === 'PUBLISHED' && <ActionButton type="button" isLoading={updatingStatus?.id === post.id && updatingStatus.status === 'INACTIVE'} loadingLabel="Desactivando…" disabled={isSaving || Boolean(updatingStatus)} onClick={() => void changeStatus(post, 'INACTIVE')}>Desactivar</ActionButton>}
     </div></details>
   }
 

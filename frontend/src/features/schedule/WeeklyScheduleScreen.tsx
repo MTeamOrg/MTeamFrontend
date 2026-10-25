@@ -3,6 +3,7 @@ import { useApiResource } from '../../hooks/use-api-resource'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { backendApi, type ScheduleClass } from '../../service/backend-api'
 import { addDays, gymDate, mondayOfGymWeek } from '../../service/date-time'
+import { ActionButton } from '../../components/ActionButton'
 import { ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
@@ -104,13 +105,15 @@ export function WeeklyScheduleScreen({ variant }: { variant: ScheduleVariant }) 
     }
   }
 
-  const copyButton = isAdmin && <button
+  const copyButton = isAdmin && <ActionButton
     type="button"
     className="button button-purple schedule-copy"
     onClick={() => void copyWeek()}
-    disabled={!canCopy || copying}
+    isLoading={copying}
+    loadingLabel="Copiando…"
+    disabled={!canCopy}
     title={!current?.id ? 'La semana actual no tiene cronograma para copiar' : !nextMissing ? 'La semana siguiente ya fue generada' : undefined}
-  ><Icon name="copy" size={20}/>{copying ? 'Copiando…' : 'Copiar a la semana siguiente'}</button>
+  ><Icon name="copy" size={20}/>Copiar a la semana siguiente</ActionButton>
 
   const newClassButton = (block = false) => isAdmin && <button
     type="button"

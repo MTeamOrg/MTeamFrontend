@@ -6,6 +6,7 @@ import { useIsMobile } from '../../hooks/use-is-mobile'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
+import { ActionButton } from '../../components/ActionButton'
 import './admin-events.css'
 
 const PAGE_SIZE = 12
@@ -62,7 +63,7 @@ export function AdminEventsScreen() {
   const [actionError, setActionError] = useState('')
   const [notice, setNotice] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState<{ id: string; status: 'PUBLISHED' | 'CANCELLED' } | null>(null)
   const [details, setDetails] = useState<Event | null>(null)
   const [detailsError, setDetailsError] = useState('')
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
@@ -120,6 +121,7 @@ export function AdminEventsScreen() {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSaving || updatingStatus) return
     setIsSaving(true)
     setFormError('')
     setNotice('')
@@ -142,7 +144,7 @@ export function AdminEventsScreen() {
       ? '¿Querés cancelar este evento? Se avisará a socios y entrenadores.'
       : '¿Querés publicar este evento?'
     if (!window.confirm(question)) return
-    setIsUpdatingStatus(true)
+    setUpdatingStatus({ id: event.id, status: nextStatus })
     setActionError('')
     setNotice('')
     try {
@@ -152,7 +154,7 @@ export function AdminEventsScreen() {
     } catch (value) {
       setActionError(value instanceof Error ? value.message : 'No se pudo actualizar el estado del evento.')
     } finally {
-      setIsUpdatingStatus(false)
+      setUpdatingStatus(null)
     }
   }
 
@@ -180,7 +182,7 @@ export function AdminEventsScreen() {
   </div>
 
   const content = isLoading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
-    {isMobile ? <div className="admin-events-cards">{data.items.map((event) => <MobileEventCard key={event.id} event={event} disabled={isUpdatingStatus || isSaving} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>)}</div> : <EventTable events={data.items} disabled={isUpdatingStatus || isSaving} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>} 
+    {isMobile ? <div className="admin-events-cards">{data.items.map((event) => <MobileEventCard key={event.id} event={event} disabled={Boolean(updatingStatus) || isSaving} statusAction={updatingStatus} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>)}</div> : <EventTable events={data.items} disabled={Boolean(updatingStatus) || isSaving} statusAction={updatingStatus} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>}
     <Pagination page={data.page} limit={data.limit} total={data.total} onPageChange={setPage}/>
   </>
 
@@ -203,27 +205,27 @@ export function AdminEventsScreen() {
   </div>
 }
 
-function EventTable({ events, disabled, onEdit, onDetails, onStatus }: { events: Event[]; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
-  return <div className="admin-events-table-wrap"><table className="admin-events-table"><thead><tr><th scope="col">Evento</th><th scope="col">Fecha y horario</th><th scope="col">Ubicación</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody>{events.map((event) => <tr data-event-row key={event.id}><td><strong>{event.title}</strong></td><td><time dateTime={event.startsAt}>{formatDateTime(event.startsAt).replace(' ', ' · ')}</time></td><td>{event.location}</td><td><StatusBadge event={event}/></td><td><EventActions event={event} isMobile={false} disabled={disabled} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></td></tr>)}</tbody></table></div>
+function EventTable({ events, disabled, statusAction, onEdit, onDetails, onStatus }: { events: Event[]; disabled: boolean; statusAction: { id: string; status: 'PUBLISHED' | 'CANCELLED' } | null; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
+  return <div className="admin-events-table-wrap"><table className="admin-events-table"><thead><tr><th scope="col">Evento</th><th scope="col">Fecha y horario</th><th scope="col">Ubicación</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody>{events.map((event) => <tr data-event-row key={event.id}><td><strong>{event.title}</strong></td><td><time dateTime={event.startsAt}>{formatDateTime(event.startsAt).replace(' ', ' · ')}</time></td><td>{event.location}</td><td><StatusBadge event={event}/></td><td><EventActions event={event} isMobile={false} disabled={disabled} statusAction={statusAction} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></td></tr>)}</tbody></table></div>
 }
 
-function MobileEventCard({ event, disabled, onEdit, onDetails, onStatus }: { event: Event; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
-  return <article className="admin-event-card" data-event-card><div className="admin-event-card-content"><h2>{event.title}</h2><p>{eventSummary(event)}</p></div><StatusBadge event={event}/><EventActions event={event} isMobile disabled={disabled} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></article>
+function MobileEventCard({ event, disabled, statusAction, onEdit, onDetails, onStatus }: { event: Event; disabled: boolean; statusAction: { id: string; status: 'PUBLISHED' | 'CANCELLED' } | null; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
+  return <article className="admin-event-card" data-event-card><div className="admin-event-card-content"><h2>{event.title}</h2><p>{eventSummary(event)}</p></div><StatusBadge event={event}/><EventActions event={event} isMobile disabled={disabled} statusAction={statusAction} onEdit={onEdit} onDetails={onDetails} onStatus={onStatus}/></article>
 }
 
 function StatusBadge({ event }: { event: Event }) {
   return <span className={`admin-event-status ${eventStatusClass(event)}`}>{eventStatusLabel(event)}</span>
 }
 
-function EventActions({ event, isMobile, disabled, onEdit, onDetails, onStatus }: { event: Event; isMobile: boolean; disabled: boolean; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
+function EventActions({ event, isMobile, disabled, statusAction, onEdit, onDetails, onStatus }: { event: Event; isMobile: boolean; disabled: boolean; statusAction: { id: string; status: 'PUBLISHED' | 'CANCELLED' } | null; onEdit: (event: Event) => void; onDetails: (event: Event) => void; onStatus: (event: Event, status: 'PUBLISHED' | 'CANCELLED') => void }) {
   const isFinished = event.status === 'PUBLISHED' && event.displayStatus === 'FINISHED'
   const isReadOnly = event.status === 'CANCELLED' || isFinished
   if (!isMobile) {
     return <div className="admin-events-action-buttons">
       {isReadOnly ? <button type="button" className="button button-secondary admin-events-action-view" disabled={disabled} onClick={() => onDetails(event)}>Ver</button> : <>
         <button type="button" className="button button-secondary admin-events-action-edit" disabled={disabled} onClick={() => onEdit(event)}>Editar</button>
-        {event.status === 'DRAFT' && <button type="button" className="button button-primary admin-events-action-publish" disabled={disabled} onClick={() => void onStatus(event, 'PUBLISHED')}>Publicar</button>}
-        {event.status === 'PUBLISHED' && <button type="button" className="button button-danger admin-events-action-cancel" disabled={disabled} onClick={() => void onStatus(event, 'CANCELLED')}>Cancelar</button>}
+        {event.status === 'DRAFT' && <ActionButton type="button" className="button button-primary admin-events-action-publish" isLoading={statusAction?.id === event.id && statusAction.status === 'PUBLISHED'} loadingLabel="Publicando…" disabled={disabled} onClick={() => void onStatus(event, 'PUBLISHED')}>Publicar</ActionButton>}
+        {event.status === 'PUBLISHED' && <ActionButton type="button" className="button button-danger admin-events-action-cancel" isLoading={statusAction?.id === event.id && statusAction.status === 'CANCELLED'} loadingLabel="Cancelando…" disabled={disabled} onClick={() => void onStatus(event, 'CANCELLED')}>Cancelar</ActionButton>}
       </>}
     </div>
   }
@@ -231,8 +233,8 @@ function EventActions({ event, isMobile, disabled, onEdit, onDetails, onStatus }
   return <details className="admin-events-actions"><summary aria-label={`Acciones de ${event.title}`}><Icon name="more" size={20}/></summary><div>
     {isReadOnly ? <button type="button" disabled={disabled} onClick={(currentEvent) => { currentEvent.currentTarget.closest('details')?.removeAttribute('open'); onDetails(event) }}>Ver detalles</button> : <>
       <button type="button" disabled={disabled} onClick={(currentEvent) => { currentEvent.currentTarget.closest('details')?.removeAttribute('open'); onEdit(event) }}>Editar</button>
-      {event.status === 'DRAFT' && <button type="button" disabled={disabled} onClick={() => void onStatus(event, 'PUBLISHED')}>Publicar</button>}
-      {event.status === 'PUBLISHED' && <button type="button" disabled={disabled} onClick={() => void onStatus(event, 'CANCELLED')}>Cancelar</button>}
+      {event.status === 'DRAFT' && <ActionButton type="button" isLoading={statusAction?.id === event.id && statusAction.status === 'PUBLISHED'} loadingLabel="Publicando…" disabled={disabled} onClick={() => void onStatus(event, 'PUBLISHED')}>Publicar</ActionButton>}
+      {event.status === 'PUBLISHED' && <ActionButton type="button" isLoading={statusAction?.id === event.id && statusAction.status === 'CANCELLED'} loadingLabel="Cancelando…" disabled={disabled} onClick={() => void onStatus(event, 'CANCELLED')}>Cancelar</ActionButton>}
     </>}
   </div></details>
 }
@@ -244,7 +246,7 @@ function Pagination({ page, limit, total, onPageChange }: { page: number; limit:
 }
 
 function EventFormDialog({ editing, form, error, saving, onChange, onCancel, onSubmit, titleInput }: { editing: Event | null; form: EventFormValue; error: string; saving: boolean; onChange: (value: EventFormValue) => void; onCancel: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; titleInput: RefObject<HTMLInputElement | null> }) {
-  return <div className="admin-events-dialog-backdrop" role="presentation"><section className="admin-events-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-event-form-title"><button type="button" className="admin-events-dialog-close" aria-label="Cerrar formulario" onClick={onCancel}><Icon name="close" size={21}/></button><form className="admin-events-form" onSubmit={onSubmit}><h2 id="admin-event-form-title">{editing ? 'Editar evento' : 'Nuevo evento'}</h2><label>Título<input ref={titleInput} required maxLength={200} placeholder="Título del evento" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })}/></label><label>Fecha y horario<input required type="datetime-local" value={form.startsAt} onChange={(event) => onChange({ ...form, startsAt: event.target.value })}/></label><label>Ubicación<input required maxLength={255} placeholder="Sede o ubicación" value={form.location} onChange={(event) => onChange({ ...form, location: event.target.value })}/></label><label>Imagen (URL)<input required type="url" value={form.imageUrl} onChange={(event) => onChange({ ...form, imageUrl: event.target.value })}/></label><label>Descripción<textarea required placeholder="Escribí la descripción del evento" value={form.description} onChange={(event) => onChange({ ...form, description: event.target.value })}/></label>{error && <p className="error-message" role="alert">{error}</p>}<div className="admin-events-form-actions"><button type="button" className="button button-secondary" onClick={onCancel}>Cancelar</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar borrador'}</button></div></form></section></div>
+  return <div className="admin-events-dialog-backdrop" role="presentation"><section className="admin-events-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-event-form-title"><button type="button" className="admin-events-dialog-close" aria-label="Cerrar formulario" onClick={onCancel}><Icon name="close" size={21}/></button><form className="admin-events-form" onSubmit={onSubmit}><h2 id="admin-event-form-title">{editing ? 'Editar evento' : 'Nuevo evento'}</h2><label>Título<input ref={titleInput} required maxLength={200} placeholder="Título del evento" value={form.title} onChange={(event) => onChange({ ...form, title: event.target.value })}/></label><label>Fecha y horario<input required type="datetime-local" value={form.startsAt} onChange={(event) => onChange({ ...form, startsAt: event.target.value })}/></label><label>Ubicación<input required maxLength={255} placeholder="Sede o ubicación" value={form.location} onChange={(event) => onChange({ ...form, location: event.target.value })}/></label><label>Imagen (URL)<input required type="url" value={form.imageUrl} onChange={(event) => onChange({ ...form, imageUrl: event.target.value })}/></label><label>Descripción<textarea required placeholder="Escribí la descripción del evento" value={form.description} onChange={(event) => onChange({ ...form, description: event.target.value })}/></label>{error && <p className="error-message" role="alert">{error}</p>}<div className="admin-events-form-actions"><button type="button" className="button button-secondary" onClick={onCancel}>Cancelar</button><ActionButton type="submit" className="button button-primary" isLoading={saving} loadingLabel="Guardando…">Guardar borrador</ActionButton></div></form></section></div>
 }
 
 function EventDetailsDialog({ event, error, loading, onRetry, onClose }: { event: Event; error: string; loading: boolean; onRetry: () => void; onClose: () => void }) {

@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { backendApi, type MedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
 import { formatDate } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { ActionButton } from '../../components/ActionButton'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
 import { MedicalCertificateFileButton } from './MedicalCertificateFileButton'
@@ -56,6 +57,7 @@ export function MemberMedicalCertificateScreen() {
   }
 
   async function submitFile() {
+    if (submitting) return
     if (!selectedFile) {
       setValidationError('Elegí un archivo antes de enviarlo.')
       return
@@ -104,7 +106,7 @@ export function MemberMedicalCertificateScreen() {
           <input ref={cameraInput} className="medical-hidden-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Tomar foto del certificado"/>
           <div className="medical-upload-actions">
             <button type="button" className="button button-secondary medical-camera-button" onClick={() => cameraInput.current?.click()}><Icon name="camera" size={18}/>Tomar una foto</button>
-            <button type="button" className="button button-primary" disabled={!selectedFile || submitting} onClick={() => void submitFile()}>{submitting ? 'Enviando…' : 'Enviar certificado'}</button>
+            <ActionButton type="button" className="button button-primary" isLoading={submitting} loadingLabel="Enviando…" disabled={!selectedFile} onClick={() => void submitFile()}>Enviar certificado</ActionButton>
           </div>
           {validationError && <p className="error-message" role="alert">{validationError}</p>}
           {submitError && <p className="error-message" role="alert">{submitError}</p>}</> :

@@ -6,6 +6,7 @@ import { PasswordField } from './PasswordField'
 import { authService } from './auth-service'
 import type { RegisterInput } from './auth-types'
 import { useAuth } from './use-auth'
+import { ActionButton } from '../../components/ActionButton'
 
 const INITIAL_FORM: RegisterInput = { firstName: '', lastName: '', documentNumber: '', birthDate: '', email: '', phone: '', password: '' }
 
@@ -24,6 +25,7 @@ export function RegisterPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitting) return
     if (form.password !== confirmation) {
       setError('Las contraseñas no coinciden.')
       return
@@ -55,7 +57,7 @@ export function RegisterPage() {
         <label className="field"><span>Teléfono</span><input type="tel" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} autoComplete="tel" required /></label>
         <PasswordField label="Contraseña" value={form.password} onChange={(event) => updateField('password', event.target.value)} autoComplete="new-password" minLength={8} required />
         <PasswordField label="Confirmar contraseña" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" minLength={8} required />
-        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}</button>
+        <ActionButton className="primary-button" type="submit" isLoading={isSubmitting} loadingLabel="Creando cuenta…">Crear cuenta</ActionButton>
         <p className="form-footer">¿Ya tenés cuenta? <Link to="/iniciar-sesion">Iniciar sesión</Link></p>
       </form>
     </AuthLayout>

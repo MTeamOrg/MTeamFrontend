@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import mailIcon from '../../assets/icons/mail.svg'
 import { ApiError } from '../../service/api-client'
@@ -6,6 +6,7 @@ import { AuthLayout } from './AuthLayout'
 import { PasswordField } from './PasswordField'
 import { RecoveryDialog } from './RecoveryDialog'
 import { useAuth } from './use-auth'
+import { ActionButton } from '../../components/ActionButton'
 
 export function LoginPage() {
   const { session, login } = useAuth()
@@ -17,6 +18,7 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRecoveryOpen, setIsRecoveryOpen] = useState(false)
+  const isSubmitLockedRef = useRef(false)
 
   if (session) {
     const roleHome = session.user.role === 'ADMIN' ? '/admin' : session.user.role === 'TRAINER' ? '/entrenador' : '/socio'
@@ -25,6 +27,8 @@ export function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isSubmitLockedRef.current) return
+    isSubmitLockedRef.current = true
     setError('')
     setIsSubmitting(true)
     try {
@@ -34,6 +38,7 @@ export function LoginPage() {
     } catch (caughtError) {
       setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible iniciar sesión.')
     } finally {
+      isSubmitLockedRef.current = false
       setIsSubmitting(false)
     }
   }
@@ -56,7 +61,7 @@ export function LoginPage() {
           <label className="checkbox"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /> Mantener la sesión iniciada</label>
           <button className="muted-link recovery-link" type="button" onClick={() => { setIsRecoveryOpen(true) }}>¿Olvidaste tu contraseña?</button>
         </div>
-        <button className="primary-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}</button>
+        <ActionButton className="primary-button" type="submit" isLoading={isSubmitting} loadingLabel="Entrando…">Iniciar sesión</ActionButton>
         <div className="form-divider"><span>o</span></div>
         <p className="form-footer">¿Todavía no tenés cuenta? <Link to="/crear-cuenta">Crear cuenta</Link></p>
       </form>
