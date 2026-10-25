@@ -10,7 +10,7 @@
 .access-qr-camera-label { position: absolute; bottom: 16px; display: flex; align-items: center; gap: 8px; color: #bbbfc8; font-size: 12px; }
 .access-qr-controls { display: grid; gap: 12px; margin-top: 24px; text-align: center; }
 .access-qr-controls p { margin: 0; color: #737881; font-size: 14px; line-height: 1.6; }
-.access-qr-controls .access-qr-status { color: #252831; font-size: 18px; font-weight: 700; }
+.access-qr-controls .access-qr-status { display: flex; align-items: center; justify-content: center; gap: 10px; color: #252831; font-size: 18px; font-weight: 700; }
 .access-qr-controls .button { width: 100%; min-height: 48px; justify-content: center; }
 .access-qr-help { display: grid; gap: 20px; }
 .access-qr-help h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; font-size: 18px; }

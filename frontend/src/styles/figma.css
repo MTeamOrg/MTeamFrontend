@@ -102,6 +102,13 @@ body { background: var(--background); color: var(--black); }
 .empty-state { display: grid; justify-items: center; gap: 8px; padding: 40px 20px; text-align: center; color: var(--text-secondary); font-size: 14px; }
 .empty-state h2, .empty-state h3 { margin: 0; color: var(--black); font-size: 16px; font-weight: 600; }
 .empty-state p { margin: 0; max-width: 520px; line-height: 1.5; }
+.loading-state { min-height: 112px; }
+.loading-dots { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--pink); }
+.loading-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: currentColor; animation: loading-dot-bounce 1s ease-in-out infinite; }
+.loading-dot:nth-child(2) { animation-delay: .14s; }
+.loading-dot:nth-child(3) { animation-delay: .28s; }
+@keyframes loading-dot-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .65; } 30% { transform: translateY(-6px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .loading-dot, .loading-dot:nth-child(2), .loading-dot:nth-child(3) { animation: none; opacity: .8; } }
 .unavailable-card { display: grid; justify-items: start; gap: 8px; max-width: 640px; }
 .unavailable-card h2 { margin: 0; font-size: 16px; font-weight: 600; }
 .unavailable-card p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }

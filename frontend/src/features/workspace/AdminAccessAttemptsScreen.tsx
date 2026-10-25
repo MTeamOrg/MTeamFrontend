@@ -88,7 +88,7 @@ export function AdminAccessAttemptsScreen() {
       </div>
       <label className="access-period-filter"><span className="visually-hidden">Período</span><select aria-label="Filtrar por período" value={period} onChange={(event) => { setPage(1); setPeriod(event.target.value as AccessPeriod) }}>{PERIOD_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
     </div>
-    {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay intentos de ingreso que coincidan con los filtros."/> : <>
+    {loading ? <LoadingState message="Cargando accesos…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay intentos de ingreso que coincidan con los filtros."/> : <>
       <div className="table-scroll access-history-table-wrap">
         <table className="data-table access-history-table"><thead><tr><th scope="col">Usuario</th><th scope="col">Rol</th><th scope="col">Sede</th><th scope="col">Fecha y hora</th><th scope="col">Resultado</th></tr></thead><tbody>{data.items.map((attempt) => <AccessRow key={attempt.id} attempt={attempt}/>)}</tbody></table>
       </div>

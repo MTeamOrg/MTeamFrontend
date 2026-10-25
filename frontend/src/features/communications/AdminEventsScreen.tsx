@@ -181,7 +181,7 @@ export function AdminEventsScreen() {
     <label><span className="visually-hidden">Filtrar por sede</span><select aria-label="Filtrar por sede" value={location} onChange={(event) => updateFilter(() => setLocation(event.target.value))}><option value="">Sede: todas</option>{knownLocations.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
   </div>
 
-  const content = isLoading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
+  const content = isLoading ? <LoadingState message="Cargando eventos…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
     {isMobile ? <div className="admin-events-cards">{data.items.map((event) => <MobileEventCard key={event.id} event={event} disabled={Boolean(updatingStatus) || isSaving} statusAction={updatingStatus} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>)}</div> : <EventTable events={data.items} disabled={Boolean(updatingStatus) || isSaving} statusAction={updatingStatus} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>}
     <Pagination page={data.page} limit={data.limit} total={data.total} onPageChange={setPage}/>
   </>

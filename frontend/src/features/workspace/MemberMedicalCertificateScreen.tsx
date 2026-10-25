@@ -77,7 +77,7 @@ export function MemberMedicalCertificateScreen() {
   }
 
   const header = <PageHeader title="Apto médico" description="Subí el certificado firmado por tu médico. Un administrador lo revisa y, una vez aprobado, no vence."/>
-  if (loading) return <div className="app-page medical-screen">{header}<div className="app-card"><LoadingState/></div></div>
+  if (loading) return <div className="app-page medical-screen">{header}<div className="app-card"><LoadingState message="Cargando apto médico…"/></div></div>
   if (error || !data) return <div className="app-page medical-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar tu certificado médico.'} retry={() => void reload()}/></div></div>
 
   const canUpload = !data.current || data.current.status === 'REJECTED'

@@ -83,7 +83,7 @@ export function AdminPaymentsScreen() {
   const header = <PageHeader title="Pagos y cuota" description="El valor vigente de la cuota y todos los pagos acreditados. Cada acreditación abre 30 días de vigencia."><button type="button" className="button button-primary payment-header-register" aria-label="Registrar pago" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button></PageHeader>
   const dialog = paymentOpen && <PaymentDialog currentPrice={data?.currentPrice?.amount ?? null} onClose={() => setPaymentOpen(false)} onSaved={() => { setPaymentOpen(false); void reload() }} />
 
-  if (loading) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState /></div>{dialog}</div>
+  if (loading) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState message="Cargando pagos…" /></div>{dialog}</div>
   if (error || !data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()} /></div>{dialog}</div>
 
   return <div className="app-page admin-payments-screen">

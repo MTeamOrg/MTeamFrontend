@@ -60,7 +60,7 @@ export function AdminUsersScreen() {
         </div>
         <button type="button" className="button button-primary admin-users-desktop-create" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20}/>Crear cuenta</button>
       </div>
-      {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay usuarios que coincidan con los filtros."/> : <>
+      {loading ? <LoadingState message="Cargando usuarios…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay usuarios que coincidan con los filtros."/> : <>
         <div className="admin-users-table-wrap">
           <div className="table-scroll admin-users-table-scroll" tabIndex={0} aria-label="Tabla de usuarios; desplazamiento horizontal disponible">
             <table className="data-table admin-users-table">

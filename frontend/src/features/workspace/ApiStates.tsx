@@ -1,8 +1,12 @@
 import { Icon } from './Icon'
 import { PageHeader } from './PageHeader'
 
-export function LoadingState({ message = 'Cargando datos…' }: { message?: string }) {
-  return <div className="empty-state" role="status"><p>{message}</p></div>
+export function LoadingDots({ className = '' }: { className?: string }) {
+  return <span className={`loading-dots ${className}`.trim()} aria-hidden="true"><span className="loading-dot"/><span className="loading-dot"/><span className="loading-dot"/></span>
+}
+
+export function LoadingState({ message = 'Cargando…' }: { message?: string }) {
+  return <div className="empty-state loading-state" role="status" aria-live="polite"><LoadingDots/><p>{message}</p></div>
 }
 
 export function ErrorState({ message, retry }: { message: string; retry?: () => void }) {

@@ -72,7 +72,7 @@ export function EventConsultationScreen() {
         {STATUS_OPTIONS.map((option) => <label key={option.value}><input type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}
       </fieldset>}
     </div>
-    {isLoading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !events.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
+    {isLoading ? <LoadingState message="Cargando eventos…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !events.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
       <div className="event-consultation-grid">{events.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((event) => <ConsultationEventCard key={event.id} event={event}/>)}</div>
       {lastPage > 1 && <nav className="table-pagination" aria-label="Páginas de eventos"><span>Página {currentPage} de {lastPage}</span><div><button type="button" className="button button-secondary" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button><button type="button" className="button button-secondary" disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}>Siguiente</button></div></nav>}
     </>}

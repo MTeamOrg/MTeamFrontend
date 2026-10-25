@@ -94,7 +94,7 @@ export function AdminMedicalCertificatesScreen() {
   }
 
   const header = <PageHeader title="Aptos médicos" description="Bandeja de revisión. Al aprobar o rechazar se notifica al socio y queda registrado quién revisó y cuándo."/>
-  if (loading) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><LoadingState/></div></div>
+  if (loading) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><LoadingState message="Cargando aptos médicos…"/></div></div>
   if (error || !data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudieron cargar los certificados médicos.'} retry={() => void reload()}/></div></div>
 
   return <div className="app-page medical-admin-screen">

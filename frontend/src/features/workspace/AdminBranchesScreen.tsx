@@ -48,7 +48,7 @@ export function AdminBranchesScreen() {
         </div>
         <button type="button" className="button button-primary admin-branches-desktop-create" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
       </div>
-      {loading ? <LoadingState/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <>
+      {loading ? <LoadingState message="Cargando sedes…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <>
         <div className="admin-branches-table-wrap">
           <table className="admin-branches-table">
             <thead><tr><th scope="col">Sede</th><th scope="col">Dirección</th><th scope="col">Horarios</th><th scope="col">Teléfono</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>

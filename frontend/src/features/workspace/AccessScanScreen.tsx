@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import type { UserRole } from '../authentication/auth-types'
 import { backendApi, type AccessAttemptResult } from '../../service/backend-api'
+import { LoadingDots } from './ApiStates'
 import { Icon } from './Icon'
 import './access-qr.css'
 
@@ -114,7 +115,7 @@ export function AccessScanScreen({ role }: { role: Extract<UserRole, 'MEMBER' | 
           <span className="access-qr-camera-label"><Icon name="camera" size={16}/>Código QR del molinete</span>
         </div>
         <div className="access-qr-controls">
-          <p className="access-qr-status" role="status">{statusText}</p>
+          <p className="access-qr-status" role="status">{isLoading && <LoadingDots/>}<span>{statusText}</span></p>
           <p>{isPermissionDenied
             ? 'Abrí los permisos de este sitio en la barra de direcciones, habilitá la cámara y volvé a intentar.'
             : cameraError ? cameraError : 'Ubicá el código dentro del marco y mantené el celular quieto, con buena iluminación.'}</p>

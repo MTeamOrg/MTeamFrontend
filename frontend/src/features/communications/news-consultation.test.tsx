@@ -54,7 +54,7 @@ describe.each(['MEMBER', 'TRAINER'] as const)('news consultation for %s', (role)
     let resolvePage!: (value: { items: NewsPost[]; total: number; page: number; limit: number }) => void
     const list = vi.spyOn(backendApi, 'listNewsPosts').mockImplementation(() => new Promise((resolve) => { resolvePage = resolve }))
     renderNews()
-    expect(screen.getByRole('status')).toHaveTextContent('Cargando datos')
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando novedades…')
     await waitFor(() => expect(list).toHaveBeenCalledTimes(1))
     resolvePage({ items: [POST], total: 13, page: 1, limit: 12 })
     await screen.findByRole('heading', { name: POST.title })

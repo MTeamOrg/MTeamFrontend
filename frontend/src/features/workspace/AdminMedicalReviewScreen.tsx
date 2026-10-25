@@ -96,7 +96,7 @@ export function AdminMedicalReviewScreen({ id }: { id: string }) {
   }
 
   const header = <PageHeader title="Revisar apto médico" description="Verificá la documentación del socio antes de aprobarla."/> 
-  if (loading) return <div className="app-page medical-review-screen">{header}<div className="app-card"><LoadingState/></div></div>
+  if (loading) return <div className="app-page medical-review-screen">{header}<div className="app-card"><LoadingState message="Cargando revisión de aptos…"/></div></div>
   if (error || !data) return <div className="app-page medical-review-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar el certificado médico.'} retry={() => void reload()}/></div></div>
 
   const memberName = `${data.member.firstName} ${data.member.lastName}`
