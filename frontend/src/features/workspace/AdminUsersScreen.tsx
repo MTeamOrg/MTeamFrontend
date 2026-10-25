@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Link, useSearchParams } from 'react-router-dom'
 import type { UserRole, UserStatus } from '../authentication/auth-types'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { ActionButton } from '../../components/ActionButton'
 import { backendApi, type CreateUserInput, type MembershipStatus, type UserListItem } from '../../service/backend-api'
 import { describeApiError } from '../../service/api-errors'
@@ -32,26 +33,32 @@ const MEMBERSHIP_BADGE_CLASS: Record<MembershipStatus, string> = { CURRENT: 'bad
 
 export function AdminUsersScreen() {
   const [searchParams] = useSearchParams()
-  const [search, setSearch] = useState(() => searchParams.get('search') ?? '')
+  const enterSearch = useEnterSearch(searchParams.get('search') ?? '')
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [role, setRole] = useState<UserRole | ''>(() => (searchParams.get('role') as UserRole | null) ?? '')
   const [status, setStatus] = useState<UserStatus | ''>(() => (searchParams.get('status') as UserStatus | null) ?? '')
   const [membershipStatus, setMembershipStatus] = useState<MembershipStatus | ''>(() => (searchParams.get('membershipStatus') as MembershipStatus | null) ?? '')
   const [page, setPage] = useState(() => Number(searchParams.get('page')) || 1)
   const [createOpen, setCreateOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const loader = useCallback(() => backendApi.listUsers({ search: search.trim() || undefined, role: role || undefined, status: status || undefined, membershipStatus: membershipStatus || undefined, page, limit: 20 }), [membershipStatus, page, role, search, status])
+  const loader = useCallback(() => {
+    void searchRequestKey
+    return backendApi.listUsers({ search: submittedSearch.trim() || undefined, role: role || undefined, status: status || undefined, membershipStatus: membershipStatus || undefined, page, limit: 20 })
+  }, [membershipStatus, page, role, searchRequestKey, status, submittedSearch])
   const { data, loading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isSearchPending || (loading && data !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
   const users = data?.items ?? EMPTY_USERS
   const { metadata, loading: metadataLoading } = useUserMetadata(users)
   const resetPage = (action: () => void) => { setPage(1); action() }
-  const usersQuery = buildUsersQuery({ search, role, status, membershipStatus, page })
+  const usersQuery = buildUsersQuery({ search: submittedSearch, role, status, membershipStatus, page })
 
   return <div className="app-page admin-users-screen">
     <PageHeader title="Usuarios" description="Socios, entrenadores y administradores en un solo listado. Filtrá por rol para administrarlos."/>
     <div className="admin-list-main">
       <button type="button" className="button button-primary admin-users-mobile-create" aria-label="Crear cuenta" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20} aria-hidden="true"/><span className="visually-hidden">Crear cuenta</span></button>
       <div className="toolbar admin-list-toolbar admin-users-toolbar">
-        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar usuarios" placeholder="Buscar por nombre, documento o correo" value={search} onChange={(event) => resetPage(() => setSearch(event.target.value))}/></label>
+        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar usuarios" placeholder="Buscar por nombre, documento o correo" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }}/></label>
         <button type="button" className="admin-users-filter-toggle" aria-label="Mostrar filtros" aria-controls="admin-users-filter-fields" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
         <div id="admin-users-filter-fields" className={`admin-users-filter-fields${filtersOpen ? ' is-open' : ''}`}>
           <select aria-label="Filtrar por rol" value={role} onChange={(event) => resetPage(() => setRole(event.target.value as UserRole | ''))}><option value="">Rol: todos</option><option value="MEMBER">Socios</option><option value="TRAINER">Entrenadores</option><option value="ADMIN">Administradores</option></select>
@@ -60,8 +67,9 @@ export function AdminUsersScreen() {
         </div>
         <button type="button" className="button button-primary admin-users-desktop-create" onClick={() => setCreateOpen(true)}><Icon name="plus" size={20}/>Crear cuenta</button>
       </div>
-      {loading ? <LoadingState message="Cargando usuarios…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay usuarios que coincidan con los filtros."/> : <>
-        <div className="admin-users-table-wrap">
+      {loading && !data ? <LoadingState message="Cargando usuarios…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar los usuarios.'} retry={() => void reload()}/> : <>
+        {error && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
+        {data.items.length ? <><div className="admin-users-table-wrap">
           <div className="table-scroll admin-users-table-scroll" tabIndex={0} aria-label="Tabla de usuarios; desplazamiento horizontal disponible">
             <table className="data-table admin-users-table">
               <colgroup><col className="admin-users-column-user"/><col className="admin-users-column-document"/><col className="admin-users-column-email"/><col className="admin-users-column-role"/><col className="admin-users-column-membership"/><col className="admin-users-column-status"/><col className="admin-users-column-action"/></colgroup>
@@ -71,7 +79,7 @@ export function AdminUsersScreen() {
           </div>
           <div className="admin-users-mobile-list">{users.map((user) => <AdminUserMobileCard key={user.id} user={user} metadata={metadata[user.id]} metadataLoading={metadataLoading} href={`/admin/usuarios/${user.id}${usersQuery}`}/>)}</div>
         </div>
-        <Pagination page={page} limit={data.limit} total={data.total} setPage={setPage}/>
+        <Pagination page={page} limit={data.limit} total={data.total} setPage={setPage}/></> : <EmptyState message="No hay usuarios que coincidan con los filtros."/>}
       </>}
     </div>
     {createOpen && <CreateUserDialog onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); void reload() }}/>}

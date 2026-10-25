@@ -77,6 +77,7 @@ describe('EventsScreen', () => {
     expect(requestsTo(fetchStub, 'GET', '/events').at(-1)?.url.searchParams.get('page')).toBe('1')
 
     fireEvent.change(screen.getByLabelText('Buscar evento'), { target: { value: 'norte' } })
+    fireEvent.keyDown(screen.getByLabelText('Buscar evento'), { key: 'Enter', code: 'Enter' })
     await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/events').at(-1)?.url.searchParams.get('search')).toBe('norte'))
     fireEvent.change(screen.getByLabelText('Filtrar por sede'), { target: { value: 'Sede Centro' } })
     expect(await screen.findByText('Evento de sede centro')).toBeInTheDocument()
@@ -206,6 +207,7 @@ describe('EventsScreen', () => {
     fireEvent.click(filterButton)
     expect(screen.getByLabelText('Filtrar por sede')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Buscar evento'), { target: { value: 'Otra' } })
+    fireEvent.keyDown(screen.getByLabelText('Buscar evento'), { key: 'Enter', code: 'Enter' })
   })
 
   it('no expone acciones administrativas ni filtros al socio', async () => {

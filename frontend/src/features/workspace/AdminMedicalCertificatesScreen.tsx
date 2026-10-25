@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { backendApi, type AdminMedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
 import { addDays, formatDate, formatDateTime, gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
@@ -47,22 +48,26 @@ interface MedicalCertificateMetrics {
 
 export function AdminMedicalCertificatesScreen() {
   const [searchParams] = useSearchParams()
-  const [search, setSearch] = useState('')
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [status, setStatus] = useState<MedicalCertificateStatus | ''>(() => initialStatus(searchParams))
   const [uploadPeriod, setUploadPeriod] = useState<UploadPeriod>('')
   const [page, setPage] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const loader = useCallback(() => {
+    void searchRequestKey
     const dateRange = getUploadDateRange(uploadPeriod)
     return backendApi.listAdminMedicalCertificates({
-      search: search || undefined,
+      search: submittedSearch || undefined,
       status: status || undefined,
       ...dateRange,
       page,
       limit: 20,
     })
-  }, [page, search, status, uploadPeriod])
+  }, [page, searchRequestKey, status, submittedSearch, uploadPeriod])
   const { data, loading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isSearchPending || (loading && data !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
   const metricsLoader = useCallback(async () => {
     const [dashboardResult, approvedResult] = await Promise.allSettled([
       backendApi.getAdminDashboardMetrics(),
@@ -78,11 +83,6 @@ export function AdminMedicalCertificatesScreen() {
   }, [])
   const metrics = useApiResource(metricsLoader)
 
-  function updateSearch(value: string) {
-    setPage(1)
-    setSearch(value)
-  }
-
   function updateStatus(value: MedicalCertificateStatus | '') {
     setPage(1)
     setStatus(value)
@@ -94,8 +94,8 @@ export function AdminMedicalCertificatesScreen() {
   }
 
   const header = <PageHeader title="Aptos médicos" description="Bandeja de revisión. Al aprobar o rechazar se notifica al socio y queda registrado quién revisó y cuándo."/>
-  if (loading) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><LoadingState message="Cargando aptos médicos…"/></div></div>
-  if (error || !data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudieron cargar los certificados médicos.'} retry={() => void reload()}/></div></div>
+  if (loading && !data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><LoadingState message="Cargando aptos médicos…"/></div></div>
+  if (!data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudieron cargar los certificados médicos.'} retry={() => void reload()}/></div></div>
 
   return <div className="app-page medical-admin-screen">
     {header}
@@ -106,7 +106,7 @@ export function AdminMedicalCertificatesScreen() {
       <Metric label="Socios en período inicial" value={metrics.data?.initialPeriodMembers ?? null} unit="socios" tone="purple" detail="Pueden ingresar sin apto" isMobileHidden/>
     </div>
     <div className="medical-filter-toolbar" aria-label="Filtros de aptos médicos">
-      <label className="search-shell"><Icon name="search" size={18}/><input value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Buscar por socio o documento" aria-label="Buscar por socio o documento"/></label>
+      <label className="search-shell"><Icon name="search" size={18}/><input value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }} placeholder="Buscar por socio o documento" aria-label="Buscar por socio o documento"/></label>
       <button type="button" className="medical-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
       <div className={`medical-filter-fields${filtersOpen ? ' is-open' : ''}`}>
         <select value={status} onChange={(event) => updateStatus(event.target.value as MedicalCertificateStatus | '')} aria-label="Filtrar por estado">

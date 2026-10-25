@@ -41,6 +41,7 @@ describe('AdminUsersScreen: flujos de gestión', () => {
     fireEvent.change(screen.getByLabelText('Filtrar por estado'), { target: { value: 'INACTIVE' } })
     fireEvent.change(screen.getByLabelText('Filtrar por estado de cuota'), { target: { value: 'EXPIRED' } })
     fireEvent.change(screen.getByLabelText('Buscar usuarios'), { target: { value: '  Ana  ' } })
+    fireEvent.keyDown(screen.getByLabelText('Buscar usuarios'), { key: 'Enter', code: 'Enter' })
     expect(screen.queryByText('Período inicial de 20 días')).not.toBeInTheDocument()
 
     await waitFor(() => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type R
 import { backendApi, type Event, type EventStatus } from '../../service/backend-api'
 import { formatDateTime, localDateTimeToGymOffset } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
@@ -52,7 +53,6 @@ async function listAllMatchingEvents(filters: { search?: string; status?: EventS
 export function AdminEventsScreen() {
   const isMobile = useIsMobile()
   const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
   const [status, setStatus] = useState<EventStatus | ''>('')
   const [location, setLocation] = useState('')
   const [editing, setEditing] = useState<Event | null>(null)
@@ -70,6 +70,8 @@ export function AdminEventsScreen() {
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
   const titleInput = useRef<HTMLInputElement>(null)
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   useEffect(() => {
     if (!isFilterOpen) return
     function closeFilters(event: KeyboardEvent) {
@@ -81,13 +83,16 @@ export function AdminEventsScreen() {
     return () => document.removeEventListener('keydown', closeFilters)
   }, [isFilterOpen])
   const loader = useCallback(async () => {
-    const filters = { ...(search.trim() ? { search: search.trim() } : {}), ...(status ? { status } : {}) }
+    void searchRequestKey
+    const filters = { ...(submittedSearch.trim() ? { search: submittedSearch.trim() } : {}), ...(status ? { status } : {}) }
     if (!location) return backendApi.listEvents({ ...filters, page, limit: PAGE_SIZE })
     const allEvents = await listAllMatchingEvents(filters)
     const filteredItems = allEvents.filter((event) => event.location === location)
     return { items: filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), page, limit: PAGE_SIZE, total: filteredItems.length }
-  }, [location, page, search, status])
+  }, [location, page, searchRequestKey, status, submittedSearch])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isSearchPending || (isLoading && data !== null)
+  useEffect(() => syncLoading(isLoading), [isLoading, syncLoading])
 
   const knownLocations = Array.from(new Set((data?.items ?? []).map((event) => event.location)))
     .sort((left, right) => left.localeCompare(right, 'es-AR', { sensitivity: 'base' }))
@@ -176,12 +181,16 @@ export function AdminEventsScreen() {
     setPage(1)
   }
 
+  function submitTextSearch() {
+    if (submitSearch()) setPage(1)
+  }
+
   const filterFields = <div id={filterId} className="admin-events-filters">
     <label><span className="visually-hidden">Filtrar por estado</span><select aria-label="Filtrar por estado" value={status} onChange={(event) => updateFilter(() => setStatus(event.target.value as EventStatus | ''))}><option value="">Estado: todos</option>{Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     <label><span className="visually-hidden">Filtrar por sede</span><select aria-label="Filtrar por sede" value={location} onChange={(event) => updateFilter(() => setLocation(event.target.value))}><option value="">Sede: todas</option>{knownLocations.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
   </div>
 
-  const content = isLoading ? <LoadingState message="Cargando eventos…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
+  const content = isLoading && !data ? <LoadingState message="Cargando eventos…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar los eventos.'} retry={() => void reload()}/> : !data.items.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
     {isMobile ? <div className="admin-events-cards">{data.items.map((event) => <MobileEventCard key={event.id} event={event} disabled={Boolean(updatingStatus) || isSaving} statusAction={updatingStatus} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>)}</div> : <EventTable events={data.items} disabled={Boolean(updatingStatus) || isSaving} statusAction={updatingStatus} onEdit={startEdit} onDetails={openDetails} onStatus={changeStatus}/>}
     <Pagination page={data.page} limit={data.limit} total={data.total} onPageChange={setPage}/>
   </>
@@ -193,11 +202,12 @@ export function AdminEventsScreen() {
     {notice && <p role="status" className="success-message">{notice}</p>}
     <section className="admin-events-list" aria-label="Eventos">
       <div className="admin-events-toolbar">
-        <label className="admin-events-search"><Icon name="search" size={19}/><span className="visually-hidden">Buscar evento</span><input aria-label="Buscar evento" type="search" maxLength={100} placeholder="Buscar evento" value={search} onChange={(event) => updateFilter(() => setSearch(event.target.value))}/></label>
+        <label className="admin-events-search"><Icon name="search" size={19}/><span className="visually-hidden">Buscar evento</span><input aria-label="Buscar evento" type="search" maxLength={100} placeholder="Buscar evento" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submitTextSearch() } }}/></label>
         <button ref={filterButton} type="button" className="admin-events-filter-button" aria-label="Filtrar eventos" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
         {(!isMobile || isFilterOpen) && filterFields}
         {!isMobile && <button type="button" className="button button-primary admin-events-desktop-create" onClick={startCreate}><Icon name="plus" size={19}/>Nuevo evento</button>}
       </div>
+      {error && data && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
       {content}
     </section>
     {isFormOpen && <EventFormDialog editing={editing} form={form} error={formError} saving={isSaving} onChange={setForm} onCancel={cancelForm} onSubmit={save} titleInput={titleInput}/>} 

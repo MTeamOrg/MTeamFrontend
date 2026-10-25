@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useEnterSearch } from '../../hooks/use-enter-search'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { addDays, formatDateTime, formatTime, gymDate } from '../../service/date-time'
 import { backendApi, type AccessAttemptResult } from '../../service/backend-api'
@@ -48,7 +49,8 @@ const REASON_LABELS: Record<string, string> = {
 }
 
 export function AdminAccessAttemptsScreen() {
-  const [search, setSearch] = useState('')
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
   const [role, setRole] = useState<UserRole | ''>('')
   const [result, setResult] = useState<AccessResult>('')
   const [branchId, setBranchId] = useState('')
@@ -58,18 +60,23 @@ export function AdminAccessAttemptsScreen() {
   const [page, setPage] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const isMobile = useIsMobile()
-  const loader = useCallback(() => backendApi.listAccessAttempts({
+  const loader = useCallback(() => {
+    void searchRequestKey
+    return backendApi.listAccessAttempts({
     page,
     limit: PAGE_SIZE,
     role: role || undefined,
     result: result || undefined,
     branchId: branchId || undefined,
-    search: search.trim() || undefined,
+    search: submittedSearch.trim() || undefined,
     ...getHistoryDateRange(isMobile, period, from, to),
-  }), [branchId, from, isMobile, page, period, result, role, search, to])
+    })
+  }, [branchId, from, isMobile, page, period, result, role, searchRequestKey, submittedSearch, to])
   const summaryLoader = useCallback(() => loadAccessSummary(getAccessPeriodRange(period)), [period])
   const branchesLoader = useCallback(() => backendApi.listAdminBranches({ page: 1, limit: 100 }), [])
   const { data, loading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isSearchPending || (loading && data !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
   const summary = useApiResource(summaryLoader)
   const { data: branches } = useApiResource(branchesLoader)
 
@@ -77,7 +84,7 @@ export function AdminAccessAttemptsScreen() {
     <PageHeader title="Accesos" description={ACCESS_DESCRIPTION}/>
     <AccessSummary summary={summary.data} loading={summary.loading} error={summary.error} period={period}/>
     <div className="toolbar access-history-filters">
-      <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar por usuario o documento" placeholder="Buscar por usuario o documento" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label>
+      <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar por usuario o documento" placeholder="Buscar por usuario o documento" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); if (submitSearch()) setPage(1) } }}/></label>
       <button type="button" className="access-history-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
       <div className={`access-filter-fields${filtersOpen ? ' is-open' : ''}`}>
         <label className="visually-hidden" htmlFor="access-branch">Sede</label><select id="access-branch" aria-label="Filtrar por sede" value={branchId} onChange={(event) => { setPage(1); setBranchId(event.target.value) }}><option value="">Sede: todas</option>{branches?.items.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select>
@@ -88,7 +95,8 @@ export function AdminAccessAttemptsScreen() {
       </div>
       <label className="access-period-filter"><span className="visually-hidden">Período</span><select aria-label="Filtrar por período" value={period} onChange={(event) => { setPage(1); setPeriod(event.target.value as AccessPeriod) }}>{PERIOD_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
     </div>
-    {loading ? <LoadingState message="Cargando accesos…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay intentos de ingreso que coincidan con los filtros."/> : <>
+    {error && data && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
+    {loading && !data ? <LoadingState message="Cargando accesos…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar los accesos.'} retry={() => void reload()}/> : !data.items.length ? <EmptyState message="No hay intentos de ingreso que coincidan con los filtros."/> : <>
       <div className="table-scroll access-history-table-wrap">
         <table className="data-table access-history-table"><thead><tr><th scope="col">Usuario</th><th scope="col">Rol</th><th scope="col">Sede</th><th scope="col">Fecha y hora</th><th scope="col">Resultado</th></tr></thead><tbody>{data.items.map((attempt) => <AccessRow key={attempt.id} attempt={attempt}/>)}</tbody></table>
       </div>
