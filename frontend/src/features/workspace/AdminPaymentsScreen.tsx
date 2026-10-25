@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { ActionButton } from '../../components/ActionButton'
 import { backendApi, type MemberListItem, type PaymentPreview, type PaymentReportItem, type PaymentStatus } from '../../service/backend-api'
 import { addDays, formatDate, formatDateTime, gymDate } from '../../service/date-time'
@@ -66,10 +67,11 @@ export function AdminPaymentsScreen() {
   const [dateRange, setDateRange] = useState<'last30' | 'month' | 'all'>('last30')
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [voidingPaymentId, setVoidingPaymentId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search)
   const from = dateRange === 'month' ? monthStart : dateRange === 'last30' ? lastThirtyDaysStart : ''
   const loader = useCallback(async () => {
     const [payments, todaySummary, monthSummary, currentPrice, prices, metrics] = await Promise.all([
-      backendApi.listPayments({ page, limit: 20, documentNumber: search.trim() || undefined, method: method || undefined, status: status || undefined, from: from ? gymInstant(from) : undefined, to: gymInstant(tomorrow) }),
+      backendApi.listPayments({ page, limit: 20, documentNumber: debouncedSearch.trim() || undefined, method: method || undefined, status: status || undefined, from: from ? gymInstant(from) : undefined, to: gymInstant(tomorrow) }),
       backendApi.getPaymentsSummary(gymInstant(today), gymInstant(tomorrow)),
       backendApi.getPaymentsSummary(gymInstant(monthStart), gymInstant(tomorrow)),
       backendApi.getCurrentPrice().catch(() => null),
@@ -77,14 +79,15 @@ export function AdminPaymentsScreen() {
       backendApi.getAdminDashboardMetrics(),
     ])
     return { payments, todaySummary, monthSummary, currentPrice, prices, metrics }
-  }, [from, method, monthStart, page, search, status, today, tomorrow])
+  }, [debouncedSearch, from, method, monthStart, page, status, today, tomorrow])
   const { data, loading, error, reload } = useApiResource(loader)
+  const isSearchLoading = loading && data !== null
   const setFilter = (action: () => void) => { setPage(1); action() }
   const header = <PageHeader title="Pagos y cuota" description="El valor vigente de la cuota y todos los pagos acreditados. Cada acreditación abre 30 días de vigencia."><button type="button" className="button button-primary payment-header-register" aria-label="Registrar pago" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button></PageHeader>
   const dialog = paymentOpen && <PaymentDialog currentPrice={data?.currentPrice?.amount ?? null} onClose={() => setPaymentOpen(false)} onSaved={() => { setPaymentOpen(false); void reload() }} />
 
-  if (loading) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState message="Cargando pagos…" /></div>{dialog}</div>
-  if (error || !data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()} /></div>{dialog}</div>
+  if (loading && !data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState message="Cargando pagos…" /></div>{dialog}</div>
+  if (!data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()} /></div>{dialog}</div>
 
   return <div className="app-page admin-payments-screen">
     {header}
@@ -116,11 +119,12 @@ export function AdminPaymentsScreen() {
     </section>
 
     <div className="toolbar payment-filter-toolbar">
-      <label className="search-shell"><Icon name="search" /><input aria-label="Buscar por socio o documento" placeholder="Buscar por socio o documento" value={search} onChange={(event) => setFilter(() => setSearch(event.target.value))} /></label>
+      <label className="search-shell"><Icon name="search" /><input aria-label="Buscar por socio o documento" placeholder="Buscar por socio o documento" value={search} aria-busy={isSearchLoading} onChange={(event) => setFilter(() => setSearch(event.target.value))} /></label>
       <select aria-label="Filtrar por medio" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}><option value="">Medio: todos</option><option value="Efectivo">Efectivo</option><option value="Débito">Débito</option><option value="Transferencia">Transferencia</option></select>
       <select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Estado: todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select>
       <label className="payment-period-filter"><span className="visually-hidden">Filtrar por fecha</span><select aria-label="Filtrar por fecha" value={dateRange} onChange={(event) => setFilter(() => setDateRange(event.target.value as 'last30' | 'month' | 'all'))}><option value="last30">Últimos 30 días</option><option value="month">Este mes</option><option value="all">Todo el historial</option></select></label>
     </div>
+    {error && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
 
     <div className="admin-payments-layout">
       <section className="payment-list-panel">
@@ -190,8 +194,10 @@ function PriceForm({ current, onSaved }: { current: string | null; onSaved: () =
 
 function PaymentDialog({ currentPrice, onClose, onSaved }: { currentPrice: string | null; onClose: () => void; onSaved: () => void }) {
   const [search, setSearch] = useState('')
-  const memberLoader = useCallback(() => backendApi.listMembers({ search: search.trim() || undefined, page: 1, limit: 100 }), [search])
+  const debouncedSearch = useDebouncedValue(search)
+  const memberLoader = useCallback(() => backendApi.listMembers({ search: debouncedSearch.trim() || undefined, page: 1, limit: 100 }), [debouncedSearch])
   const { data: members, loading, error, reload } = useApiResource(memberLoader)
+  const isMemberSearchLoading = loading && members !== null
   const [memberId, setMemberId] = useState('')
   const [amount, setAmount] = useState(currentPrice ?? '')
   const [method, setMethod] = useState('Efectivo')
@@ -228,5 +234,5 @@ function PaymentDialog({ currentPrice, onClose, onSaved }: { currentPrice: strin
       setSaving(false)
     }
   }
-  return <div className="dialog-backdrop payment-dialog-backdrop" role="presentation"><section className="workspace-dialog payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-dialog-title"><header className="payment-dialog-header"><div><h2 id="payment-dialog-title">Registrar y acreditar un pago</h2><p>Revisá el resumen antes de confirmar: la acreditación genera una nueva vigencia de 30 días.</p></div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" /></button></header><form onSubmit={previewPayment}><div className="payment-dialog-body"><label className="read-field payment-member-field"><span>Socio</span><span className="payment-member-search"><Icon name="search" size={20} /><input aria-label="Buscar socio" value={search} onChange={(event) => { setSearch(event.target.value); setMemberId(''); invalidatePreview() }} placeholder="Buscar por nombre o documento" /></span><select aria-label="Socio" value={memberId} onChange={(event) => { setMemberId(event.target.value); invalidatePreview() }} required><option value="">Seleccioná un socio</option>{members?.items.map((member: MemberListItem) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName} · DNI {member.documentNumber}</option>)}</select></label><div className="payment-dialog-row"><label className="read-field"><span>Importe</span><input aria-label="Importe" type="number" min="0.01" max="9999999999.99" step="0.01" value={amount} onChange={(event) => { setAmount(event.target.value); invalidatePreview() }} required /></label><label className="read-field"><span>Medio de pago</span><select aria-label="Medio de pago" value={method} onChange={(event) => { setMethod(event.target.value); invalidatePreview() }} required><option>Efectivo</option><option>Débito</option><option>Transferencia</option></select></label></div><label className="read-field"><span>Número de comprobante</span><input aria-label="Número de comprobante" value={receiptNumber} maxLength={100} onChange={(event) => { setReceiptNumber(event.target.value); invalidatePreview() }} placeholder="0001-0456" /></label>{loading && <LoadingState message="Buscando socios…" />}{error && <ErrorState message={error} retry={() => void reload()} />}{selected && <div className="payment-operation-summary"><span className="payment-summary-title">RESUMEN DE LA OPERACIÓN</span><p><span>Socio</span><strong>{selected.firstName} {selected.lastName}</strong></p><p><span>Valor vigente de la cuota</span><strong>{money(currentPrice)}</strong></p><p><span>Vencimiento actual</span><strong>{formatDate(selected.expiresAt)}</strong></p><div className="payment-summary-divider" /><p className="payment-new-expiration"><span>Nuevo vencimiento</span><strong>{preview ? formatDate(preview.estimatedExpiresAt) : 'Pendiente de validar'}</strong></p><small>Los días restantes del vencimiento anterior no se acumulan.</small></div>}{notice && <p className="error-message" role="alert">{notice}</p>}</div><footer className="dialog-actions payment-dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button>{preview ? <ActionButton type="button" className="button button-primary" isLoading={saving} loadingLabel="Acreditando…" onClick={() => void confirmPayment()}><Icon name="check" size={20} />Confirmar y acreditar</ActionButton> : <ActionButton type="submit" className="button button-primary" isLoading={previewing} loadingLabel="Revisando…" disabled={!selected}><Icon name="check" size={20} />Revisar y acreditar</ActionButton>}</footer></form></section></div>
+  return <div className="dialog-backdrop payment-dialog-backdrop" role="presentation"><section className="workspace-dialog payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-dialog-title"><header className="payment-dialog-header"><div><h2 id="payment-dialog-title">Registrar y acreditar un pago</h2><p>Revisá el resumen antes de confirmar: la acreditación genera una nueva vigencia de 30 días.</p></div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" /></button></header><form onSubmit={previewPayment}><div className="payment-dialog-body"><label className="read-field payment-member-field"><span>Socio</span><span className="payment-member-search"><Icon name="search" size={20} /><input aria-label="Buscar socio" aria-busy={isMemberSearchLoading} value={search} onChange={(event) => { setSearch(event.target.value); setMemberId(''); invalidatePreview() }} placeholder="Buscar por nombre o documento" /></span><select aria-label="Socio" value={memberId} onChange={(event) => { setMemberId(event.target.value); invalidatePreview() }} required><option value="">Seleccioná un socio</option>{members?.items.map((member: MemberListItem) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName} · DNI {member.documentNumber}</option>)}</select></label><div className="payment-dialog-row"><label className="read-field"><span>Importe</span><input aria-label="Importe" type="number" min="0.01" max="9999999999.99" step="0.01" value={amount} onChange={(event) => { setAmount(event.target.value); invalidatePreview() }} required /></label><label className="read-field"><span>Medio de pago</span><select aria-label="Medio de pago" value={method} onChange={(event) => { setMethod(event.target.value); invalidatePreview() }} required><option>Efectivo</option><option>Débito</option><option>Transferencia</option></select></label></div><label className="read-field"><span>Número de comprobante</span><input aria-label="Número de comprobante" value={receiptNumber} maxLength={100} onChange={(event) => { setReceiptNumber(event.target.value); invalidatePreview() }} placeholder="0001-0456" /></label>{loading && !members && <LoadingState message="Buscando socios…" />}{error && !members && <ErrorState message={error} retry={() => void reload()} />}{error && members && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}{selected && <div className="payment-operation-summary"><span className="payment-summary-title">RESUMEN DE LA OPERACIÓN</span><p><span>Socio</span><strong>{selected.firstName} {selected.lastName}</strong></p><p><span>Valor vigente de la cuota</span><strong>{money(currentPrice)}</strong></p><p><span>Vencimiento actual</span><strong>{formatDate(selected.expiresAt)}</strong></p><div className="payment-summary-divider" /><p className="payment-new-expiration"><span>Nuevo vencimiento</span><strong>{preview ? formatDate(preview.estimatedExpiresAt) : 'Pendiente de validar'}</strong></p><small>Los días restantes del vencimiento anterior no se acumulan.</small></div>}{notice && <p className="error-message" role="alert">{notice}</p>}</div><footer className="dialog-actions payment-dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button>{preview ? <ActionButton type="button" className="button button-primary" isLoading={saving} loadingLabel="Acreditando…" onClick={() => void confirmPayment()}><Icon name="check" size={20} />Confirmar y acreditar</ActionButton> : <ActionButton type="submit" className="button button-primary" isLoading={previewing} loadingLabel="Revisando…" disabled={!selected}><Icon name="check" size={20} />Revisar y acreditar</ActionButton>}</footer></form></section></div>
 }

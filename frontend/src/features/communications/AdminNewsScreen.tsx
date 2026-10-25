@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type R
 import { backendApi, type NewsPost, type PublicationAudience, type PublicationStatus } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { useIsMobile } from '../../hooks/use-is-mobile'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
@@ -32,6 +33,7 @@ export function AdminNewsScreen() {
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
   const formTitle = useRef<HTMLInputElement>(null)
+  const debouncedSearch = useDebouncedValue(search)
   useEffect(() => {
     if (!isFilterOpen) return
     function closeFilters(event: KeyboardEvent) {
@@ -42,8 +44,9 @@ export function AdminNewsScreen() {
     document.addEventListener('keydown', closeFilters)
     return () => document.removeEventListener('keydown', closeFilters)
   }, [isFilterOpen])
-  const loader = useCallback(() => backendApi.listNewsPosts({ page, limit: 12, ...(search.trim() ? { search: search.trim() } : {}), ...(audience ? { audience } : {}), ...(status ? { status } : {}) }), [page, search, audience, status])
+  const loader = useCallback(() => backendApi.listNewsPosts({ page, limit: 12, ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}), ...(audience ? { audience } : {}), ...(status ? { status } : {}) }), [audience, debouncedSearch, page, status])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isLoading && data !== null
 
   function startCreate() {
     setEditing(null); setForm(EMPTY_FORM); setFormError(''); setNotice(''); setIsFormOpen(true); setIsFilterOpen(false)
@@ -121,14 +124,15 @@ export function AdminNewsScreen() {
     {notice && <p role="status" className="success-message">{notice}</p>}
     <div className="admin-news-layout"><section className="admin-news-list" aria-label="Publicaciones">
       <div className="admin-news-toolbar">
-        <label className="admin-news-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar novedad</span><input type="search" maxLength={100} placeholder="Buscar novedad" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
+        <label className="admin-news-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar novedad</span><input type="search" maxLength={100} placeholder="Buscar novedad" value={search} aria-busy={isSearchLoading} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
         <button ref={filterButton} type="button" className="admin-news-filter-button" aria-label="Filtrar novedades" aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={19}/></button>
         {(!isMobile || isFilterOpen) && <div id={filterId} className="admin-news-filters">
           <label><span className="visually-hidden">Filtrar por audiencia</span><select value={audience} onChange={(event) => { setAudience(event.target.value as PublicationAudience | ''); setPage(1) }}><option value="">Audiencia: todas</option>{Object.entries(AUDIENCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <label><span className="visually-hidden">Estado</span><select value={status} onChange={(event) => { setStatus(event.target.value as PublicationStatus | ''); setPage(1) }}><option value="">Estado: todos</option><option value="DRAFT">Borradores</option><option value="PUBLISHED">Publicadas</option><option value="INACTIVE">Desactivadas</option></select></label>
         </div>}
       </div>
-      {isLoading ? <LoadingState message="Cargando novedades…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay novedades para los filtros seleccionados."/> : <>
+      {error && data && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
+      {isLoading && !data ? <LoadingState message="Cargando novedades…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar las novedades.'} retry={() => void reload()}/> : !data.items.length ? <EmptyState message="No hay novedades para los filtros seleccionados."/> : <>
         {isMobile ? <div className="admin-news-cards">{data.items.map((post) => <article data-news-post key={post.id} className="admin-news-mobile-card"><div><h2><button type="button" onClick={() => startEdit(post)}>{post.title}</button></h2><p>{AUDIENCE_LABELS[post.audience]} · {post.publishedAt ? `publicada el ${publicationDate(post.publishedAt)}` : 'sin publicar'}</p></div><span className={`badge ${post.status === 'PUBLISHED' ? 'badge-info' : post.status === 'DRAFT' ? 'badge-secondary' : 'badge-neutral'}`}>{STATUS_LABELS[post.status]}</span>{postActions(post)}</article>)}</div> :
           <div className="admin-news-table-wrap"><table className="admin-news-table"><thead><tr><th scope="col">Título</th><th scope="col">Audiencia</th><th scope="col">Publicada</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead><tbody>{data.items.map((post) => <tr data-news-post key={post.id}><td><div className="admin-news-title-cell"><h2><button type="button" onClick={() => startEdit(post)}>{post.title}</button></h2></div></td><td>{AUDIENCE_LABELS[post.audience]}</td><td>{post.publishedAt ? <time dateTime={post.publishedAt}>{publicationDate(post.publishedAt)}</time> : '—'}</td><td><span className={`admin-news-status admin-news-status-${post.status.toLowerCase()}`}>{STATUS_LABELS[post.status]}</span></td><td className="admin-news-actions-cell">{postActions(post)}</td></tr>)}</tbody></table></div>}
         {data.total > data.limit && <nav className="table-pagination" aria-label="Páginas de novedades"><span>Página {data.page} de {Math.ceil(data.total / data.limit)}</span><div><button type="button" className="button button-secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</button><button type="button" className="button button-secondary" disabled={page * data.limit >= data.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></nav>}

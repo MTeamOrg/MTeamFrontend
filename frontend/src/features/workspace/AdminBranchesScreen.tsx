@@ -1,5 +1,6 @@
 import { useCallback, useState, type FormEvent } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { backendApi, type Branch, type BranchInput } from '../../service/backend-api'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
 import { Icon } from './Icon'
@@ -24,20 +25,22 @@ export function AdminBranchesScreen() {
   const [editing, setEditing] = useState<Branch | 'new' | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [togglingBranchId, setTogglingBranchId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search)
   const loader = useCallback(() => backendApi.listAdminBranches({
-    search: search.trim() || undefined,
+    search: debouncedSearch.trim() || undefined,
     isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
     page,
     limit: 20,
-  }), [activeFilter, page, search])
+  }), [activeFilter, debouncedSearch, page])
   const { data, loading, error, reload } = useApiResource(loader)
+  const isSearchLoading = loading && data !== null
 
   return <div className="app-page admin-branches-screen">
     <PageHeader title="Sedes" description="Las sedes desactivadas dejan de mostrarse y no pueden asignarse a nuevas clases, pero conservan su historial."/>
     <button type="button" className="button button-primary admin-branches-mobile-create" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
     <div className="admin-list-main">
       <div className="toolbar admin-list-toolbar admin-branches-toolbar">
-        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Buscar por nombre o dirección" value={search} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label>
+        <label className="search-shell"><Icon name="search" size={18}/><input aria-label="Buscar sedes" placeholder="Buscar por nombre o dirección" value={search} aria-busy={isSearchLoading} onChange={(event) => { setPage(1); setSearch(event.target.value) }}/></label>
         <button type="button" className="admin-branches-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
         <div className={`admin-branches-filter-fields${filtersOpen ? ' is-open' : ''}`}>
           <select aria-label="Filtrar sedes por estado" value={activeFilter} onChange={(event) => { setPage(1); setActiveFilter(event.target.value as BranchFilter) }}>
@@ -48,7 +51,8 @@ export function AdminBranchesScreen() {
         </div>
         <button type="button" className="button button-primary admin-branches-desktop-create" onClick={() => setEditing('new')}><Icon name="plus" size={20}/>Nueva sede</button>
       </div>
-      {loading ? <LoadingState message="Cargando sedes…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !data?.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <>
+      {error && data && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
+      {loading && !data ? <LoadingState message="Cargando sedes…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar las sedes.'} retry={() => void reload()}/> : !data.items.length ? <EmptyState message="No hay sedes que coincidan con los filtros."/> : <>
         <div className="admin-branches-table-wrap">
           <table className="admin-branches-table">
             <thead><tr><th scope="col">Sede</th><th scope="col">Dirección</th><th scope="col">Horarios</th><th scope="col">Teléfono</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>

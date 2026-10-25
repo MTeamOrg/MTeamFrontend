@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { backendApi, type Event, type EventDisplayStatus } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { EmptyState, ErrorState, LoadingState } from '../workspace/ApiStates'
 import { Icon } from '../workspace/Icon'
 import { PageHeader } from '../workspace/PageHeader'
@@ -36,6 +37,7 @@ export function EventConsultationScreen() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
+  const debouncedSearch = useDebouncedValue(search)
   useEffect(() => {
     if (!isFilterOpen) return
     function closeFilters(event: KeyboardEvent) {
@@ -46,8 +48,9 @@ export function EventConsultationScreen() {
     document.addEventListener('keydown', closeFilters)
     return () => document.removeEventListener('keydown', closeFilters)
   }, [isFilterOpen])
-  const loader = useCallback(() => loadEvents(search), [search])
+  const loader = useCallback(() => loadEvents(debouncedSearch), [debouncedSearch])
   const { data, loading: isLoading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isLoading && data !== null
   const events = data?.filter((event) => event.displayStatus === status) ?? []
   const lastPage = Math.max(1, Math.ceil(events.length / PAGE_SIZE))
   const currentPage = Math.min(page, lastPage)
@@ -65,14 +68,15 @@ export function EventConsultationScreen() {
       {STATUS_OPTIONS.map((option) => <button key={option.value} type="button" aria-pressed={status === option.value} onClick={() => selectStatus(option.value)}>{option.label}</button>)}
     </div>
     <div className="event-search-toolbar">
-      <label className="event-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar evento</span><input type="search" maxLength={100} placeholder="Buscar evento" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
+      <label className="event-search"><Icon name="search" size={18}/><span className="visually-hidden">Buscar evento</span><input type="search" maxLength={100} placeholder="Buscar evento" value={search} aria-busy={isSearchLoading} onChange={(event) => { setSearch(event.target.value); setPage(1) }}/></label>
       <button ref={filterButton} type="button" className="event-filter-button" aria-label={`Filtrar eventos: ${STATUS_OPTIONS.find((option) => option.value === status)?.label}`} aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={20}/></button>
       {isFilterOpen && <fieldset id={filterId} className="event-filter-panel">
         <legend>Estado de los eventos</legend>
         {STATUS_OPTIONS.map((option) => <label key={option.value}><input type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}
       </fieldset>}
     </div>
-    {isLoading ? <LoadingState message="Cargando eventos…"/> : error ? <ErrorState message={error} retry={() => void reload()}/> : !events.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
+    {error && data && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
+    {isLoading && !data ? <LoadingState message="Cargando eventos…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar los eventos.'} retry={() => void reload()}/> : !events.length ? <EmptyState message="No hay eventos para los filtros seleccionados."/> : <>
       <div className="event-consultation-grid">{events.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((event) => <ConsultationEventCard key={event.id} event={event}/>)}</div>
       {lastPage > 1 && <nav className="table-pagination" aria-label="Páginas de eventos"><span>Página {currentPage} de {lastPage}</span><div><button type="button" className="button button-secondary" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button><button type="button" className="button button-secondary" disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}>Siguiente</button></div></nav>}
     </>}

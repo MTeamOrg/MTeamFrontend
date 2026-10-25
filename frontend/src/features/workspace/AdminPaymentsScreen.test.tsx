@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PaymentReportItem } from '../../service/backend-api'
+import { backendApi, type PaymentReportItem } from '../../service/backend-api'
 import { renderWithSession, requestsTo, stubApi, testUser } from '../../test/test-utils'
 import { AdminPaymentsScreen } from './AdminPaymentsScreen'
 
@@ -41,6 +41,33 @@ describe('pagos y cuota del administrador', () => {
     expect(screen.getByRole('heading', { name: 'Historial de valores' })).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Estado de las cuotas' })).toHaveLength(2)
     expect(screen.getByRole('heading', { name: 'Últimos pagos' })).toBeInTheDocument()
+  })
+
+  it('debouncea la búsqueda y conserva la pantalla mientras llega la respuesta', async () => {
+    stubPaymentsApi()
+    renderWithSession(<AdminPaymentsScreen />, { user: testUser('ADMIN') })
+    await screen.findByText('Juan Manuel Pérez')
+
+    let resolveSearch!: (value: Awaited<ReturnType<typeof backendApi.listPayments>>) => void
+    const listPayments = vi.spyOn(backendApi, 'listPayments').mockImplementation(() => new Promise((resolve) => { resolveSearch = resolve }))
+    const searchInput = screen.getByRole('textbox', { name: 'Buscar por socio o documento' })
+    searchInput.focus()
+    fireEvent.change(searchInput, { target: { value: 's' } })
+    fireEvent.change(searchInput, { target: { value: 'so' } })
+    fireEvent.change(searchInput, { target: { value: 'soc' } })
+
+    expect(listPayments).not.toHaveBeenCalled()
+    expect(searchInput).toHaveFocus()
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    await waitFor(() => expect(listPayments).toHaveBeenCalledTimes(1))
+
+    expect(searchInput).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('heading', { name: 'Pagos y cuota' })).toBeInTheDocument()
+    expect(screen.getByText('Juan Manuel Pérez')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cambiar el valor de la cuota' })).toBeInTheDocument()
+
+    resolveSearch(page([DEFAULT_PAYMENT]) as Awaited<ReturnType<typeof backendApi.listPayments>>)
+    await waitFor(() => expect(searchInput).toHaveAttribute('aria-busy', 'false'))
   })
 
   it('expone el detalle completo de valores largos sin perder la acción', async () => {

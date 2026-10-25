@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useDebouncedValue } from '../../hooks/use-debounced-value'
 import { backendApi, type AdminMedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
 import { addDays, formatDate, formatDateTime, gymDate } from '../../service/date-time'
 import { EmptyState, ErrorState, LoadingState } from './ApiStates'
@@ -52,16 +53,17 @@ export function AdminMedicalCertificatesScreen() {
   const [uploadPeriod, setUploadPeriod] = useState<UploadPeriod>('')
   const [page, setPage] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const debouncedSearch = useDebouncedValue(search)
   const loader = useCallback(() => {
     const dateRange = getUploadDateRange(uploadPeriod)
     return backendApi.listAdminMedicalCertificates({
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       status: status || undefined,
       ...dateRange,
       page,
       limit: 20,
     })
-  }, [page, search, status, uploadPeriod])
+  }, [page, debouncedSearch, status, uploadPeriod])
   const { data, loading, error, reload } = useApiResource(loader)
   const metricsLoader = useCallback(async () => {
     const [dashboardResult, approvedResult] = await Promise.allSettled([
@@ -94,8 +96,8 @@ export function AdminMedicalCertificatesScreen() {
   }
 
   const header = <PageHeader title="Aptos médicos" description="Bandeja de revisión. Al aprobar o rechazar se notifica al socio y queda registrado quién revisó y cuándo."/>
-  if (loading) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><LoadingState message="Cargando aptos médicos…"/></div></div>
-  if (error || !data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudieron cargar los certificados médicos.'} retry={() => void reload()}/></div></div>
+  if (loading && !data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><LoadingState message="Cargando aptos médicos…"/></div></div>
+  if (!data) return <div className="app-page medical-admin-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudieron cargar los certificados médicos.'} retry={() => void reload()}/></div></div>
 
   return <div className="app-page medical-admin-screen">
     {header}
@@ -106,7 +108,7 @@ export function AdminMedicalCertificatesScreen() {
       <Metric label="Socios en período inicial" value={metrics.data?.initialPeriodMembers ?? null} unit="socios" tone="purple" detail="Pueden ingresar sin apto" isMobileHidden/>
     </div>
     <div className="medical-filter-toolbar" aria-label="Filtros de aptos médicos">
-      <label className="search-shell"><Icon name="search" size={18}/><input value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Buscar por socio o documento" aria-label="Buscar por socio o documento"/></label>
+      <label className="search-shell"><Icon name="search" size={18}/><input value={search} aria-busy={loading && data !== null} onChange={(event) => updateSearch(event.target.value)} placeholder="Buscar por socio o documento" aria-label="Buscar por socio o documento"/></label>
       <button type="button" className="medical-filter-toggle" aria-label="Mostrar filtros" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}><Icon name="filter" size={18}/></button>
       <div className={`medical-filter-fields${filtersOpen ? ' is-open' : ''}`}>
         <select value={status} onChange={(event) => updateStatus(event.target.value as MedicalCertificateStatus | '')} aria-label="Filtrar por estado">

@@ -43,6 +43,7 @@ describe('AdminBranchesScreen: flujos de gestión', () => {
     fireEvent.change(screen.getByLabelText('Buscar sedes'), { target: { value: 'Palermo' } })
     expect((await screen.findAllByText('Sede 1')).length).toBeGreaterThan(0)
     fireEvent.change(screen.getByLabelText('Filtrar sedes por estado'), { target: { value: 'inactive' } })
+    await new Promise((resolve) => setTimeout(resolve, 450))
     await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/admin/branches').at(-1)?.url.searchParams.toString()).toContain('isActive=false'))
     expect(requestsTo(fetchStub, 'GET', '/admin/branches').at(-1)?.url.searchParams.get('search')).toBe('Palermo')
     expect(requestsTo(fetchStub, 'GET', '/admin/branches').at(-1)?.url.searchParams.get('page')).toBe('1')
