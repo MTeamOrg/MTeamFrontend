@@ -10,6 +10,8 @@ import { ActionButton } from '../../components/ActionButton'
 
 type LoginStatus = 'idle' | 'loading' | 'success'
 
+const SUCCESS_FEEDBACK_DURATION_MS = 240
+
 export function LoginPage() {
   const { session, login } = useAuth()
   const navigate = useNavigate()
@@ -22,7 +24,7 @@ export function LoginPage() {
   const [isRecoveryOpen, setIsRecoveryOpen] = useState(false)
   const isSubmitLockedRef = useRef(false)
 
-  if (session) {
+  if (session && loginStatus === 'idle') {
     const roleHome = session.user.role === 'ADMIN' ? '/admin' : session.user.role === 'TRAINER' ? '/entrenador' : '/socio'
     return <Navigate to={session.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome} replace />
   }
@@ -33,16 +35,20 @@ export function LoginPage() {
     isSubmitLockedRef.current = true
     setError('')
     setLoginStatus('loading')
+    let navigationStarted = false
     try {
       const nextSession = await login({ email, password }, remember)
       setLoginStatus('success')
       const roleHome = nextSession.user.role === 'ADMIN' ? '/admin' : nextSession.user.role === 'TRAINER' ? '/entrenador' : '/socio'
+      await new Promise<void>((resolve) => window.setTimeout(resolve, SUCCESS_FEEDBACK_DURATION_MS))
+      navigationStarted = true
       await navigate(nextSession.user.isPasswordChangeRequired ? '/cambiar-contrasena' : roleHome, { replace: true })
     } catch (caughtError) {
       setError(caughtError instanceof ApiError ? caughtError.message : 'No fue posible iniciar sesión.')
       setLoginStatus('idle')
+      navigationStarted = false
     } finally {
-      isSubmitLockedRef.current = false
+      if (!navigationStarted) isSubmitLockedRef.current = false
     }
   }
 

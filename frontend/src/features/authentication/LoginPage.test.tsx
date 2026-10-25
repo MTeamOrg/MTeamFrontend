@@ -116,6 +116,20 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Inicio de socio')).toBeInTheDocument()
   })
 
+  it('renders the confirmed success state before navigating', async () => {
+    let resolveLogin: (session: AuthSession) => void = () => undefined
+    const loginPromise = new Promise<AuthSession>((resolve) => { resolveLogin = resolve })
+    const login = vi.fn().mockReturnValue(loginPromise)
+    renderLogin(login as AuthContextValue['login'])
+
+    fireEvent.submit(screen.getByRole('button', { name: /Iniciar sesi/ }).closest('form') as HTMLFormElement)
+    await waitFor(() => expect(login).toHaveBeenCalledTimes(1))
+
+    resolveLogin(buildSession())
+    expect(await screen.findByText('¡Listo!')).toBeInTheDocument()
+    expect(await screen.findByText('Inicio de socio')).toBeInTheDocument()
+  })
+
   it('libera el bloqueo después de un error y permite volver a intentar', async () => {
     const login = vi.fn()
       .mockRejectedValueOnce(new Error('login failed'))
