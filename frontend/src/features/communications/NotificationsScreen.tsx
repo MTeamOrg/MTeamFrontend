@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { backendApi, type Notification, type NotificationPage } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
@@ -69,7 +69,7 @@ export function NotificationsScreen() {
   }, [reportedUnread, syncUnreadCount])
 
   // The "Marcar como leída" button disappears once it is used: keep the keyboard on the same notification.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!focusAfterRead.current) return
     document.getElementById(toggleId(focusAfterRead.current))?.focus()
     focusAfterRead.current = null
