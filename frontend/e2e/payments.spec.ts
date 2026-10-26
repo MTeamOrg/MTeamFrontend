@@ -169,7 +169,9 @@ test('el administrador previsualiza y acredita un pago desde Pagos y cuota', asy
   await page.getByRole('button', { name: 'Confirmar y acreditar' }).click()
 
   await expect(page.getByRole('dialog')).toBeHidden()
-  await expect(page.getByRole('cell', { name: 'Juan Manuel Perez' })).toHaveCount(2)
+  const paymentRows = page.locator('.payment-table tbody tr')
+  await expect(paymentRows).toHaveCount(2)
+  await expect(paymentRows.filter({ hasText: 'Juan Manuel Perez' })).toHaveCount(2)
   expect(paymentRequest).toEqual({ memberId: member.id, amount: 32000, method: 'Efectivo', receiptNumber: '0001-0456' })
   expect(paymentIdempotencyKey).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
 })

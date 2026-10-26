@@ -10,7 +10,7 @@ for (const width of [1440, 390, 320]) {
     const errors: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width, height: 1000 })
-    await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ user, accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: 9999999999999 })), user)
+    await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ user, accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000 })), user)
     await page.route('**/api/**', async (route) => {
       const url = new URL(route.request().url())
       if (url.pathname.endsWith('/auth/me')) return route.fulfill({ json: user })

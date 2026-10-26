@@ -158,7 +158,7 @@ test.describe('[API simulada] bandeja de notificaciones (escritorio)', () => {
     await menuEntry(page).click()
 
     await expect(page.getByRole('alert').filter({ hasText: 'No se pudieron cargar los datos' })).toBeVisible()
-    await page.getByRole('button', { name: 'Reintentar' }).click()
+    await page.getByRole('alert').filter({ hasText: 'No se pudieron cargar los datos' }).getByRole('button', { name: 'Reintentar' }).click()
     await expect(page.getByRole('article')).toHaveCount(3)
 
     api.failNextReadStatus = 1

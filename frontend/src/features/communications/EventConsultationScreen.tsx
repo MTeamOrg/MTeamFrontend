@@ -38,8 +38,10 @@ export function EventConsultationScreen() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const filterId = useId()
   const filterButton = useRef<HTMLButtonElement>(null)
+  const selectedFilterOption = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!isFilterOpen) return
+    selectedFilterOption.current?.focus()
     function closeFilters(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       setIsFilterOpen(false)
@@ -76,7 +78,7 @@ export function EventConsultationScreen() {
       <button ref={filterButton} type="button" className="event-filter-button" aria-label={`Filtrar eventos: ${STATUS_OPTIONS.find((option) => option.value === status)?.label}`} aria-expanded={isFilterOpen} aria-controls={filterId} onClick={() => setIsFilterOpen(!isFilterOpen)}><Icon name="filter" size={20}/></button>
       {isFilterOpen && <fieldset id={filterId} className="event-filter-panel">
         <legend>Estado de los eventos</legend>
-        {STATUS_OPTIONS.map((option) => <label key={option.value}><input type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}
+        {STATUS_OPTIONS.map((option) => <label key={option.value}><input ref={status === option.value ? selectedFilterOption : undefined} type="radio" name={filterId} value={option.value} checked={status === option.value} onChange={() => selectStatus(option.value)}/>{option.label}</label>)}
       </fieldset>}
     </div>
     {error && data && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
