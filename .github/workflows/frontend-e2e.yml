@@ -22,7 +22,6 @@ jobs:
       QASE_MODE: ${{ secrets.QASE_TESTOPS_API_TOKEN != '' && vars.QASE_TESTOPS_PROJECT != '' && 'testops' || 'off' }}
       QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
       QASE_TESTOPS_PROJECT: ${{ vars.QASE_TESTOPS_PROJECT }}
-      TEMP: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
