@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { backendApi, type MedicalCertificate, type MedicalCertificateStatus } from '../../service/backend-api'
 import { formatDate } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
@@ -41,12 +41,56 @@ export function MemberMedicalCertificateScreen() {
   const loader = useCallback(() => backendApi.getOwnMedicalCertificates(), [])
   const { data, loading, error, reload } = useApiResource(loader)
   const fileInput = useRef<HTMLInputElement>(null)
-  const cameraInput = useRef<HTMLInputElement>(null)
+  const cameraVideo = useRef<HTMLVideoElement>(null)
+  const cameraStream = useRef<MediaStream | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [dragging, setDragging] = useState(false)
   const [validationError, setValidationError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+
+  function stopCamera() {
+    cameraStream.current?.getTracks().forEach((track) => track.stop())
+    cameraStream.current = null
+  }
+
+  useEffect(() => () => stopCamera(), [])
+
+  async function openCamera() {
+    setCameraError('')
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Tu navegador no permite acceder a la cámara. Elegí una foto desde tus archivos.')
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+      cameraStream.current = stream
+      setCameraOpen(true)
+      if (cameraVideo.current) cameraVideo.current.srcObject = stream
+    } catch {
+      setCameraError('No se pudo abrir la cámara. Revisá los permisos del navegador e intentá nuevamente.')
+    }
+  }
+
+  function capturePhoto() {
+    const video = cameraVideo.current
+    if (!video || !video.videoWidth || !video.videoHeight) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')?.drawImage(video, 0, 0)
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setCameraError('No se pudo tomar la foto. Intentá nuevamente.')
+        return
+      }
+      selectFile(new File([blob], `apto-medico-${Date.now()}.jpg`, { type: 'image/jpeg' }))
+      setCameraOpen(false)
+      stopCamera()
+    }, 'image/jpeg', 0.92)
+  }
 
   function selectFile(file: File | undefined) {
     if (!file) return
@@ -109,15 +153,23 @@ export function MemberMedicalCertificateScreen() {
             {selectedFile && <span className="medical-selected-file">Archivo seleccionado: {selectedFile.name}</span>}
           </button>
           <input ref={fileInput} className="medical-hidden-file-input" type="file" accept={MEDICAL_CERTIFICATE_ACCEPT} onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Seleccionar certificado médico"/>
-          <input ref={cameraInput} className="medical-hidden-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Tomar foto del certificado"/>
           <div className="medical-upload-actions">
-            <button type="button" className="button button-secondary medical-camera-button" onClick={() => cameraInput.current?.click()}><Icon name="camera" size={18}/>Sacar una foto</button>
+            <button type="button" className="button button-secondary medical-camera-button" onClick={() => void openCamera()}><Icon name="camera" size={18}/>Sacar una foto</button>
             <ActionButton type="button" className={`button button-primary medical-submit-button${selectedFile ? '' : ' is-empty'}`} isLoading={submitting} loadingLabel="Enviando…" disabled={!selectedFile} onClick={() => void submitFile()}>Enviar certificado</ActionButton>
           </div>
           {validationError && <p className="error-message" role="alert">{validationError}</p>}
           {submitError && <p className="error-message" role="alert">{submitError}</p>}</> :
             <p role="status">{data.current?.status === 'PENDING' ? 'Pendiente de revisión. No podés cargar otro certificado todavía.' : 'Aprobado. El apto aprobado no vence y no requiere una nueva carga.'}</p>}
         </section>
+
+        {cameraError && <p className="error-message" role="alert">{cameraError}</p>}
+        {cameraOpen && <div className="medical-camera-dialog" role="dialog" aria-modal="true" aria-label="Tomar foto del certificado">
+          <video ref={(element) => { cameraVideo.current = element; if (element && cameraStream.current) element.srcObject = cameraStream.current }} autoPlay playsInline aria-label="Vista previa de la cámara"/>
+          <div className="medical-camera-dialog-actions">
+            <button type="button" className="button button-secondary" onClick={() => { setCameraOpen(false); stopCamera() }}>Cancelar</button>
+            <button type="button" className="button button-primary" onClick={capturePhoto}>Tomar foto</button>
+          </div>
+        </div>}
 
         <section className="surface-card medical-history" aria-labelledby="history-title">
           <h2 id="history-title">Historial de aptos</h2>

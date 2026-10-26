@@ -41,6 +41,9 @@
 .medical-upload-actions{display:flex;gap:10px;flex-wrap:wrap}
 .medical-upload-actions .button{min-height:36px;font-size:13px}
 .medical-upload-actions .button-primary{margin-left:auto}
+.medical-camera-dialog{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px}
+.medical-camera-dialog video{display:block;width:min(100%,720px);max-height:75vh;object-fit:contain;background:#111;border-radius:12px}
+.medical-camera-dialog-actions{display:flex;justify-content:center;gap:12px}
 .medical-history{padding:0;overflow:hidden}
 .medical-history h2{padding:20px 20px 14px;margin:0}
 .medical-history-row{display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--border);min-width:0}
