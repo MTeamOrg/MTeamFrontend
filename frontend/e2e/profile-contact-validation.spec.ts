@@ -10,7 +10,7 @@ for (const role of ['MEMBER', 'TRAINER'] as const) {
       const user = { id: 'trainer-own', firstName: 'Ana', lastName: 'Prueba', role, status: 'ACTIVE', email: 'ana@example.com', isPasswordChangeRequired: false }
       let profile = { ...user, documentNumber: '12345678', birthDate: '1990-01-01', photoUrl: null, phone: '1100000000', memberProfile: role === 'MEMBER' ? { emergencyContactName: 'Ana', emergencyContactPhone: '1199999999' } : null, trainerProfile: { specialty: 'Entrenamiento funcional', description: 'Preparación física y movilidad.' } }
       const updates: unknown[] = []
-      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: 9999999999999, user })), user)
+      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000, user })), user)
       await page.route('**/api/**', async (route) => {
         const path = new URL(route.request().url()).pathname.replace('/api', '')
         if (path === '/users/me' && route.request().method() === 'PATCH') {
@@ -32,10 +32,10 @@ for (const role of ['MEMBER', 'TRAINER'] as const) {
       await expect(page).toHaveURL(role === 'MEMBER' ? /\/socio\/perfil$/ : /\/entrenador\/perfil$/)
       await expect(page.getByRole('heading', { name: 'Ana Prueba' })).toBeVisible()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-      if (role === 'TRAINER' && width < 701) {
+      if (width < 701) {
         await expect(page.getByRole('navigation', { name: 'Navegación inferior' })).toHaveCount(1)
         await expect(page.getByRole('textbox')).toHaveCount(0)
-        await page.getByRole('button', { name: 'Editar mi perfil' }).click()
+        await page.getByRole('button', { name: role === 'TRAINER' ? 'Editar mi perfil' : 'Editar datos' }).click()
       }
       await page.getByLabel('Correo electrónico').fill('ana@example')
       await page.getByRole('button', { name: 'Guardar cambios' }).click()

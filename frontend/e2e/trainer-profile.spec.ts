@@ -9,7 +9,7 @@ for (const width of [1440, 390, 320]) {
     const user = { id: 'trainer-own', firstName: 'Ana', lastName: 'Prueba', role: 'TRAINER', status: 'ACTIVE', email: 'ana@example.com', isPasswordChangeRequired: false }
     let profile = { ...user, documentNumber: '12345678', birthDate: '1990-01-01', photoUrl: null, phone: '1100000000', memberProfile: null, trainerProfile: { specialty: 'Entrenamiento funcional', description: 'Preparación física y movilidad.' } }
     const updates: unknown[] = []
-    await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: 9999999999999, user })), user)
+    await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000, user })), user)
     await page.route('**/api/**', async (route) => {
       const path = new URL(route.request().url()).pathname.replace('/api', '')
       if (path === '/users/me' && route.request().method() === 'PATCH') {

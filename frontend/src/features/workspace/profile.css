@@ -94,6 +94,20 @@
 .trainer-profile-branches p { margin: 5px 0 0; overflow-wrap: anywhere; }
 .trainer-profile-page .profile-form-actions .button { min-height: 44px; }
 @media (max-width: 700px) {
+  .profile-page > .page-header { display: none; }
+  .profile-identity-section .field-hint { display: none; }
+  .member-profile-layout .profile-personal-section { order: 2; }
+  .member-profile-layout .profile-personal-section .profile-help { display: none; }
+  .member-profile-layout .profile-contact-section,
+  .member-profile-layout .profile-emergency-summary-section { order: 3; }
+  .member-profile-layout .member-edit-contact { order: 4; width: 100%; min-height: 44px; justify-content: center; gap: 10px; }
+  .member-profile-layout .profile-quota-section { order: 5; }
+  .member-profile-layout .profile-security-section { order: 6; }
+  .member-profile-layout .profile-payments-section { order: 7; }
+  .member-profile-layout .profile-medical-section { order: 8; }
+  .trainer-profile-page .profile-security-section { order: 3; }
+  .trainer-profile-page .trainer-branches-section { order: 4; }
+  .trainer-profile-page .trainer-edit-contact { order: 5; width: 100%; min-height: 44px; justify-content: center; gap: 10px; }
   .trainer-profile-page .page-header { display: none; }
   .trainer-profile-page .profile-section { width: 100%; min-width: 0; }
   .trainer-profile-page .trainer-professional-section { display: none; }
@@ -105,4 +119,14 @@
   .trainer-profile-page .profile-read-field { align-items: flex-start; }
   .trainer-profile-page .profile-read-field strong { padding: 0; min-width: 0; max-width: 65%; }
   .trainer-profile-page .profile-read-field > span { flex-shrink: 0; }
+}
+@media (max-width: 700px) {
+  .profile-page .profile-layout { width: 100%; align-items: stretch; }
+  .member-profile-layout .profile-section { width: 100%; min-width: 0; }
+  .member-profile-layout .profile-quota-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .member-profile-layout .profile-quota-metric:nth-child(3) { grid-column: 1 / -1; }
+  .trainer-profile-page .profile-security-section { order: 3; }
+  .trainer-profile-page .trainer-branches-section { order: 4; }
+  .profile-mobile-logout { border-color: var(--pink); background: var(--pink); color: var(--white); }
+  .profile-mobile-logout:hover { border-color: var(--pink-hover); background: var(--pink-hover); color: var(--white); }
 }
