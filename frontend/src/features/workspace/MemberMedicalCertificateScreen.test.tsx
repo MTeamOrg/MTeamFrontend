@@ -119,6 +119,48 @@ describe('pantalla de apto médico del socio', () => {
     expect(screen.queryByText('Historial de aptos')).toBeInTheDocument()
   })
 
+  it('muestra un mensaje cuando el navegador no ofrece acceso a la cámara', async () => {
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: undefined })
+    stubApi([{ path: '/members/me/medical-certificates', handler: () => ({ body: {
+      items: [], page: 1, limit: 20, total: 0,
+      initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false },
+    } }) }])
+    renderWithSession(<MemberMedicalCertificateScreen/>, { user: testUser('MEMBER') })
+    fireEvent.click(await screen.findByRole('button', { name: 'Sacar una foto' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tu navegador no permite acceder a la cámara')
+  })
+
+  it('muestra un mensaje si el usuario deniega el permiso de cámara', async () => {
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia: vi.fn().mockRejectedValue(new Error('denied')) } })
+    stubApi([{ path: '/members/me/medical-certificates', handler: () => ({ body: {
+      items: [], page: 1, limit: 20, total: 0,
+      initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false },
+    } }) }])
+    renderWithSession(<MemberMedicalCertificateScreen/>, { user: testUser('MEMBER') })
+    fireEvent.click(await screen.findByRole('button', { name: 'Sacar una foto' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo abrir la cámara')
+  })
+
+  it('captura una foto, la selecciona como JPG y detiene la cámara', async () => {
+    const stop = vi.fn()
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) } })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: vi.fn() } as unknown as CanvasRenderingContext2D)
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => callback(new Blob(['photo'], { type: 'image/jpeg' })))
+    stubApi([{ path: '/members/me/medical-certificates', handler: () => ({ body: {
+      items: [], page: 1, limit: 20, total: 0,
+      initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false },
+    } }) }])
+    renderWithSession(<MemberMedicalCertificateScreen/>, { user: testUser('MEMBER') })
+    fireEvent.click(await screen.findByRole('button', { name: 'Sacar una foto' }))
+    const video = await screen.findByLabelText('Vista previa de la cámara')
+    Object.defineProperty(video, 'videoWidth', { configurable: true, value: 640 })
+    Object.defineProperty(video, 'videoHeight', { configurable: true, value: 480 })
+    fireEvent.click(screen.getByRole('button', { name: 'Tomar foto' }))
+    expect(await screen.findByText(/Archivo seleccionado: apto-medico-/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar certificado' })).toBeEnabled()
+    expect(stop).toHaveBeenCalled()
+  })
+
   it('acepta drag enter, drag over y drop usando la validación existente', async () => {
     stubApi([{ path: '/members/me/medical-certificates', handler: () => ({ body: {
       items: [], page: 1, limit: 20, total: 0,
