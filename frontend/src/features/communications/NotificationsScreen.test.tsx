@@ -51,6 +51,25 @@ describe('mark all as read', () => {
     expect(screen.getByRole('button', { name: 'Marcar todas como leídas' })).toBeDisabled()
   })
 
+  it('uses the existing read filter when the unread tab is selected', async () => {
+    const fetchStub = stubApi([{ path: '/notifications', handler: (url) => {
+      const unreadOnly = url.searchParams.get('isRead') === 'false'
+      const items = unreadOnly ? [unread('u1', 'Pendiente')] : [unread('u1', 'Pendiente'), read('r1', 'Ya leída')]
+      return { body: { items, page: 1, limit: 20, total: items.length, unreadCount: 1 } }
+    } }])
+    renderWithSession(<NotificationsScreen/>, { user: testUser('MEMBER') })
+
+    expect(await screen.findByText('Ya leída')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: /No leídas/ }))
+    await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/notifications').at(-1)?.url.searchParams.get('isRead')).toBe('false'))
+    expect(await screen.findByText('Pendiente')).toBeInTheDocument()
+    expect(screen.queryByText('Ya leída')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Todas' }))
+    await waitFor(() => expect(requestsTo(fetchStub, 'GET', '/notifications').at(-1)?.url.searchParams.has('isRead')).toBe(false))
+    expect(await screen.findByText('Ya leída')).toBeInTheDocument()
+  })
+
   it('still works with a backend that does not report unreadCount, using the unread total', async () => {
     stubApi([{ path: '/notifications', handler: (url) => url.searchParams.get('isRead') === 'false'
       ? { body: { items: [unread('u1', 'Pendiente')], page: 1, limit: 1, total: 3 } }
@@ -196,7 +215,7 @@ describe('what the member reads', () => {
     renderWithSession(<NotificationsScreen/>, { user: testUser('TRAINER') })
 
     const article = (await screen.findByText('Clase asignada')).closest('article') as HTMLElement
-    expect(within(article).getByText('Clases')).toBeInTheDocument()
+    expect(within(article).getByRole('img', { name: 'Clases' })).toBeInTheDocument()
     expect(within(article).getByText('No leída')).toBeInTheDocument()
     expect(within(article).getByText('Se te asignó la clase de Yoga.')).toBeInTheDocument()
     const stamp = article.querySelector('time') as HTMLTimeElement

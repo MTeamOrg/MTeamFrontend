@@ -87,6 +87,13 @@ describe('shell autenticado', () => {
     expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
   })
 
+  it('muestra volver al perfil desde apto médico en celular', () => {
+    setMobileViewport(true)
+    renderWorkspace('/socio/apto-medico', 'MEMBER')
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/socio/perfil')
+    expect(document.querySelector('.app-topbar-title')).toHaveTextContent('Apto médico')
+  })
+
   it('muestra volver al panel desde accesos en celular', () => {
     setMobileViewport(true)
     stubApi([
@@ -185,7 +192,7 @@ describe.each([
     stubApi([{ path: '/notifications', handler: () => ({ body: { items: [], page: 1, limit: 20, total: 0 } }) }])
     renderWorkspace(route, role)
     expect(await screen.findByText('No ten\u00e9s notificaciones para mostrar.')).toBeInTheDocument()
-    expect(screen.getByText('Avisos de tu cuenta y novedades operativas.')).toBeInTheDocument()
+    expect(screen.getByText('Avisos de tu cuenta: cuota, apto médico, clases y eventos.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Marcar todas como le\u00eddas' })).toBeDisabled()
   })
 })

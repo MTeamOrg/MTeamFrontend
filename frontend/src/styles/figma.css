@@ -1033,3 +1033,53 @@ body { background: var(--background); color: var(--black); }
   .admin-user-mobile-copy strong { font-size: 12px; }
   .admin-user-mobile-copy > span:not(.badge) { font-size: 9px; }
 }
+
+/* Member medical certificate mobile composition. Desktop keeps the existing upload workflow. */
+.medical-mobile-upload-heading { display: none; }
+
+@media (max-width: 700px) {
+  .medical-screen { gap: 12px; }
+  .medical-member-grid { gap: 12px; }
+  .medical-member-main,
+  .medical-member-aside { gap: 12px; }
+  .medical-current-card,
+  .medical-upload-card,
+  .medical-member-aside .surface-card { padding: 16px; }
+  .medical-current-card .dashboard-section-title { align-items: center; margin-bottom: 14px; }
+  .medical-current-card .dashboard-section-title h2 { font-size: 16px; }
+  .medical-current-card .dashboard-section-title .badge { min-height: 24px; font-size: 11px; }
+  .medical-current-file { display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 10px; }
+  .medical-current-file > div { min-width: 0; gap: 4px; }
+  .medical-current-file strong { font-size: 13px; }
+  .medical-current-file span:not(.medical-file-icon) { font-size: 11px; line-height: 1.35; }
+  .medical-current-file .medical-reviewed-by { display: none; }
+  .medical-current-file .medical-review-comment { white-space: normal; }
+  .medical-current-file .medical-file-actions { display: block; grid-column: 1 / -1; width: 100%; margin: 2px 0 0; }
+  .medical-file-link,
+  .medical-file-link .button { width: 100%; }
+  .medical-file-link { display: block; }
+  .medical-file-link .button { display: flex; }
+  .medical-file-actions .button { min-height: 44px; padding: 0 14px; font-size: 14px; }
+
+  .medical-upload-card { gap: 12px; }
+  .medical-upload-desktop-heading { display: none; }
+  .medical-mobile-upload-heading { display: grid; justify-items: center; gap: 7px; text-align: center; }
+  .medical-mobile-upload-heading > svg { color: var(--purple); }
+  .medical-mobile-upload-heading h2 { margin: 0; font-size: 15px; line-height: 1.35; }
+  .medical-mobile-upload-heading p { margin: 0; color: var(--text-secondary); font-size: 11px; line-height: 1.4; }
+  .medical-dropzone { min-height: 0; display: grid; justify-content: stretch; justify-items: stretch; gap: 0; padding: 0; border: 0; background: transparent; color: inherit; }
+  .medical-dropzone > svg,
+  .medical-dropzone > .medical-dropzone-file,
+  .medical-dropzone > span:not(.button):not(.medical-selected-file) { display: none; }
+  .medical-dropzone > .button { display: flex; justify-self: stretch; width: auto; min-height: 44px; padding: 0 14px; font-size: 14px; }
+  .medical-selected-file { display: block; min-width: 0; margin-top: 8px; overflow: hidden; color: var(--text-secondary); font-size: 11px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+  .medical-upload-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .medical-upload-actions .button { width: 100%; min-height: 44px; padding: 0 14px; font-size: 14px; }
+  .medical-upload-actions .medical-submit-button.is-empty { display: none; }
+  .medical-history,
+  .medical-member-aside .medical-requirements { display: none; }
+  .medical-member-aside .surface-card { gap: 10px; }
+  .medical-member-aside h2 { font-size: 15px; }
+  .medical-member-aside p { margin: 0; font-size: 12px; line-height: 1.5; }
+  .medical-member-aside dl { display: none; }
+}

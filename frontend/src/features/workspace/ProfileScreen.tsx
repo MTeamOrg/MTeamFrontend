@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { UserRole } from '../authentication/auth-types'
 import { useAuth } from '../authentication/use-auth'
 import { useApiResource } from '../../hooks/use-api-resource'
+import { useIsMobile } from '../../hooks/use-is-mobile'
 import { backendApi, type OwnMedicalCertificateView, type OwnMembership, type OwnProfile, type Page, type Payment } from '../../service/backend-api'
 import { formatDate, formatDateTime } from '../../service/date-time'
 import { formatMoney } from '../dashboard/dashboard-data'
@@ -65,33 +66,52 @@ export function ProfileScreen({ role, onPasswordChange, onLogout }: { role: User
 }
 
 function ProfileContent({ profile, member, role, onPasswordChange, onUpdated }: { profile: OwnProfile; member: MemberProfileData | null; role: UserRole; onPasswordChange: () => void; onUpdated: (profile: OwnProfile) => void }) {
-  const isMember = role === 'MEMBER'
   if (role === 'TRAINER') return <TrainerProfileContent profile={profile} onUpdated={onUpdated} onPasswordChange={onPasswordChange}/>
-  return <div className="profile-layout">
+  return <MemberProfileContent profile={profile} member={member} onPasswordChange={onPasswordChange} onUpdated={onUpdated}/>
+}
+
+function MemberProfileContent({ profile, member, onPasswordChange, onUpdated }: { profile: OwnProfile; member: MemberProfileData | null; onPasswordChange: () => void; onUpdated: (profile: OwnProfile) => void }) {
+  const isMobile = useIsMobile()
+  const [isEditing, setIsEditing] = useState(false)
+  return <div className="profile-layout member-profile-layout">
     <main className="profile-primary">
-      <PersonalDataCard profile={profile}/>
-      <ContactDataCard profile={profile} role={role} onUpdated={onUpdated}/>
-      {isMember && <MemberQuotaCard membership={member?.membership} loading={!member}/>}
-      {isMember && <PaymentHistoryCard payments={member?.payments} loading={!member}/>}
+      <PersonalDataCard profile={profile} includeContact={isMobile && !isEditing}/>
+      {isMobile && !isEditing
+        ? <EmergencyContactCard profile={profile}/>
+        : <ContactDataCard profile={profile} role="MEMBER" onUpdated={onUpdated} onCancel={() => setIsEditing(false)}/>
+      }
+      <MemberQuotaCard membership={member?.membership} loading={!member}/>
+      <PaymentHistoryCard payments={member?.payments} loading={!member}/>
     </main>
     <aside className="profile-secondary">
-      <ProfileIdentityCard profile={profile} role={role} onUpdated={onUpdated}/>
+      <ProfileIdentityCard profile={profile} role="MEMBER" onUpdated={onUpdated}/>
       <SecurityCard onPasswordChange={onPasswordChange}/>
-      {isMember && <MedicalSummaryCard medical={member?.medical} loading={!member}/>}
+      <MedicalSummaryCard medical={member?.medical} loading={!member}/>
     </aside>
+    {isMobile && !isEditing && <button type="button" className="button button-secondary member-edit-contact" onClick={() => setIsEditing(true)}><Icon name="edit" size={18}/>Editar datos</button>}
   </div>
 }
 
-function PersonalDataCard({ profile }: { profile: OwnProfile }) {
+function PersonalDataCard({ profile, includeContact = false }: { profile: OwnProfile; includeContact?: boolean }) {
   return <section className="surface-card profile-section profile-personal-section" aria-labelledby="personal-data-title">
     <h2 id="personal-data-title">Datos personales</h2>
     <div className="profile-read-grid">
-      <ReadOnlyField label="Nombre" value={profile.firstName}/>
-      <ReadOnlyField label="Apellido" value={profile.lastName}/>
+      {!includeContact && <><ReadOnlyField label="Nombre" value={profile.firstName}/><ReadOnlyField label="Apellido" value={profile.lastName}/></>}
       <ReadOnlyField label="Documento" value={profile.documentNumber}/>
       <ReadOnlyField label="Fecha de nacimiento" value={formatDate(profile.birthDate)}/>
+      {includeContact && <><ReadOnlyField label="Correo" value={profile.email}/><ReadOnlyField label="Teléfono" value={profile.phone}/></>}
     </div>
-    <p className="profile-help">El documento y la fecha de nacimiento solo pueden modificarlos un administrador.</p>
+    {!includeContact && <p className="profile-help">El documento y la fecha de nacimiento solo pueden modificarlos un administrador.</p>}
+  </section>
+}
+
+function EmergencyContactCard({ profile }: { profile: OwnProfile }) {
+  return <section className="surface-card profile-section profile-emergency-summary-section" aria-labelledby="emergency-contact-title">
+    <h2 id="emergency-contact-title">Contacto de emergencia</h2>
+    <div className="profile-read-grid">
+      <ReadOnlyField label="Nombre" value={profile.memberProfile?.emergencyContactName || 'Sin registrar'}/>
+      <ReadOnlyField label="Teléfono" value={profile.memberProfile?.emergencyContactPhone || 'Sin registrar'}/>
+    </div>
   </section>
 }
 

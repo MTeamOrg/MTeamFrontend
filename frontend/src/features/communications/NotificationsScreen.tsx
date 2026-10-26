@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { backendApi, type Notification, type NotificationPage } from '../../service/backend-api'
 import { formatDateTime } from '../../service/date-time'
 import { useApiResource } from '../../hooks/use-api-resource'
@@ -11,6 +11,8 @@ import './communications.css'
 
 const RETURN_REFRESH_MIN_GAP_MS = 5_000
 
+type NotificationFilter = 'all' | 'unread'
+
 const toggleId = (id: string) => `notification-toggle-${id}`
 const detailId = (id: string) => `notification-detail-${id}`
 
@@ -20,10 +22,16 @@ function typeLabel(notification: Notification) {
 }
 
 function iconFor(notification: Notification) {
-  if (notification.type === 'EVENT_CANCELLED') return 'trophy'
+  if (notification.type === 'MEMBERSHIP_PRICE_CHANGED' || notification.type === 'MEMBERSHIP_EXPIRED') return 'wallet'
+  if (notification.type === 'MEMBERSHIP_EXPIRING') return 'clock'
   if (notification.type === 'CLASS_CHANGED') return 'calendar'
-  if (notification.type === 'MEDICAL_CERTIFICATE_REVIEWED') return 'file'
+  if (notification.type === 'MEDICAL_CERTIFICATE_REVIEWED') return 'check'
+  if (notification.type === 'EVENT_CANCELLED') return 'close'
   return 'bell'
+}
+
+function iconClassFor(notification: Notification) {
+  return `notification-icon-${notification.type.toLowerCase().replaceAll('_', '-')}`
 }
 
 /** What the page shows once the server accepted the read action, before the refreshed answer arrives. */
@@ -44,11 +52,12 @@ export function NotificationsScreen() {
   const [successMessage, setSuccessMessage] = useState('')
   const [failedNotification, setFailedNotification] = useState<Notification | 'all' | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [notificationFilter, setNotificationFilter] = useState<NotificationFilter>('all')
   const focusAfterRead = useRef<string | null>(null)
   const isSavingRef = useRef(false)
   const lastRefreshAt = useRef(0)
   const { unreadCount, refreshUnreadCount, syncUnreadCount } = useNotifications()
-  const loader = useCallback(() => backendApi.listNotifications({ page, limit: 20 }), [page])
+  const loader = useCallback(() => backendApi.listNotifications({ page, limit: 20, isRead: notificationFilter === 'unread' ? false : undefined }), [notificationFilter, page])
   const { data, loading, error, reload, refresh, setData } = useApiResource(loader)
 
   // The account-wide counter, not the page on screen, decides whether "mark all" has anything to do.
@@ -60,7 +69,7 @@ export function NotificationsScreen() {
   }, [reportedUnread, syncUnreadCount])
 
   // The "Marcar como leída" button disappears once it is used: keep the keyboard on the same notification.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!focusAfterRead.current) return
     document.getElementById(toggleId(focusAfterRead.current))?.focus()
     focusAfterRead.current = null
@@ -128,10 +137,22 @@ export function NotificationsScreen() {
     setPage(next)
   }
 
+  function selectFilter(next: NotificationFilter) {
+    if (next === notificationFilter) return
+    setOpenId(null)
+    setPage(1)
+    setNotificationFilter(next)
+  }
+
   return <div className="app-page communications-page">
-    <PageHeader title="Notificaciones" description="Avisos de tu cuenta y novedades operativas.">
-      <button type="button" className="button button-secondary" onClick={() => void saveReadStatus('all')} disabled={isSaving || loading || !!error || unreadTotal === 0}><Icon name="check" size={16}/>Marcar todas como leídas</button>
-    </PageHeader>
+    <PageHeader title="Notificaciones" description="Avisos de tu cuenta: cuota, apto médico, clases y eventos."/>
+    <div className="notification-toolbar">
+      <div className="notification-filters" role="tablist" aria-label="Filtrar notificaciones">
+        <button type="button" role="tab" aria-selected={notificationFilter === 'all'} className={notificationFilter === 'all' ? 'is-active' : ''} onClick={() => selectFilter('all')}>Todas</button>
+        <button type="button" role="tab" aria-selected={notificationFilter === 'unread'} className={notificationFilter === 'unread' ? 'is-active' : ''} onClick={() => selectFilter('unread')}>No leídas ({unreadTotal})</button>
+      </div>
+      <button type="button" className="button button-secondary notification-mark-all" onClick={() => void saveReadStatus('all')} disabled={isSaving || loading || !!error || unreadTotal === 0}><Icon name="check" size={16}/>Marcar todas como leídas</button>
+    </div>
     {actionError && <div className="notification-feedback error-message" role="alert"><p>{actionError}</p>{failedNotification && <button type="button" className="button button-secondary" disabled={isSaving} onClick={() => void saveReadStatus(failedNotification)}>Reintentar</button>}</div>}
     {successMessage && <p className="notification-feedback" role="status">{successMessage}</p>}
     {isSaving && <p role="status">Guardando estado de lectura…</p>}
@@ -139,10 +160,16 @@ export function NotificationsScreen() {
       {data.items.map((notification) => {
         const isOpen = openId === notification.id
         return <article key={notification.id} className={`notification-item ${notification.readAt ? '' : 'is-unread'}`}>
-          <span className="notification-icon"><Icon name={iconFor(notification)} size={18}/></span>
-          <div>
-            <div className="notification-meta"><span>{typeLabel(notification)}</span><span className="notification-read-status">{notification.readAt ? 'Leída' : 'No leída'}</span><time dateTime={notification.createdAt}>{formatDateTime(notification.createdAt)}</time></div>
-            <h2>{notification.title}</h2>
+          <span className={`notification-icon ${iconClassFor(notification)}`} role="img" aria-label={typeLabel(notification)}><Icon name={iconFor(notification)} size={20}/></span>
+          <div className="notification-content">
+            <div className="notification-heading">
+              <div className="notification-title-group">
+                <h2>{notification.title}</h2>
+                {!notification.readAt && <span className="notification-unread-dot" aria-hidden="true"/>}
+                <span className="notification-read-status visually-hidden">{notification.readAt ? 'Leída' : 'No leída'}</span>
+              </div>
+              <time className="notification-time" dateTime={notification.createdAt}>{formatDateTime(notification.createdAt)}</time>
+            </div>
             <p>{notification.message}</p>
             <div className="notification-actions">
               <button type="button" id={toggleId(notification.id)} className="text-link" aria-expanded={isOpen} aria-controls={detailId(notification.id)} onClick={() => toggleDetail(notification)}>{isOpen ? 'Ocultar detalle' : 'Ver detalle'}</button>

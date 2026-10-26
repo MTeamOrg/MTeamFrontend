@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderWithSession, stubApi, testUser } from '../../test/test-utils'
+import { renderWithSession, setMobileViewport, stubApi, testUser } from '../../test/test-utils'
 import { MemberMedicalCertificateScreen } from './MemberMedicalCertificateScreen'
 
 const certificate = {
@@ -27,6 +27,7 @@ describe('pantalla de apto médico del socio', () => {
     const tab = { opener: window, location: { href: '' }, close: vi.fn() }
     vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window)
     renderWithSession(<MemberMedicalCertificateScreen/>, { user: testUser('MEMBER') })
+    expect(await screen.findByRole('heading', { name: 'Certificado actual' })).toBeInTheDocument()
     expect((await screen.findAllByText('Documento de apto médico')).length).toBeGreaterThan(0)
     const listUrl = new URL(String(fetchStub.mock.calls[0]?.[0]))
     expect(listUrl.pathname).toBe('/api/members/me/medical-certificates')
@@ -49,7 +50,7 @@ describe('pantalla de apto médico del socio', () => {
       { method: 'POST', path: '/members/me/medical-certificates', handler: () => ({ status: 201, body: certificate }) },
     ])
     renderWithSession(<MemberMedicalCertificateScreen/>, { user: testUser('MEMBER') })
-    await screen.findByText('Cargar un nuevo certificado')
+    await screen.findByRole('button', { name: 'Enviar certificado' })
     const input = screen.getByLabelText('Seleccionar certificado médico')
     fireEvent.change(input, { target: { files: [new File(['bad'], 'apto.txt', { type: 'text/plain' })] } })
     expect(screen.getByRole('alert')).toHaveTextContent('PDF, JPG o PNG')
@@ -91,6 +92,23 @@ describe('pantalla de apto médico del socio', () => {
     expect(await screen.findByRole('button', { name: 'Enviar certificado' })).toBeDisabled()
     expect(screen.getByText('Tu período inicial aún no comenzó.')).toBeInTheDocument()
     expect(screen.queryByText(/El backend/)).not.toBeInTheDocument()
+  })
+
+  it('expone la composición móvil con carga, cámara y período inicial sin inventar datos', async () => {
+    setMobileViewport(true)
+    stubApi([{ path: '/members/me/medical-certificates', handler: () => ({ body: {
+      items: [], page: 1, limit: 20, total: 0,
+      initialMedicalCertificatePeriod: { startsAt: '2026-09-01T12:00:00Z', expiresAt: '2026-09-21T12:00:00Z', daysRemaining: 6, isActive: true },
+    } }) }])
+    renderWithSession(<MemberMedicalCertificateScreen/>, { user: testUser('MEMBER') })
+    await screen.findByRole('button', { name: 'Enviar certificado' })
+    expect(document.querySelector('.medical-mobile-upload-heading')).toHaveTextContent('Cargar un nuevo certificado')
+    expect(screen.getByRole('button', { name: /Elegir archivo/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sacar una foto' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Tomar foto del certificado')).toHaveAttribute('capture', 'environment')
+    expect(screen.getByText('Período inicial')).toBeInTheDocument()
+    expect(screen.getByText(/Durante los primeros 20 días/)).toBeInTheDocument()
+    expect(screen.queryByText('Historial de aptos')).toBeInTheDocument()
   })
 
   it('acepta drag enter, drag over y drop usando la validación existente', async () => {

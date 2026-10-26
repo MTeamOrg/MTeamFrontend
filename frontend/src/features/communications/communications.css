@@ -3,3 +3,47 @@
 @media(max-width:560px){.communications-page .page-header{align-items:flex-start;flex-direction:column}.communication-card{grid-template-columns:1fr}.communication-image{height:150px;min-height:150px}.communication-card-body{padding:14px}.communication-card-body dl div{grid-template-columns:90px minmax(0,1fr)}.communication-news-card{display:grid}.communication-news-image{width:100%;height:130px;min-height:130px}.notification-item{grid-template-columns:34px minmax(0,1fr);gap:9px;padding:13px}.notification-icon{width:34px;height:34px}.notification-meta{display:grid;gap:4px}.notification-meta time{margin-left:0}.communication-actions .button{flex:1}}
 
 .notification-item>div{min-width:0;overflow-wrap:anywhere}.notification-meta{flex-wrap:wrap}.notification-read-status{font-weight:700;color:#555a60}.is-unread .notification-read-status{color:#a31c49}.notification-feedback{padding:12px;border:1px solid #d9dadd;border-radius:8px;overflow-wrap:anywhere}.notification-feedback p{margin:0 0 8px}.notification-item .text-link{min-height:44px;padding:8px 0}.notification-actions{display:flex;flex-wrap:wrap;gap:0 18px}.notification-item .notification-actions .text-link{margin-top:0}.notification-detail{display:grid;gap:6px;margin:6px 0 0;padding:10px 12px;border-radius:8px;background:#f6f6f7;font-size:11px}.notification-detail div{display:grid;grid-template-columns:78px minmax(0,1fr);gap:8px}.notification-detail dt{color:#6a6f75}.notification-detail dd{margin:0;color:#33373b}.communications-page .table-pagination{flex-wrap:wrap;gap:12px}.communications-page .table-pagination>div{display:flex;flex-wrap:wrap;gap:8px}.communications-page .button{min-height:44px;white-space:normal}
+.communications-page .notification-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.communications-page .notification-filters{display:flex;align-items:center;gap:12px}
+.communications-page .notification-filters button{min-height:44px;padding:0 20px;border:1px solid var(--input-border);border-radius:22px;background:var(--white);color:var(--text-secondary);font-size:16px;cursor:pointer}
+.communications-page .notification-filters button.is-active{border-color:var(--black);background:var(--black);color:var(--white);font-weight:600}
+.communications-page .notification-mark-all{min-height:44px;padding-inline:20px}
+.communications-page .notification-list{gap:16px}
+.communications-page .notification-item{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:start;gap:16px;min-width:0;padding:28px;border:1px solid var(--border);border-radius:16px;background:var(--white);box-shadow:var(--card-shadow)}
+.communications-page .notification-item.is-unread{border-color:var(--border);background:var(--white)}
+.communications-page .notification-icon{width:48px;height:48px;flex:none}
+.communications-page .notification-icon-medical-certificate-reviewed,.communications-page .notification-icon-class-changed{background:var(--blue-tint);color:var(--blue)}
+.communications-page .notification-icon-membership-price-changed{background:var(--pink-tint);color:var(--pink)}
+.communications-page .notification-icon-membership-expiring{background:var(--purple-tint);color:var(--purple)}
+.communications-page .notification-icon-membership-expired{background:var(--pink-tint);color:var(--pink)}
+.communications-page .notification-icon-event-cancelled{background:#f0f1f2;color:var(--text-secondary)}
+.communications-page .notification-content{min-width:0;overflow-wrap:anywhere}
+.communications-page .notification-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-width:0}
+.communications-page .notification-title-group{display:flex;align-items:center;gap:10px;min-width:0}
+.communications-page .notification-title-group h2{min-width:0;color:var(--black);font-size:20px;line-height:1.3;overflow-wrap:anywhere}
+.communications-page .notification-item:not(.is-unread) .notification-title-group h2{color:var(--text-secondary);font-weight:500}
+.communications-page .notification-unread-dot{width:10px;height:10px;flex:none;border-radius:50%;background:var(--pink)}
+.communications-page .notification-time{flex:none;color:var(--text-muted);font-size:16px;white-space:nowrap}
+.communications-page .notification-item p{max-width:none;margin-top:6px;font-size:16px;line-height:1.5}
+.communications-page .notification-actions{margin-top:12px}
+.communications-page .notification-detail{max-width:100%}
+
+@media(max-width:700px){
+  .communications-page .notification-toolbar{align-items:stretch;flex-direction:column;gap:12px}
+  .communications-page .notification-filters{width:100%;gap:8px}
+  .communications-page .notification-filters button{flex:1;min-height:42px;padding-inline:12px;font-size:14px}
+  .communications-page .notification-mark-all{width:100%}
+  .communications-page .notification-item{grid-template-columns:36px minmax(0,1fr);gap:12px;padding:18px}
+  .communications-page .notification-icon{width:36px;height:36px}
+  .communications-page .notification-heading{gap:10px}
+  .communications-page .notification-title-group{gap:7px}
+  .communications-page .notification-title-group h2{font-size:16px}
+  .communications-page .notification-time{font-size:12px}
+  .communications-page .notification-item p{font-size:14px}
+}
+
+@media(max-width:420px){
+  .communications-page .notification-item{padding:16px;gap:10px}
+  .communications-page .notification-heading{display:block}
+  .communications-page .notification-time{display:block;margin-top:6px}
+}
