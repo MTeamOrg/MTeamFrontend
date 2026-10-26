@@ -48,6 +48,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     allowedLogId = randomUUID()
     deniedLogId = randomUUID()
     certificateId = randomUUID()
+    const certificateUploadedAt = new Date().toISOString()
 
     // These deterministic markers let the test remove leftovers if a previous run was interrupted.
     await writer.rows('DELETE FROM access_log WHERE access_point_id IN (SELECT id FROM access_point WHERE branch_id = $1 AND name = $2)', [fixture.branch.id, ACCESS_POINT_NAME])
@@ -69,7 +70,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await writer.rows(
       `INSERT INTO medical_certificate (id, member_id, file_url, status, uploaded_at)
        VALUES ($1, $2, $3, 'PENDING', $4)`,
-      [certificateId, fixture.otherMember.id, CERTIFICATE_FILE_URL, `${FILTER_DATE}T15:00:00.000Z`],
+      [certificateId, fixture.otherMember.id, CERTIFICATE_FILE_URL, certificateUploadedAt],
     )
   })
 
@@ -115,8 +116,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
 
     await page.getByLabel('Buscar por socio o documento').fill('E2E-OTRO.SOCIO')
     await page.getByLabel('Filtrar por estado').selectOption('PENDING')
-    await page.getByLabel('Fecha desde').fill(FILTER_DATE)
-    await page.getByLabel('Fecha hasta').fill(FILTER_DATE)
+    await page.getByLabel('Filtrar por fecha de carga').selectOption('TODAY')
     await page.getByLabel('Buscar por socio o documento').press('Enter')
 
     const certificateRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
