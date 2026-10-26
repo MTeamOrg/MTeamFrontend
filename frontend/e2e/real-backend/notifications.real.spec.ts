@@ -267,10 +267,12 @@ test.describe('[backend y PostgreSQL reales] notificaciones', () => {
     const admin = await openSessionOf(browser, 'admin')
     try {
       await admin.page.goto('/admin/eventos')
-      const card = admin.page.getByRole('article').filter({ has: admin.page.getByRole('heading', { name: title }) })
+      const eventRow = admin.page.getByRole('row').filter({ hasText: title })
+      await expect(eventRow).toBeVisible()
       admin.page.once('dialog', (dialog) => void dialog.accept())
-      await card.getByRole('button', { name: 'Cancelar evento' }).click()
-      await expect(card.getByRole('button', { name: 'Cancelar evento' })).toHaveCount(0)
+      await eventRow.getByRole('button', { name: 'Cancelar', exact: true }).click()
+      await expect(eventRow).toContainText('Cancelado')
+      await expect(eventRow.getByRole('button', { name: 'Cancelar', exact: true })).toHaveCount(0)
     } finally {
       await admin.context.close()
     }

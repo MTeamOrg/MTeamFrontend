@@ -137,12 +137,14 @@ describe('pantalla administrativa de accesos', () => {
     })
   })
 
-  it('aplica el rango manual de fechas también en escritorio', async () => {
+  it('envía el rango manual seleccionado en los filtros móviles', async () => {
+    setMobileViewport(true)
     const fetchStub = stubApi(accessRoutes(() => ({ body: pageResponse([]) })))
 
     renderWithSession(<AdminAccessAttemptsScreen />, { user: testUser('ADMIN') })
     await screen.findByText('No hay intentos de ingreso que coincidan con los filtros.')
 
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar filtros' }))
     fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2092-03-03' } })
     fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2092-03-03' } })
 

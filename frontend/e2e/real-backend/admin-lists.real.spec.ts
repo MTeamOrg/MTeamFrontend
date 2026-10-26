@@ -84,11 +84,12 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
 
   test('el administrador filtra accesos reales por socio, rol, sede, resultado y fecha', async ({ page }) => {
     await loginAsAdministrator(page, fixture)
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/admin/accesos')
-    await expect(page.getByRole('heading', { name: 'Accesos' })).toBeVisible()
-    await page.getByLabel('Filtrar por período').selectOption('ALL')
-    await expect(page.getByRole('cell', { name: fixture.branch.name }).first()).toBeVisible()
-    await expect(page.getByRole('row')).toHaveCount(3)
+    await expect(page.locator('.access-mobile-list')).toBeVisible()
+    await page.getByRole('button', { name: 'Mostrar filtros' }).click()
+    await expect(page.locator('.access-filter-fields.is-open')).toBeVisible()
+    await expect(page.locator('.access-mobile-card').filter({ hasText: fixture.branch.name })).toHaveCount(2)
 
     await page.getByLabel('Buscar por usuario o documento').fill('E2E-OTRO.SOCIO')
     await page.getByLabel('Filtrar por rol').selectOption('MEMBER')
@@ -98,12 +99,12 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await page.getByLabel('Hasta').fill(FILTER_DATE)
     await page.getByLabel('Buscar por usuario o documento').press('Enter')
 
-    const deniedRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
-    await expect(deniedRow).toHaveCount(1)
-    await expect(deniedRow).toContainText(fixture.branch.name)
-    await expect(deniedRow).toContainText('Rechazado')
-    await expect(deniedRow).toContainText('Cuota vencida')
-    await expect(page.getByText('1 intentos')).toBeVisible()
+    const deniedAttempt = page.locator('.access-mobile-card').filter({ hasText: 'Omar Otro' })
+    await expect(deniedAttempt).toHaveCount(1)
+    await expect(deniedAttempt).toContainText(fixture.branch.name)
+    await expect(deniedAttempt).toContainText('Rechazado')
+    await expect(deniedAttempt).toContainText('Cuota vencida')
+    await expect(page.getByText('1 intento')).toBeVisible()
   })
 
   test('el administrador filtra aptos reales por socio, estado y fecha', async ({ page }) => {
