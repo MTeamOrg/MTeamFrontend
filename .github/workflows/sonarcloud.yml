@@ -9,6 +9,10 @@ jobs:
   build:
     name: Build and analyze
     runs-on: ubuntu-latest
+    env:
+      QASE_MODE: ${{ secrets.QASE_TESTOPS_API_TOKEN != '' && vars.QASE_TESTOPS_PROJECT != '' && 'testops' || 'off' }}
+      QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
+      QASE_TESTOPS_PROJECT: ${{ vars.QASE_TESTOPS_PROJECT }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -27,6 +31,8 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
         working-directory: frontend
+        env:
+          QASE_TESTOPS_RUN_TITLE: Frontend - unit and component
       - name: Verify coverage report
         run: test -s coverage/lcov.info
         working-directory: frontend
