@@ -7,7 +7,25 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  reporter: 'list',
+  reporter: process.env.QASE_MODE === 'testops'
+    ? [
+        ['list'],
+        [
+          'playwright-qase-reporter',
+          {
+            mode: 'testops',
+            testops: {
+              api: { token: process.env.QASE_TESTOPS_API_TOKEN },
+              project: process.env.QASE_TESTOPS_PROJECT,
+              run: {
+                title: process.env.QASE_TESTOPS_RUN_TITLE,
+                complete: true,
+              },
+            },
+          },
+        ],
+      ]
+    : 'list',
   use: {
     baseURL: 'http://127.0.0.1:4173',
     browserName: 'chromium',
