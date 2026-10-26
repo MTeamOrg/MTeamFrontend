@@ -1,0 +1,40 @@
+.user-avatar { overflow: hidden; border-radius: 50%; }
+.user-detail-summary .user-detail-status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.user-last-access-card { min-width: 0; }
+.user-last-access-card .status-card-value { white-space: nowrap; }
+.user-last-access-card .status-card-sub { overflow-wrap: anywhere; }
+.user-last-access-card button { width: fit-content; margin-top: 0; min-height: 32px; }
+@media (max-width: 700px) {
+  .user-detail-summary .user-detail-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .user-last-access-card button { min-height: 44px; }
+}
+.user-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.profile-identity-avatar .user-avatar { width: 100%; height: 100%; font: inherit; background: inherit; color: inherit; }
+
+/* Unread notifications counter: sidebar entry on desktop, bell in the top bar on phones. */
+.app-nav-badge { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 10px; background: var(--pink); color: var(--white); font-size: 11px; font-weight: 700; line-height: 1; }
+.app-topbar-bell { position: relative; margin-left: auto; width: 40px; height: 40px; display: grid; place-items: center; color: var(--black); }
+.app-topbar-bell.is-active { color: var(--pink); }
+.app-topbar-help { position: relative; margin-left: auto; width: 40px; height: 40px; display: grid; place-items: center; color: var(--black); }
+.app-topbar-help.is-active { color: var(--pink); }
+.app-topbar-help + .app-topbar-bell { margin-left: 0; }
+.app-topbar-bell .app-nav-badge { position: absolute; top: 0; right: -2px; margin: 0; min-width: 18px; height: 18px; padding: 0 5px; font-size: 10px; }
+.admin-user-editor { min-width: 0; }
+.user-access-record { min-width: 0; }
+.user-access-record + .user-access-record { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.user-access-record h2 { font-size: 16px; }
+.user-access-record dd { overflow-wrap: anywhere; }
+.workspace-dialog:has(.admin-user-editor) { width: min(760px, 100%); }
+.admin-user-editor fieldset { min-width: 0; margin: 20px 0; padding: 16px; border: 1px solid #e5e6e8; border-radius: 12px; }
+.admin-user-editor legend { padding: 0 8px; font-weight: 600; }
+.admin-user-editor .read-field { min-width: 0; font-size: 14px; }
+.admin-user-editor input:not([type="checkbox"]), .admin-user-editor textarea { min-width: 0; width: 100%; min-height: 44px; box-sizing: border-box; font-size: 16px; }
+.admin-user-editor .trainer-branch-options .checkbox { min-height: 44px; }
+.admin-user-editor .dialog-actions { gap: 12px; flex-wrap: wrap; }
+.admin-user-editor .button { min-height: 44px; }
+@media (max-width: 700px) {
+  .user-detail-desktop-identity { display: none; }
+  .user-detail-screen .user-detail-desktop-actions { display: none; }
+  .admin-user-editor fieldset { padding: 12px; }
+  .admin-user-editor .dialog-actions .button { flex: 1; }
+}

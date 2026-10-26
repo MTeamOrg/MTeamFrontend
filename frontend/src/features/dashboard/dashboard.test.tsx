@@ -1,0 +1,312 @@
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { renderWithSession, requestsTo, setMobileViewport, stubApi, testUser, type ApiRoute } from '../../test/test-utils'
+import { AdminDashboardScreen } from './AdminDashboardScreen'
+import { MemberDashboardScreen } from './MemberDashboardScreen'
+import { TrainerDashboardScreen } from './TrainerDashboardScreen'
+import { lastSevenDays } from './dashboard-data'
+import adminSource from './AdminDashboardScreen.tsx?raw'
+import dataSource from './dashboard-data.ts?raw'
+
+const totals = { users: 184, inactive: 16, CURRENT: 120, EXPIRING_SOON: 21, EXPIRED: 30, REJECTED: 2, INITIAL: 5 }
+const accessAttempts = [
+  { id: 'a1', userId: 'u1', roleAtAttempt: 'MEMBER', branchId: 'b1', accessPointId: 'p1', result: 'ALLOWED', denialReason: null, attemptedAt: '2026-09-07T14:24:00-03:00', user: { id: 'u1', firstName: 'Juan Manuel', lastName: 'Pérez' }, branch: { id: 'b1', name: 'Belgrano' } },
+  { id: 'a2', userId: 'u2', roleAtAttempt: 'MEMBER', branchId: 'b1', accessPointId: 'p1', result: 'DENIED', denialReason: 'EXPIRED_MEMBERSHIP', attemptedAt: '2026-09-07T13:19:00-03:00', user: { id: 'u2', firstName: 'Micaela', lastName: 'Rossi' }, branch: { id: 'b1', name: 'Belgrano' } },
+  { id: 'a3', userId: 'u3', roleAtAttempt: 'MEMBER', branchId: 'b2', accessPointId: 'p2', result: 'ALLOWED', denialReason: null, attemptedAt: '2026-09-07T12:52:00-03:00', user: { id: 'u3', firstName: 'Carla', lastName: 'Giménez' }, branch: { id: 'b2', name: 'Palermo' } },
+  { id: 'a4', userId: 'u4', roleAtAttempt: 'MEMBER', branchId: 'b2', accessPointId: 'p2', result: 'DENIED', denialReason: 'MEDICAL_CERTIFICATE_REQUIRED', attemptedAt: '2026-09-07T11:40:00-03:00', user: { id: 'u4', firstName: 'Lucas', lastName: 'Torres' }, branch: { id: 'b2', name: 'Palermo' } },
+]
+const payment = (id: string, accreditedAt: string, amount: string, status: 'ACCREDITED' | 'VOIDED' = 'ACCREDITED') => ({
+  id, accreditedAt, amount, status, method: 'Efectivo', receiptNumber: null, expiresAt: accreditedAt, voidedAt: null, voidReason: null,
+  member: { id: 'm', firstName: 'A', lastName: 'B', documentNumber: '1', email: 'a@example.com' },
+})
+
+function adminRoutes(overrides: Partial<typeof totals> = {}, payments = [payment('p1', '2026-09-07T13:00:00Z', '10000'), payment('p2', '2026-09-05T13:00:00Z', '5000')], pendingMedicalCertificates = 4): ApiRoute[] {
+  const values = { ...totals, ...overrides }
+  const days = lastSevenDays('2026-09-07').map((date) => ({
+    date,
+    amount: String(payments.filter((item) => item.accreditedAt.slice(0, 10) === date).reduce((sum, item) => sum + Number(item.amount), 0)),
+  }))
+  return [
+    { path: '/admin/dashboard/metrics', handler: () => ({ body: { activeMembers: values.users, inactiveMembers: values.inactive, currentMemberships: values.CURRENT, expiringMemberships: values.EXPIRING_SOON, expiredMemberships: values.EXPIRED, pendingMedicalCertificates, rejectedMedicalCertificates: values.REJECTED, initialPeriodMembers: values.INITIAL } }) },
+    { path: '/users', handler: () => ({ body: { items: [], page: 1, limit: 1, total: values.users } }) },
+    { path: '/members', handler: (url) => ({ body: { items: [], page: 1, limit: 1, total: values[url.searchParams.get('membershipStatus') as 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED'] } }) },
+    { path: '/payments/summary', handler: () => ({ body: { from: '', to: '', paymentCount: payments.length, totalAmount: String(payments.reduce((sum, item) => sum + Number(item.amount), 0)), days } }) },
+    { path: '/medical-certificates', handler: () => ({ body: { items: [], page: 1, limit: 1, total: pendingMedicalCertificates } }) },
+    { path: '/access-attempts', handler: () => ({ body: { items: accessAttempts, page: 1, limit: 4, total: accessAttempts.length } }) },
+    { path: '/weekly-schedules', handler: (url) => ({ body: url.searchParams.get('weekStartsOn') === '2026-09-14' ? { id: null, weekStartsOn: '2026-09-14', classes: [] } : { id: 'schedule-current', weekStartsOn: '2026-09-07', classes: [] } }) },
+  ]
+}
+
+describe('panel administrativo', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-07T15:00:00-03:00'))
+    setMobileViewport(false)
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('renderiza A1 desktop con encabezado, métricas reales y aptos pendientes', async () => {
+    const fetchStub = stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN', { firstName: 'Carla' }) })
+    expect(screen.getByText('PANEL ADMINISTRATIVO')).toHaveClass('dashboard-pill')
+    expect(screen.getByRole('heading', { name: 'Buen día, Carla' })).toBeInTheDocument()
+    expect(screen.getByText('Resumen de socios, cuotas, aptos médicos y accesos de M-TEAM.')).toBeInTheDocument()
+    expect(await screen.findByText('184 socios')).toBeInTheDocument()
+    expect(screen.getByText('120 socios')).toBeInTheDocument()
+    expect(screen.getByText('21 próximas a vencer')).toBeInTheDocument()
+    const cards = [...document.querySelectorAll('.status-grid .status-card')]
+    expect(cards).toHaveLength(4)
+    expect(cards[3]).toHaveTextContent('4 aptos')
+    expect(cards[3]).toHaveAttribute('href', '/admin/aptos?status=PENDING')
+    expect(requestsTo(fetchStub, 'GET', '/admin/dashboard/metrics')).toHaveLength(1)
+    expect(requestsTo(fetchStub, 'GET', '/users')).toHaveLength(0)
+    expect(await screen.findByText('Juan Manuel Pérez')).toBeInTheDocument()
+  })
+
+  it('grafica la recaudación real de los últimos 7 días', async () => {
+    const fetchStub = stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    expect(await screen.findByText('$ 15.000')).toHaveClass('revenue-total')
+    const bars = screen.getAllByRole('listitem')
+    expect(bars).toHaveLength(7)
+    expect(bars[6]).toHaveAccessibleName(/^07\/09\/2026: \$\s10\.000$/)
+    expect(bars[4]).toHaveAccessibleName(/^05\/09\/2026: \$\s5\.000$/)
+    expect(bars[0]).toHaveAccessibleName(/^01\/09\/2026: \$\s0$/)
+    expect(bars[6].querySelector('.revenue-bar')).toHaveClass('is-today')
+    expect(bars.slice(0, 6).every((bar) => !bar.querySelector('.is-today'))).toBe(true)
+    expect(screen.getAllByText(/\/09$/)).toHaveLength(7)
+    const summary = requestsTo(fetchStub, 'GET', '/payments/summary')[0].url.searchParams
+    expect(summary.get('from')).toBe('2026-09-01T00:00:00-03:00')
+    expect(summary.get('to')).toBe('2026-09-08T00:00:00-03:00')
+    expect(requestsTo(fetchStub, 'GET', '/payments')).toHaveLength(0)
+  })
+
+  it('muestra cero sin inventar datos', async () => {
+    stubApi(adminRoutes({ users: 0, inactive: 0, CURRENT: 0, EXPIRING_SOON: 0, EXPIRED: 0, REJECTED: 0, INITIAL: 0 }, [], 0))
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    await waitFor(() => expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')?.querySelector('.status-card-value')).toHaveTextContent('0'))
+    expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')?.querySelector('.status-card-value')).toHaveTextContent('0')
+    expect(await screen.findByText('$ 0')).toBeInTheDocument()
+  })
+
+  it('una fuente que falla no destruye el resto del panel', async () => {
+    stubApi([
+      { path: '/admin/dashboard/metrics', handler: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'Métricas no disponibles', details: null } }) },
+      { path: '/payments/summary', handler: () => ({ status: 500, body: { code: 'INTERNAL_ERROR', message: 'Falló la recaudación', details: null } }) },
+      ...adminRoutes(),
+    ])
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    expect(screen.getAllByText('Cargando…').length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('No se pudo cargar')).length).toBeGreaterThan(1)
+    expect(screen.getAllByText(/Métricas no disponibles/).length).toBeGreaterThan(0)
+    expect(await screen.findByText('Falló la recaudación')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Últimos intentos de acceso' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Reintentar' }).length).toBeGreaterThan(1)
+  })
+
+  it('las acciones frecuentes del panel navegan a su sección', async () => {
+    stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    const actions = screen.getByRole('heading', { name: 'Acciones frecuentes' }).closest('section')!
+    expect(within(actions).getByRole('link', { name: 'Registrar un pago' })).toHaveAttribute('href', '/admin/pagos')
+    expect(within(actions).getByRole('link', { name: 'Registrar un pago' })).toHaveClass('button-primary')
+    expect(within(actions).getByRole('link', { name: 'Crear una cuenta' })).toHaveAttribute('href', '/admin/usuarios')
+    expect(within(actions).getByRole('link', { name: /Revisar aptos médicos/ })).toHaveAttribute('href', '/admin/aptos')
+    expect(within(actions).getByRole('link', { name: 'Publicar una novedad' })).toHaveAttribute('href', '/admin/novedades')
+    await screen.findByText('184 socios')
+  })
+
+  it('completa las columnas de A1 con accesos, período inicial y cronograma reales', async () => {
+    stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    await screen.findByText('184 socios')
+    const grid = document.querySelector('.admin-panel-grid')!
+    expect([...grid.children[0].querySelectorAll('h2')].map((heading) => heading.textContent)).toEqual(['Recaudación de los últimos 7 días', 'Últimos intentos de acceso'])
+    expect([...grid.children[1].querySelectorAll('h2')].map((heading) => heading.textContent)).toEqual(['Acciones frecuentes', 'Período inicial de 20 días', 'Cronograma semanal'])
+    const access = screen.getByRole('heading', { name: 'Últimos intentos de acceso' }).closest('section')!
+    expect(within(access).getByText('Juan Manuel Pérez')).toBeInTheDocument()
+    expect(within(access).getAllByText('Permitido').length).toBeGreaterThan(0)
+    const period = screen.getByRole('heading', { name: 'Período inicial de 20 días' }).closest('section')!
+    expect(within(period).getByRole('status')).toHaveTextContent('5 socios')
+    expect(within(period).getByRole('link', { name: 'Ver socios en período inicial' })).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&initialPeriod=true')
+    expect(screen.getByText(/La semana del/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Generar desde la semana anterior' })).toBeInTheDocument()
+  })
+
+  it('muestra carga solo en la tarjeta de aptos mientras consulta su total', () => {
+    stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    const card = screen.getByText('SOCIOS ACTIVOS').closest('.status-card')!
+    expect(card).toHaveTextContent('—Cargando…')
+    expect(card).toHaveAttribute('href', '/admin/usuarios?role=MEMBER&status=ACTIVE')
+  })
+
+  it('aísla un error de aptos médicos y conserva socios, cuotas y el resto del dashboard', async () => {
+    stubApi([
+      { path: '/admin/dashboard/metrics', handler: () => ({ status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Métricas no disponibles' } }) },
+      ...adminRoutes(),
+    ])
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN') })
+    const card = screen.getByText('APTOS PENDIENTES').closest('.status-card')!
+    await waitFor(() => expect(card).toHaveTextContent('—No se pudo cargar'))
+    expect(card).toHaveAttribute('href', '/admin/aptos?status=PENDING')
+    expect(screen.getByRole('heading', { name: 'Acciones frecuentes' })).toBeInTheDocument()
+  })
+
+  it('el código del panel no contiene datos simulados', () => {
+    for (const source of [adminSource, dataSource]) {
+      expect(source).not.toMatch(/mock|fake|sample|Math\.random|setTimeout|Juan|Lucas/i)
+    }
+  })
+
+  it('mobile MA1: resumen de hoy, métricas 2x2, acciones, más secciones y últimos accesos', async () => {
+    setMobileViewport(true)
+    stubApi(adminRoutes())
+    renderWithSession(<AdminDashboardScreen/>, { user: testUser('ADMIN', { firstName: 'Carla' }) })
+    expect(screen.getByRole('heading', { name: 'Buen día, Carla' })).toBeInTheDocument()
+    expect(screen.getByText('Resumen de hoy · 07/09/2026')).toBeInTheDocument()
+    expect(screen.queryByText('PANEL ADMINISTRATIVO')).not.toBeInTheDocument()
+    await screen.findByText('184 socios')
+    expect(document.querySelectorAll('.status-grid > .status-card')).toHaveLength(4)
+    const order = [...document.querySelectorAll('.dashboard-screen > *')].map((element) => element.querySelector('h2')?.textContent ?? element.className)
+    expect(order).toEqual(['dashboard-header', 'status-grid admin-metrics-grid', 'Acciones frecuentes', 'Más secciones', 'Últimos accesos'])
+    const more = screen.getByRole('heading', { name: 'Más secciones' }).closest('section')!
+    expect(within(more).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/admin/accesos', '/admin/sedes', '/admin/eventos', '/admin/novedades', '/admin/preguntas-frecuentes'])
+    expect(within(more).queryByText(/Cerrar sesión/)).not.toBeInTheDocument()
+    const actions = screen.getByRole('heading', { name: 'Acciones frecuentes' }).closest('section')!
+    expect(within(actions).getByRole('link', { name: /Revisar aptos médicos/ })).toHaveAttribute('href', '/admin/aptos')
+    expect(screen.getByText('APTOS PENDIENTES').closest('.status-card')).toHaveAttribute('href', '/admin/aptos?status=PENDING')
+    const access = screen.getByRole('heading', { name: 'Últimos accesos' }).closest('section')!
+    expect(within(access).getByText('Juan Manuel Pérez')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Período inicial de 20 días' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Recaudación de los últimos 7 días' })).not.toBeInTheDocument()
+  })
+})
+
+describe('período de recaudación', () => {
+  it('construye hoy y los seis días calendario anteriores', () => {
+    const dates = lastSevenDays('2026-09-07')
+    expect(dates).toEqual(['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06', '2026-09-07'])
+  })
+})
+
+describe('inicio de socio y entrenador', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-07T09:00:00-03:00'))
+    setMobileViewport(false)
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  const schedule = {
+    id: 's1',
+    weekStartsOn: '2026-09-07',
+    classes: [
+      { id: 'past', activity: 'Madrugada', day: '2026-09-07', startTime: '07:00', startsAt: '2026-09-07T07:00:00-03:00', branch: { id: 'b', name: 'Centro' }, trainer: { id: 'trainer-id', firstName: 'Ana', lastName: 'Gómez' } },
+      { id: 'today', activity: 'Funcional', day: '2026-09-07', startTime: '18:00', startsAt: '2026-09-07T18:00:00-03:00', branch: { id: 'b', name: 'Centro' }, trainer: { id: 'trainer-id', firstName: 'Ana', lastName: 'Gómez' } },
+      { id: 'other', activity: 'Yoga', day: '2026-09-08', startTime: '10:00', startsAt: '2026-09-08T10:00:00-03:00', branch: { id: 'b', name: 'Centro' }, trainer: { id: 'x', firstName: 'Bruno', lastName: 'Díaz' } },
+    ],
+  }
+
+  it('permite reintentar cuota, apto y sedes de forma independiente', async () => {
+    const attempts = { membership: 0, medical: 0, branches: 0 }
+    stubApi([
+      { path: '/members/me/membership', handler: () => ++attempts.membership === 1
+        ? { status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Cuota temporalmente no disponible' } }
+        : { body: { currentPrice: '32000', lastPaymentAt: null, expiresAt: '2026-10-01', daysRemaining: 24, status: 'CURRENT' } } },
+      { path: '/members/me/medical-certificates', handler: () => ++attempts.medical === 1
+        ? { status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Apto temporalmente no disponible' } }
+        : { body: { items: [], page: 1, limit: 20, total: 0, initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false } } } },
+      { path: '/branches', handler: () => ++attempts.branches === 1
+        ? { status: 503, body: { code: 'SERVICE_UNAVAILABLE', message: 'Sedes temporalmente no disponibles' } }
+        : { body: { items: [], page: 1, limit: 100, total: 0 } } },
+    ])
+    renderWithSession(<MemberDashboardScreen/>, { user: testUser('MEMBER') })
+
+    const membershipAlert = await screen.findByText(/No pudimos obtener tu cuota/)
+    fireEvent.click(within(membershipAlert.closest('[role="alert"]')!).getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Al día')).toBeInTheDocument()
+
+    const medicalAlert = await screen.findByText(/No pudimos obtener tu apto médico/)
+    fireEvent.click(within(medicalAlert.closest('[role="alert"]')!).getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Sin cargar')).toBeInTheDocument()
+
+    const branchesError = screen.getByText('No se pudieron cargar los datos')
+    fireEvent.click(within(branchesError.closest('[role="alert"]')!).getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('No hay sedes disponibles para mostrar.')).toBeInTheDocument()
+    expect(attempts).toEqual({ membership: 2, medical: 2, branches: 2 })
+  })
+
+  it('muestra el rechazo médico y prioriza coordenadas en el enlace del mapa', async () => {
+    stubApi([
+      { path: '/members/me/membership', handler: () => ({ body: { currentPrice: '32000', lastPaymentAt: null, expiresAt: '2026-10-01', daysRemaining: 24, status: 'CURRENT' } }) },
+      { path: '/members/me/medical-certificates', handler: () => ({ body: {
+        items: [{ id: 'mc-rejected', memberId: 'member-id', status: 'REJECTED', uploadedAt: '2026-09-01T12:00:00Z', reviewedAt: '2026-09-02T12:00:00Z', reviewComment: 'Falta la firma', member: { id: 'member-id', firstName: 'Sofía', lastName: 'Prueba', documentNumber: '1', email: 'member@example.com' }, reviewedBy: null }],
+        page: 1, limit: 20, total: 1, initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false },
+      } }) },
+      { path: '/branches', handler: () => ({ body: { items: [{ id: 'branch-gps', name: 'Sede GPS', imageUrl: '', address: 'Calle 1', openingHours: '08:00 a 22:00', phone: '', description: 'Ubicación disponible', latitude: -34.6, longitude: -58.4 }], page: 1, limit: 100, total: 1 } }) },
+    ])
+    renderWithSession(<MemberDashboardScreen/>, { user: testUser('MEMBER') })
+
+    const rejectionNotice = await screen.findByText(/Observación: “Falta la firma”/)
+    expect(rejectionNotice.closest('[role="status"]')).toHaveTextContent('Tu apto médico fue rechazado')
+    expect(screen.getByRole('link', { name: 'Ver apto médico' })).toHaveAttribute('href', '/socio/apto-medico')
+    expect(await screen.findByText('Sede GPS')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Cómo llegar' })).toHaveAttribute('href', expect.stringContaining('-34.6%2C-58.4'))
+  })
+
+  it('el socio ve cuota, pagos y próximas clases reales', async () => {
+    stubApi([
+      { path: '/members/me/membership', handler: () => ({ body: { currentPrice: '25000', lastPaymentAt: '2026-09-01T12:00:00Z', expiresAt: '2026-10-01T12:00:00Z', daysRemaining: 24, status: 'CURRENT' } }) },
+      { path: '/members/me/payments', handler: () => ({ body: { items: [payment('p1', '2026-09-01T12:00:00Z', '25000')], page: 1, limit: 3, total: 1 } }) },
+      { path: '/members/me/medical-certificates', handler: () => ({ body: { items: [{ id: 'mc1', memberId: 'member-id', status: 'APPROVED', uploadedAt: '2026-09-01T12:00:00Z', reviewedAt: '2026-09-02T12:00:00Z', reviewComment: null, member: { id: 'member-id', firstName: 'Sofía', lastName: 'Prueba', documentNumber: '1', email: 'member@example.com' }, reviewedBy: null }], page: 1, limit: 20, total: 1, initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false } } }) },
+      { path: '/branches', handler: () => ({ body: { items: [{ id: 'branch-1', name: 'Sede Centro', imageUrl: '', address: 'Calle 1', openingHours: '08:00 a 22:00', phone: '111111', description: 'Sede de prueba', isActive: true, latitude: null, longitude: null }], page: 1, limit: 100, total: 1 } }) },
+      { path: '/weekly-schedules', handler: () => ({ body: schedule }) },
+    ])
+    renderWithSession(<MemberDashboardScreen/>, { user: testUser('MEMBER', { firstName: 'Sofía' }) })
+    expect(await screen.findByText('Al día')).toBeInTheDocument()
+    expect(screen.getByText(/Vence el .*24 días/)).toBeInTheDocument()
+    expect(screen.getByText('Aprobado')).toBeInTheDocument()
+    expect(screen.getByText('$ 25.000')).toBeInTheDocument()
+    expect(screen.getByText('Nuestras sedes')).toBeInTheDocument()
+    expect(screen.getByText('Sede Centro')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver mis clases' })).toHaveAttribute('href', '/socio/clases')
+    expect(screen.getByRole('link', { name: 'Mi apto médico' })).toHaveAttribute('href', '/socio/apto-medico')
+    expect(screen.getByRole('link', { name: 'Cómo llegar' })).toHaveAttribute('href', expect.stringContaining('Calle%201'))
+    expect(screen.queryByText('Funcional')).not.toBeInTheDocument()
+    expect(screen.queryByText('Madrugada')).not.toBeInTheDocument()
+    expect(screen.getByText('Aprobado')).toBeInTheDocument()
+  })
+
+  it('en celular el socio tiene acceso a Eventos y Novedades desde Inicio', async () => {
+    setMobileViewport(true)
+    stubApi([
+      { path: '/members/me/membership', handler: () => ({ body: { currentPrice: null, lastPaymentAt: null, expiresAt: null, daysRemaining: 0, status: 'EXPIRED' } }) },
+      { path: '/members/me/medical-certificates', handler: () => ({ body: { items: [], page: 1, limit: 20, total: 0, initialMedicalCertificatePeriod: { startsAt: null, expiresAt: null, daysRemaining: 0, isActive: false } } }) },
+      { path: '/branches', handler: () => ({ body: { items: [], page: 1, limit: 100, total: 0 } }) },
+    ])
+    renderWithSession(<MemberDashboardScreen/>, { user: testUser('MEMBER') })
+
+    const more = screen.getByRole('heading', { name: /secciones/ }).closest('section')!
+    expect(within(more).getByRole('link', { name: 'Eventos' })).toHaveAttribute('href', '/socio/eventos')
+    expect(within(more).getByRole('link', { name: 'Novedades' })).toHaveAttribute('href', '/socio/novedades')
+  })
+
+  it('el entrenador ve la cantidad real de clases asignadas', async () => {
+    stubApi([{ path: '/trainer/classes', handler: () => ({ body: { ...schedule, classes: schedule.classes.filter((item) => item.trainer.id === 'trainer-id') } }) }])
+    renderWithSession(<TrainerDashboardScreen/>, { user: testUser('TRAINER', { id: 'trainer-id' }) })
+    const today = await screen.findByText('CLASES DE HOY')
+    await waitFor(() => expect(today.nextSibling).toHaveTextContent('2'))
+    expect(screen.getByText('CLASES DE LA SEMANA').nextSibling).toHaveTextContent('2')
+    expect(screen.queryByText('Yoga')).not.toBeInTheDocument()
+  })
+})

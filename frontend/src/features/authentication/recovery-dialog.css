@@ -1,0 +1,11 @@
+.recovery-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+dialog.recovery-dialog {
+  margin: auto;
+  border: 0;
+  max-height: 90dvh;
+  overflow-y: auto;
+  width: min(520px, calc(100% - 32px));
+}

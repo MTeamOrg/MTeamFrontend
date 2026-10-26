@@ -1,0 +1,294 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useApiResource } from '../../hooks/use-api-resource'
+import { useEnterSearch } from '../../hooks/use-enter-search'
+import { ActionButton } from '../../components/ActionButton'
+import { backendApi, type MemberListItem, type PaymentPreview, type PaymentReportItem, type PaymentStatus } from '../../service/backend-api'
+import { addDays, formatDate, formatDateTime, gymDate } from '../../service/date-time'
+import { EmptyState, ErrorState, LoadingState } from './ApiStates'
+import { Icon } from './Icon'
+import { PageHeader } from './PageHeader'
+import { StatusCard } from './StatusCard'
+
+const money = (value: string | number | null | undefined) => value == null
+  ? 'Sin configurar'
+  : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(value))
+const gymInstant = (date: string) => `${date}T00:00:00-03:00`
+const mobilePaymentDate = (date: string) => new Intl.DateTimeFormat('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+}).format(new Date(date))
+
+type PaymentSearchFilters = { method?: string; status?: PaymentStatus; from?: string; to?: string }
+
+function normalizeSearch(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+function memberMatchesSearch(member: MemberListItem, search: string) {
+  const normalizedSearch = normalizeSearch(search.trim())
+  const terms = normalizedSearch.split(/\s+/).filter(Boolean)
+  const fields = [
+    `${member.firstName} ${member.lastName}`,
+    member.firstName,
+    member.lastName,
+    member.documentNumber,
+    member.email,
+  ].map(normalizeSearch)
+  return fields.some((field) => field.includes(normalizedSearch)) || terms.length > 1 && terms.every((term) => fields.some((field) => field.includes(term)))
+}
+
+async function listAllMembersMatchingSearch(search: string) {
+  const trimmedSearch = search.trim()
+  if (!trimmedSearch) return []
+  const terms = Array.from(new Set([trimmedSearch, ...trimmedSearch.split(/\s+/)]))
+  const pages = await Promise.all(terms.map(async (term) => {
+    const firstPage = await backendApi.listMembers({ search: term, page: 1, limit: 100 })
+    const totalPages = Math.ceil(firstPage.total / firstPage.limit)
+    const remainingPages = await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => backendApi.listMembers({ search: term, page: index + 2, limit: 100 })))
+    return [firstPage, ...remainingPages]
+  }))
+  const members = new Map<string, MemberListItem>()
+  pages.flat().forEach((page) => page.items.forEach((member) => members.set(member.id, member)))
+  return Array.from(members.values()).filter((member) => memberMatchesSearch(member, trimmedSearch))
+}
+
+async function listPaymentsForMemberSearch(search: string, filters: PaymentSearchFilters, page: number, limit: number) {
+  const members = await listAllMembersMatchingSearch(search)
+  if (!members.length) return { items: [], page, limit, total: 0 }
+  const paymentPages = await Promise.all(members.map(async (member) => {
+    const firstPage = await backendApi.listPayments({ ...filters, memberId: member.id, page: 1, limit: 100 })
+    const totalPages = Math.ceil(firstPage.total / firstPage.limit)
+    const remainingPages = await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => backendApi.listPayments({ ...filters, memberId: member.id, page: index + 2, limit: 100 })))
+    return [firstPage, ...remainingPages]
+  }))
+  const payments = paymentPages.flatMap((pages) => pages.flatMap((paymentPage) => paymentPage.items))
+    .sort((left, right) => new Date(right.accreditedAt).getTime() - new Date(left.accreditedAt).getTime() || right.id.localeCompare(left.id))
+  return { items: payments.slice((page - 1) * limit, page * limit), page, limit, total: payments.length }
+}
+
+function PaymentCellText({ value }: { value: string }) {
+  return <span className="payment-cell-text" title={value} aria-label={value}>{value}</span>
+}
+
+function PaymentMobileCard({ payment, onVoid, isVoiding }: { payment: PaymentReportItem; onVoid: () => void; isVoiding: boolean }) {
+  const memberName = `${payment.member.firstName} ${payment.member.lastName}`
+  const heading = `${memberName} · ${mobilePaymentDate(payment.accreditedAt)}`
+  const details = payment.status === 'VOIDED'
+    ? `${payment.method} · anulado`
+    : `${payment.method} · vence ${formatDate(payment.expiresAt)}`
+
+  return <article className="payment-mobile-card">
+    <span className="payment-mobile-icon"><Icon name="wallet" size={16} /></span>
+    <div className="payment-mobile-detail">
+      <strong title={heading} aria-label={heading}>{heading}</strong>
+      <span title={details} aria-label={details}>{details}</span>
+    </div>
+    <div className="payment-mobile-value"><strong>{money(payment.amount)}</strong><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'}</span><PaymentActions payment={payment} onVoid={onVoid} isVoiding={isVoiding} /></div>
+  </article>
+}
+
+function PaymentTableRow({ payment, onVoid, isVoiding }: { payment: PaymentReportItem; onVoid: () => void; isVoiding: boolean }) {
+  const memberName = `${payment.member.firstName} ${payment.member.lastName}`
+  const receiptNumber = payment.receiptNumber || '—'
+  const statusLabel = payment.status === 'VOIDED' ? 'Anulado' : 'Acreditado'
+
+  return <tr>
+    <td><PaymentCellText value={memberName} /></td>
+    <td><PaymentCellText value={formatDateTime(payment.accreditedAt)} /></td>
+    <td><PaymentCellText value={money(payment.amount)} /></td>
+    <td><PaymentCellText value={receiptNumber} /></td>
+    <td><PaymentCellText value={payment.method} /></td>
+    <td><PaymentCellText value={formatDate(payment.expiresAt)} /></td>
+    <td className="payment-status-cell"><span className={`badge ${payment.status === 'VOIDED' ? 'badge-disabled' : 'badge-info'}`}>{statusLabel}</span></td>
+    <td className="payment-action-cell"><PaymentActions payment={payment} onVoid={onVoid} isVoiding={isVoiding} desktop /></td>
+  </tr>
+}
+
+export function AdminPaymentsScreen() {
+  const today = gymDate()
+  const monthStart = `${today.slice(0, 8)}01`
+  const lastThirtyDaysStart = addDays(today, -29)
+  const tomorrow = addDays(today, 1)
+  const [page, setPage] = useState(1)
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
+  const [method, setMethod] = useState('')
+  const [status, setStatus] = useState<PaymentStatus | ''>('')
+  const [dateRange, setDateRange] = useState<'last30' | 'month' | 'all'>('last30')
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [voidingPaymentId, setVoidingPaymentId] = useState<string | null>(null)
+  const from = dateRange === 'month' ? monthStart : dateRange === 'last30' ? lastThirtyDaysStart : ''
+  const loader = useCallback(async () => {
+    void searchRequestKey
+    const paymentFilters = { method: method || undefined, status: status || undefined, from: from ? gymInstant(from) : undefined, to: gymInstant(tomorrow) }
+    const [payments, todaySummary, monthSummary, currentPrice, prices, metrics] = await Promise.all([
+      submittedSearch.trim() ? listPaymentsForMemberSearch(submittedSearch, paymentFilters, page, 20) : backendApi.listPayments({ ...paymentFilters, page, limit: 20 }),
+      backendApi.getPaymentsSummary(gymInstant(today), gymInstant(tomorrow)),
+      backendApi.getPaymentsSummary(gymInstant(monthStart), gymInstant(tomorrow)),
+      backendApi.getCurrentPrice().catch(() => null),
+      backendApi.listPrices(1, 5),
+      backendApi.getAdminDashboardMetrics(),
+    ])
+    return { payments, todaySummary, monthSummary, currentPrice, prices, metrics }
+  }, [from, method, monthStart, page, searchRequestKey, status, submittedSearch, today, tomorrow])
+  const { data, loading, error, reload } = useApiResource(loader)
+  const isSearchLoading = isSearchPending || (loading && data !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
+  const setFilter = (action: () => void) => { setPage(1); action() }
+  const submitTextSearch = () => { if (submitSearch()) setPage(1) }
+  const header = <PageHeader title="Pagos y cuota" description="El valor vigente de la cuota y todos los pagos acreditados. Cada acreditación abre 30 días de vigencia."><button type="button" className="button button-primary payment-header-register" aria-label="Registrar pago" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button></PageHeader>
+  const dialog = paymentOpen && <PaymentDialog currentPrice={data?.currentPrice?.amount ?? null} onClose={() => setPaymentOpen(false)} onSaved={() => { setPaymentOpen(false); void reload() }} />
+
+  if (loading && !data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><LoadingState message="Cargando pagos…" /></div>{dialog}</div>
+  if (!data) return <div className="app-page admin-payments-screen">{header}<div className="app-card"><ErrorState message={error || 'No se pudo cargar la información de pagos.'} retry={() => void reload()} /></div>{dialog}</div>
+
+  return <div className="app-page admin-payments-screen">
+    {header}
+    <div className="status-grid payment-stats payment-desktop-stats">
+      <StatusCard label="VALOR VIGENTE" value={money(data.currentPrice?.amount)} tone="pink" sub={data.currentPrice ? `Desde el ${formatDate(data.currentPrice.effectiveFrom)}` : 'Todavía no configurado'} />
+      <StatusCard label="RECAUDADO HOY" value={money(data.todaySummary.totalAmount)} tone="black" sub={`${data.todaySummary.paymentCount} pagos acreditados`} />
+      <StatusCard label="RECAUDADO EN EL MES" value={money(data.monthSummary.totalAmount)} tone="black" sub={new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(new Date(`${today}T12:00:00Z`))} />
+      <StatusCard label="SOCIOS SIN PAGO" value={`${data.metrics.expiredMemberships} socios`} tone="pink" sub="Cuota vencida o sin registrar" />
+    </div>
+
+    <section className="payment-mobile-summary">
+      <div className="payment-mobile-stats">
+        <StatusCard label="VALOR VIGENTE" value={money(data.currentPrice?.amount)} tone="pink" sub={data.currentPrice ? `Desde el ${formatDate(data.currentPrice.effectiveFrom)}` : 'Todavía no configurado'} />
+        <StatusCard label="RECAUDADO HOY" value={money(data.todaySummary.totalAmount)} tone="black" sub={`${data.todaySummary.paymentCount} pagos`} />
+      </div>
+      <button type="button" className="button button-primary payment-mobile-register" onClick={() => setPaymentOpen(true)}><Icon name="plus" size={20} />Registrar un pago</button>
+      <section className="surface-card payment-mobile-membership">
+        <h2>Estado de las cuotas</h2>
+        <div className="membership-state-list">
+          <p><span>Al día</span><strong className="state-count state-count-blue">{data.metrics.currentMemberships}</strong></p>
+          <p><span>Próximas a vencer</span><strong className="state-count state-count-purple">{data.metrics.expiringMemberships}</strong></p>
+          <p><span>Vencidas</span><strong className="state-count state-count-pink">{data.metrics.expiredMemberships}</strong></p>
+        </div>
+      </section>
+      <section className="payment-mobile-history">
+        <h2>Últimos pagos</h2>
+        {!data.payments.items.length ? <div className="surface-card"><EmptyState message="Todavía no hay pagos registrados." /></div> : <div className="payment-mobile-list">{data.payments.items.slice(0, 4).map((payment) => <PaymentMobileCard key={payment.id} payment={payment} isVoiding={voidingPaymentId === payment.id} onVoid={() => void voidPayment(payment.id)} />)}</div>}
+      </section>
+    </section>
+
+    <div className="toolbar payment-filter-toolbar">
+      <label className="search-shell"><Icon name="search" /><input aria-label="Buscar por socio o documento" placeholder="Buscar por socio o documento" value={search} aria-busy={isSearchLoading} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submitTextSearch() } }} /></label>
+      <select aria-label="Filtrar por medio" value={method} onChange={(event) => setFilter(() => setMethod(event.target.value))}><option value="">Medio: todos</option><option value="Efectivo">Efectivo</option><option value="Débito">Débito</option><option value="Transferencia">Transferencia</option></select>
+      <select aria-label="Filtrar por estado" value={status} onChange={(event) => setFilter(() => setStatus(event.target.value as PaymentStatus | ''))}><option value="">Estado: todos</option><option value="ACCREDITED">Acreditados</option><option value="VOIDED">Anulados</option></select>
+      <label className="payment-period-filter"><span className="visually-hidden">Filtrar por fecha</span><select aria-label="Filtrar por fecha" value={dateRange} onChange={(event) => setFilter(() => setDateRange(event.target.value as 'last30' | 'month' | 'all'))}><option value="last30">Últimos 30 días</option><option value="month">Este mes</option><option value="all">Todo el historial</option></select></label>
+    </div>
+    {error && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
+
+    <div className="admin-payments-layout">
+      <section className="payment-list-panel">
+        <div className="payment-desktop-history">
+          {!data.payments.items.length ? <div className="surface-card"><EmptyState message="No hay pagos en el período o con los filtros seleccionados." /></div> : <div className="table-scroll payment-table-wrap"><table className="data-table payment-table"><thead><tr><th>Socio</th><th>Fecha y hora</th><th>Importe</th><th>Comprobante</th><th>Medio</th><th>Vencimiento</th><th>Estado</th><th aria-label="Acción"></th></tr></thead><tbody>{data.payments.items.map((payment) => <PaymentTableRow key={payment.id} payment={payment} isVoiding={voidingPaymentId === payment.id} onVoid={() => void voidPayment(payment.id)} />)}</tbody></table></div>}
+          <div className="table-pagination payment-pagination"><span>Página {page}</span><div><button className="button button-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Anterior</button><button className="button button-secondary" disabled={page * data.payments.limit >= data.payments.total} onClick={() => setPage(page + 1)}>Siguiente</button></div></div>
+        </div>
+      </section>
+      <aside className="admin-payment-side">
+        <PriceForm current={data.currentPrice?.amount ?? null} onSaved={() => void reload()} />
+        <section className="surface-card payment-side-card"><h2>Historial de valores</h2><div className="price-history">{data.prices.items.length ? data.prices.items.map((price) => <p key={price.id}><span>Desde {formatDate(price.effectiveFrom)}</span><strong>{money(price.amount)}</strong></p>) : <EmptyState message="No hay valores registrados." />}</div></section>
+        <section className="surface-card payment-side-card"><h2>Estado de las cuotas</h2><div className="membership-state-list"><p><span>Al día</span><strong className="state-count state-count-blue">{data.metrics.currentMemberships}</strong></p><p><span>Próximas a vencer (≤5 días)</span><strong className="state-count state-count-purple">{data.metrics.expiringMemberships}</strong></p><p><span>Vencidas</span><strong className="state-count state-count-pink">{data.metrics.expiredMemberships}</strong></p></div></section>
+      </aside>
+    </div>
+    {dialog}
+  </div>
+
+  async function voidPayment(id: string) {
+    if (!window.confirm('¿Confirmás la anulación de este pago? El pago quedará en el historial y se recalculará la vigencia.')) return
+    const reason = window.prompt('Ingresá el motivo de la anulación:')?.trim()
+    if (!reason) return
+    setVoidingPaymentId(id)
+    try { await backendApi.voidPayment(id, reason); await reload() }
+    catch (value) { window.alert(value instanceof Error ? value.message : 'No se pudo anular el pago.') }
+    finally { setVoidingPaymentId(null) }
+  }
+}
+
+function canVoidPayment(payment: { status: PaymentStatus; expiresAt: string }) {
+  return payment.status === 'ACCREDITED' && new Date(payment.expiresAt).getTime() > Date.now()
+}
+
+function PaymentActions({ payment, onVoid, isVoiding, desktop = false }: { payment: { id: string; status: PaymentStatus; expiresAt: string; member: { firstName: string; lastName: string } }; onVoid: () => void; isVoiding: boolean; desktop?: boolean }) {
+  const canVoid = canVoidPayment(payment)
+  if (desktop) return canVoid
+    ? <ActionButton type="button" className="payment-desktop-void" isLoading={isVoiding} loadingLabel="Anulando…" aria-label={`Anular pago de ${payment.member.firstName} ${payment.member.lastName}`} onClick={onVoid}><Icon name="close" size={16} />Anular</ActionButton>
+    : null
+
+  return <details className="payment-mobile-actions">
+    <summary className="payment-mobile-more" aria-label={`Acciones de ${payment.member.firstName} ${payment.member.lastName}`}><Icon name="more" size={19} /></summary>
+    <div className="payment-mobile-menu">
+      {canVoid ? <ActionButton type="button" isLoading={isVoiding} loadingLabel="Anulando…" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); onVoid() }}>Anular pago</ActionButton> : <span>Sin acciones disponibles</span>}
+    </div>
+  </details>
+}
+
+function PriceForm({ current, onSaved }: { current: string | null; onSaved: () => void }) {
+  const [amount, setAmount] = useState('')
+  const [effectiveFrom, setEffectiveFrom] = useState(gymDate())
+  const [notice, setNotice] = useState('')
+  const [saving, setSaving] = useState(false)
+  const requestKey = useRef<{ payload: string; key: string } | null>(null)
+  async function submit(event: FormEvent) {
+    event.preventDefault(); if (saving) return; setSaving(true); setNotice('')
+    const effectiveDateTime = `${effectiveFrom}T00:00:00-03:00`
+    const payload = JSON.stringify({ amount: Number(amount), effectiveFrom: effectiveDateTime })
+    const idempotencyKey = requestKey.current?.payload === payload
+      ? requestKey.current.key
+      : crypto.randomUUID()
+    requestKey.current = { payload, key: idempotencyKey }
+    try { await backendApi.createPrice(Number(amount), effectiveDateTime, idempotencyKey); requestKey.current = null; setAmount(''); setNotice('Nuevo valor registrado correctamente.'); onSaved() }
+    catch (value) { setNotice(value instanceof Error ? value.message : 'No se pudo registrar el valor.') }
+    finally { setSaving(false) }
+  }
+  return <section className="surface-card payment-price-card"><h2>Cambiar el valor de la cuota</h2><form onSubmit={submit}><label className="read-field"><span>Nuevo valor</span><input aria-label="Nuevo valor" type="number" min="0.01" max="9999999999.99" step="0.01" placeholder={current ? money(current) : '$ 0'} value={amount} onChange={(event) => setAmount(event.target.value)} required /></label><label className="read-field"><span>Vigente desde</span><input aria-label="Vigente desde" type="date" value={effectiveFrom} onChange={(event) => setEffectiveFrom(event.target.value)} required /></label><p className="payment-price-alert"><Icon name="alert" size={20} /><span>Los pagos ya acreditados no cambian. Solo los aumentos notifican a los socios activos; el sistema determina los destinatarios al guardar.</span></p>{notice && <p className="notice-inline" role="status">{notice}</p>}<ActionButton type="submit" className="button button-primary button-block" isLoading={saving} loadingLabel="Guardando nuevo valor">Guardar nuevo valor</ActionButton></form></section>
+}
+
+function PaymentDialog({ currentPrice, onClose, onSaved }: { currentPrice: string | null; onClose: () => void; onSaved: () => void }) {
+  const enterSearch = useEnterSearch()
+  const { inputValue: search, setInputValue: setSearch, submittedValue: submittedSearch, requestKey: searchRequestKey, isSearchPending, submitSearch, syncLoading } = enterSearch
+  const memberLoader = useCallback(() => {
+    void searchRequestKey
+    return backendApi.listMembers({ search: submittedSearch.trim() || undefined, page: 1, limit: 100 })
+  }, [searchRequestKey, submittedSearch])
+  const { data: members, loading, error, reload } = useApiResource(memberLoader)
+  const isMemberSearchLoading = isSearchPending || (loading && members !== null)
+  useEffect(() => syncLoading(loading), [loading, syncLoading])
+  const [memberId, setMemberId] = useState('')
+  const [amount, setAmount] = useState(currentPrice ?? '')
+  const [method, setMethod] = useState('Efectivo')
+  const [receiptNumber, setReceiptNumber] = useState('')
+  const [preview, setPreview] = useState<PaymentPreview | null>(null)
+  const [notice, setNotice] = useState('')
+  const [previewing, setPreviewing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const requestKey = useRef<{ payload: string; key: string } | null>(null)
+  const selected = useMemo(() => members?.items.find((member) => member.id === memberId), [memberId, members])
+  const body = () => ({ memberId, amount: Number(amount), method, ...(receiptNumber.trim() ? { receiptNumber: receiptNumber.trim() } : {}) })
+  const invalidatePreview = () => { setPreview(null); setNotice('') }
+  async function previewPayment(event: FormEvent) { event.preventDefault(); if (previewing || saving) return; setPreviewing(true); setNotice(''); try { setPreview(await backendApi.previewPayment(body())) } catch (value) { setNotice(value instanceof Error ? value.message : 'No se pudo generar el resumen.') } finally { setPreviewing(false) } }
+  async function confirmPayment() {
+    if (savingRef.current) return
+    savingRef.current = true
+    setSaving(true)
+    setNotice('')
+    const paymentBody = body()
+    const payload = JSON.stringify(paymentBody)
+    const idempotencyKey = requestKey.current?.payload === payload
+      ? requestKey.current.key
+      : crypto.randomUUID()
+    requestKey.current = { payload, key: idempotencyKey }
+    try {
+      await backendApi.createPayment(paymentBody, idempotencyKey)
+      requestKey.current = null
+      onSaved()
+    } catch (value) {
+      setNotice(value instanceof Error ? value.message : 'No se pudo acreditar el pago.')
+    } finally {
+      savingRef.current = false
+      setSaving(false)
+    }
+  }
+  return <div className="dialog-backdrop payment-dialog-backdrop" role="presentation"><section className="workspace-dialog payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-dialog-title"><header className="payment-dialog-header"><div><h2 id="payment-dialog-title">Registrar y acreditar un pago</h2><p>Revisá el resumen antes de confirmar: la acreditación genera una nueva vigencia de 30 días.</p></div><button type="button" className="dialog-close" aria-label="Cerrar" onClick={onClose}><Icon name="close" /></button></header><form onSubmit={previewPayment}><div className="payment-dialog-body"><label className="read-field payment-member-field"><span>Socio</span><span className="payment-member-search"><Icon name="search" size={20} /><input aria-label="Buscar socio" aria-busy={isMemberSearchLoading} value={search} onChange={(event) => { setSearch(event.target.value); setMemberId(''); invalidatePreview() }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); submitSearch() } }} placeholder="Buscar por nombre o documento" /></span><select aria-label="Socio" value={memberId} onChange={(event) => { setMemberId(event.target.value); invalidatePreview() }} required><option value="">Seleccioná un socio</option>{members?.items.map((member: MemberListItem) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName} · DNI {member.documentNumber}</option>)}</select></label><div className="payment-dialog-row"><label className="read-field"><span>Importe</span><input aria-label="Importe" type="number" min="0.01" max="9999999999.99" step="0.01" value={amount} onChange={(event) => { setAmount(event.target.value); invalidatePreview() }} required /></label><label className="read-field"><span>Medio de pago</span><select aria-label="Medio de pago" value={method} onChange={(event) => { setMethod(event.target.value); invalidatePreview() }} required><option>Efectivo</option><option>Débito</option><option>Transferencia</option></select></label></div><label className="read-field"><span>Número de comprobante</span><input aria-label="Número de comprobante" value={receiptNumber} maxLength={100} onChange={(event) => { setReceiptNumber(event.target.value); invalidatePreview() }} placeholder="0001-0456" /></label>{loading && !members && <LoadingState message="Buscando socios…" />}{error && !members && <ErrorState message={error} retry={() => void reload()} />}{error && members && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}{selected && <div className="payment-operation-summary"><span className="payment-summary-title">RESUMEN DE LA OPERACIÓN</span><p><span>Socio</span><strong>{selected.firstName} {selected.lastName}</strong></p><p><span>Valor vigente de la cuota</span><strong>{money(currentPrice)}</strong></p><p><span>Vencimiento actual</span><strong>{formatDate(selected.expiresAt)}</strong></p><div className="payment-summary-divider" /><p className="payment-new-expiration"><span>Nuevo vencimiento</span><strong>{preview ? formatDate(preview.estimatedExpiresAt) : 'Pendiente de validar'}</strong></p><small>Los días restantes del vencimiento anterior no se acumulan.</small></div>}{notice && <p className="error-message" role="alert">{notice}</p>}</div><footer className="dialog-actions payment-dialog-actions"><button type="button" className="button button-secondary" onClick={onClose}>Cancelar</button>{preview ? <ActionButton type="button" className="button button-primary" isLoading={saving} loadingLabel="Acreditando…" onClick={() => void confirmPayment()}><Icon name="check" size={20} />Confirmar y acreditar</ActionButton> : <ActionButton type="submit" className="button button-primary" isLoading={previewing} loadingLabel="Revisando…" disabled={!selected}><Icon name="check" size={20} />Revisar y acreditar</ActionButton>}</footer></form></section></div>
+}
