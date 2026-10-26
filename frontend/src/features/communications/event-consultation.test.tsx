@@ -84,7 +84,7 @@ describe.each(['MEMBER', 'TRAINER'] as const)('event consultation for %s', (role
     const button = screen.getByRole('button', { name: 'Filtrar eventos: Próximos' })
     fireEvent.click(button)
     expect(button).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('radio', { name: 'Próximos' })).not.toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Próximos' })).toHaveFocus()
     fireEvent.click(screen.getByRole('radio', { name: 'Cancelados' }))
     expect(screen.getByRole('heading', { name: EVENTS[2].title })).toBeInTheDocument()
     expect(button).toHaveFocus()
