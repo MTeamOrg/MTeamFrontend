@@ -40,6 +40,8 @@ describe('detalle de usuarios del administrador', () => {
       { path: '/users/user-1/audit-logs', handler: () => ({ body: { items: [], page: 1, limit: 10, total: 0 } }) },
     ])
     renderWorkspace('/admin/usuarios?role=MEMBER&status=ACTIVE&page=2')
+    await screen.findByRole('table')
+    expect(document.querySelector('.admin-users-table-scroll')).not.toHaveAttribute('tabindex')
 
     fireEvent.click((await screen.findAllByRole('link', { name: 'Editar usuario Juan Manuel Pérez' }, { timeout: 5000 }))[0])
 

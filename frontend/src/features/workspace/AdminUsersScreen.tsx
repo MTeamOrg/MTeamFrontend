@@ -70,7 +70,7 @@ export function AdminUsersScreen() {
       {loading && !data ? <LoadingState message="Cargando usuarios…"/> : !data ? <ErrorState message={error || 'No se pudieron cargar los usuarios.'} retry={() => void reload()}/> : <>
         {error && <p className="error-message" role="alert">{error} <button type="button" className="text-link" onClick={() => void reload()}>Reintentar</button></p>}
         {data.items.length ? <><div className="admin-users-table-wrap">
-          <div className="table-scroll admin-users-table-scroll" tabIndex={0} aria-label="Tabla de usuarios; desplazamiento horizontal disponible">
+          <div className="table-scroll admin-users-table-scroll">
             <table className="data-table admin-users-table">
               <colgroup><col className="admin-users-column-user"/><col className="admin-users-column-document"/><col className="admin-users-column-email"/><col className="admin-users-column-role"/><col className="admin-users-column-membership"/><col className="admin-users-column-status"/><col className="admin-users-column-action"/></colgroup>
               <thead><tr><th scope="col">Usuario</th><th scope="col">Documento</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Cuota</th><th scope="col">Estado</th><th scope="col">Acción</th></tr></thead>
