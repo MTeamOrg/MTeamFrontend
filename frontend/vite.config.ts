@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    maxWorkers: 2,
     reporters: process.env.QASE_MODE === 'testops'
       ? [
           ...configDefaults.reporters,

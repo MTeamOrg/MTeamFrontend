@@ -137,6 +137,23 @@ describe('pantalla administrativa de accesos', () => {
     })
   })
 
+  it('aplica el rango manual de fechas también en escritorio', async () => {
+    const fetchStub = stubApi(accessRoutes(() => ({ body: pageResponse([]) })))
+
+    renderWithSession(<AdminAccessAttemptsScreen />, { user: testUser('ADMIN') })
+    await screen.findByText('No hay intentos de ingreso que coincidan con los filtros.')
+
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2092-03-03' } })
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '2092-03-03' } })
+
+    await waitFor(() => {
+      const request = requestsTo(fetchStub, 'GET', '/access-attempts').find(({ url }) =>
+        url.searchParams.get('from') === '2092-03-03T00:00:00-03:00' &&
+        url.searchParams.get('to') === '2092-03-03T23:59:59.999-03:00')
+      expect(request).toBeDefined()
+    })
+  })
+
   it('muestra filtros plegables y tarjetas de intentos para celular', async () => {
     setMobileViewport(true)
     const fetchStub = stubApi(accessRoutes(() => ({ body: pageResponse([allowedAttempt, deniedAttempt]) })))

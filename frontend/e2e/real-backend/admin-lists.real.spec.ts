@@ -86,7 +86,8 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await loginAsAdministrator(page, fixture)
     await page.goto('/admin/accesos')
     await expect(page.getByRole('heading', { name: 'Accesos' })).toBeVisible()
-    await expect(page.getByRole('cell', { name: ACCESS_POINT_NAME }).first()).toBeVisible()
+    await page.getByLabel('Filtrar por período').selectOption('ALL')
+    await expect(page.getByRole('cell', { name: fixture.branch.name }).first()).toBeVisible()
     await expect(page.getByRole('row')).toHaveCount(3)
 
     await page.getByLabel('Buscar por usuario o documento').fill('E2E-OTRO.SOCIO')
@@ -99,7 +100,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
 
     const deniedRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
     await expect(deniedRow).toHaveCount(1)
-    await expect(deniedRow).toContainText(ACCESS_POINT_NAME)
+    await expect(deniedRow).toContainText(fixture.branch.name)
     await expect(deniedRow).toContainText('Rechazado')
     await expect(deniedRow).toContainText('Cuota vencida')
     await expect(page.getByText('1 intentos')).toBeVisible()

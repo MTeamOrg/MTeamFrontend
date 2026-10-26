@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useApiResource } from '../../hooks/use-api-resource'
 import { useEnterSearch } from '../../hooks/use-enter-search'
-import { useIsMobile } from '../../hooks/use-is-mobile'
 import { addDays, formatDateTime, formatTime, gymDate } from '../../service/date-time'
 import { backendApi, type AccessAttemptResult } from '../../service/backend-api'
 import type { UserRole } from '../authentication/auth-types'
@@ -59,7 +58,6 @@ export function AdminAccessAttemptsScreen() {
   const [period, setPeriod] = useState<AccessPeriod>('TODAY')
   const [page, setPage] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const isMobile = useIsMobile()
   const loader = useCallback(() => {
     void searchRequestKey
     return backendApi.listAccessAttempts({
@@ -69,9 +67,9 @@ export function AdminAccessAttemptsScreen() {
     result: result || undefined,
     branchId: branchId || undefined,
     search: submittedSearch.trim() || undefined,
-    ...getHistoryDateRange(isMobile, period, from, to),
+    ...getHistoryDateRange(period, from, to),
     })
-  }, [branchId, from, isMobile, page, period, result, role, searchRequestKey, submittedSearch, to])
+  }, [branchId, from, page, period, result, role, searchRequestKey, submittedSearch, to])
   const summaryLoader = useCallback(() => loadAccessSummary(getAccessPeriodRange(period)), [period])
   const branchesLoader = useCallback(() => backendApi.listAdminBranches({ page: 1, limit: 100 }), [])
   const { data, loading, error, reload } = useApiResource(loader)
@@ -135,8 +133,9 @@ function SummaryCard({ label, value, tone, sub, icon, className = '' }: { label:
   return <article className={`access-summary-card tone-${tone} ${className}`}><span className="access-summary-card-label">{label}</span><strong className="access-summary-card-value">{value}</strong>{sub && <span className="access-summary-card-sub">{icon && <Icon name={icon} size={16}/>}<span>{sub}</span></span>}</article>
 }
 
-function getHistoryDateRange(isMobile: boolean, period: AccessPeriod, from: string, to: string): AccessDateRange {
-  return isMobile ? getInputDateRange(from, to) : getAccessPeriodRange(period)
+function getHistoryDateRange(period: AccessPeriod, from: string, to: string): AccessDateRange {
+  if (from || to) return getInputDateRange(from, to)
+  return getAccessPeriodRange(period)
 }
 
 function getInputDateRange(from: string, to: string): AccessDateRange {

@@ -144,11 +144,19 @@ test.describe('[backend y PostgreSQL reales] notificaciones', () => {
     db = await openDatabaseProbe({ backendDir: fixture.backendDir, databaseUrl: fixture.databaseUrl })
     writer = await openDatabaseWriter({ backendDir: fixture.backendDir, databaseUrl: fixture.databaseUrl })
 
-    // A retry re-runs this serial suite against the same disposable database. Remove notices
-    // from the previous attempt so its setup recreates the same initial inbox state.
+    // Retries reuse the same disposable database. Reset this suite's business fixtures as well as
+    // notices; otherwise earlier price increases change which notices the next attempt generates.
     await writer.rows(
       'DELETE FROM notification WHERE user_id = ANY($1::uuid[])',
       [[fixture.admin.id, fixture.member.id, fixture.otherMember.id, fixture.trainer.id]],
+    )
+    await writer.rows('DELETE FROM membership_price WHERE created_by_id = $1', [fixture.admin.id])
+    await writer.rows('DELETE FROM event WHERE created_by_id = $1', [fixture.admin.id])
+    await writer.rows(
+      `UPDATE medical_certificate
+       SET status = 'PENDING', reviewed_by_id = NULL, reviewed_at = NULL, review_comment = NULL
+       WHERE id = $1`,
+      [fixture.certificateId],
     )
 
     for (const account of ['admin', 'member', 'otherMember', 'trainer'] as const) tokens[account] = await login(fixture[account].email)
