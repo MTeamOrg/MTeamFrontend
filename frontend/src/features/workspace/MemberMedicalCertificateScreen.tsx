@@ -20,19 +20,19 @@ function statusClass(status: MedicalCertificateStatus) {
 }
 
 function CertificateFile({ certificate, compact = false }: { certificate: MedicalCertificate; compact?: boolean }) {
+  const reviewLabel = certificate.status === 'APPROVED' ? 'aprobado' : 'revisado'
+
   return <div className={compact ? 'medical-history-row' : 'medical-current-file'}>
     <span className="medical-file-icon" aria-hidden="true"><Icon name="file" size={compact ? 18 : 28}/></span>
     <div>
       <strong>Documento de apto médico</strong>
-      <span>{compact ? `Cargado ${formatDate(certificate.uploadedAt)}` : `Cargado el ${formatDate(certificate.uploadedAt)}`}</span>
-      {!compact && certificate.reviewedAt && <span>Revisado el {formatDate(certificate.reviewedAt)}</span>}
-      {certificate.reviewedBy && <small>Revisado por {certificate.reviewedBy.firstName} {certificate.reviewedBy.lastName}</small>}
-      {certificate.reviewComment && <small>Observación: “{certificate.reviewComment}”</small>}
+      <span>{compact ? `Cargado ${formatDate(certificate.uploadedAt)}` : certificate.reviewedAt ? `Cargado ${formatDate(certificate.uploadedAt)} · ${reviewLabel} ${formatDate(certificate.reviewedAt)}` : `Cargado ${formatDate(certificate.uploadedAt)}`}</span>
+      {certificate.reviewedBy && <small className="medical-reviewed-by">Revisado por {certificate.reviewedBy.firstName} {certificate.reviewedBy.lastName}</small>}
+      {certificate.reviewComment && <small className="medical-review-comment">Observación: “{certificate.reviewComment}”</small>}
     </div>
     {compact && <span className={`badge ${statusClass(certificate.status)}`}>{STATUS_LABEL[certificate.status]}</span>}
     {!compact && <div className="medical-file-actions">
       <MedicalCertificateFileButton id={certificate.id}/>
-      <span className={`badge ${statusClass(certificate.status)}`}>{STATUS_LABEL[certificate.status]}</span>
     </div>}
   </div>
 }
@@ -88,25 +88,31 @@ export function MemberMedicalCertificateScreen() {
       <div className="medical-member-main">
         <section className="surface-card medical-current-card" aria-labelledby="current-certificate-title">
           <div className="dashboard-section-title">
-            <h2 id="current-certificate-title">Último certificado</h2>
+            <h2 id="current-certificate-title">Certificado actual</h2>
             {data.current && <span className={`badge ${statusClass(data.current.status)}`}>{STATUS_LABEL[data.current.status]}</span>}
           </div>
           {data.current ? <CertificateFile certificate={data.current}/> : <EmptyState message="Todavía no cargaste un certificado médico."/>}
         </section>
 
         <section className="surface-card medical-upload-card" aria-labelledby="upload-certificate-title">
-          <h2 id="upload-certificate-title">{canUpload ? data.current ? 'Reemplazar certificado' : 'Cargar un nuevo certificado' : 'Estado del certificado'}</h2>
+          <h2 id="upload-certificate-title" className="medical-upload-desktop-heading">{canUpload ? data.current ? 'Reemplazar certificado' : 'Cargar un nuevo certificado' : 'Estado del certificado'}</h2>
+          {canUpload && <div className="medical-mobile-upload-heading">
+            <Icon name="upload" size={28}/>
+            <h2>{data.current ? 'Reemplazar certificado' : 'Cargar un nuevo certificado'}</h2>
+            <p>PDF, JPG o PNG · hasta 5 MB</p>
+          </div>}
           {canUpload ? <><button type="button" className={`medical-dropzone${dragging ? ' is-dragging' : ''}`} onClick={() => fileInput.current?.click()} onDragEnter={(event) => { event.preventDefault(); setDragging(true) }} onDragOver={(event) => event.preventDefault()} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); selectFile(event.dataTransfer.files[0]) }}>
             <Icon name="upload" size={28}/>
-            <strong>{selectedFile ? selectedFile.name : 'Arrastrá el archivo o hacé clic para buscarlo'}</strong>
+            <strong className="medical-dropzone-file">{selectedFile ? selectedFile.name : 'Arrastrá el archivo o hacé clic para buscarlo'}</strong>
             <span>PDF, JPG o PNG · hasta 5 MB</span>
             <span className="button button-primary"><Icon name="upload" size={18}/>Elegir archivo</span>
+            {selectedFile && <span className="medical-selected-file">Archivo seleccionado: {selectedFile.name}</span>}
           </button>
           <input ref={fileInput} className="medical-hidden-file-input" type="file" accept={MEDICAL_CERTIFICATE_ACCEPT} onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Seleccionar certificado médico"/>
           <input ref={cameraInput} className="medical-hidden-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => selectFile(event.target.files?.[0])} aria-label="Tomar foto del certificado"/>
           <div className="medical-upload-actions">
-            <button type="button" className="button button-secondary medical-camera-button" onClick={() => cameraInput.current?.click()}><Icon name="camera" size={18}/>Tomar una foto</button>
-            <ActionButton type="button" className="button button-primary" isLoading={submitting} loadingLabel="Enviando…" disabled={!selectedFile} onClick={() => void submitFile()}>Enviar certificado</ActionButton>
+            <button type="button" className="button button-secondary medical-camera-button" onClick={() => cameraInput.current?.click()}><Icon name="camera" size={18}/>Sacar una foto</button>
+            <ActionButton type="button" className={`button button-primary medical-submit-button${selectedFile ? '' : ' is-empty'}`} isLoading={submitting} loadingLabel="Enviando…" disabled={!selectedFile} onClick={() => void submitFile()}>Enviar certificado</ActionButton>
           </div>
           {validationError && <p className="error-message" role="alert">{validationError}</p>}
           {submitError && <p className="error-message" role="alert">{submitError}</p>}</> :

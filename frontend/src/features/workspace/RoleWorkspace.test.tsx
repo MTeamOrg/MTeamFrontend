@@ -87,6 +87,13 @@ describe('shell autenticado', () => {
     expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/admin')
   })
 
+  it('muestra volver al perfil desde apto médico en celular', () => {
+    setMobileViewport(true)
+    renderWorkspace('/socio/apto-medico', 'MEMBER')
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/socio/perfil')
+    expect(document.querySelector('.app-topbar-title')).toHaveTextContent('Apto médico')
+  })
+
   it('muestra volver al panel desde accesos en celular', () => {
     setMobileViewport(true)
     stubApi([
