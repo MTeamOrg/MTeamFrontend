@@ -105,7 +105,15 @@ describe('pantalla de apto médico del socio', () => {
     expect(document.querySelector('.medical-mobile-upload-heading')).toHaveTextContent('Cargar un nuevo certificado')
     expect(screen.getByRole('button', { name: /Elegir archivo/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sacar una foto' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Tomar foto del certificado')).toHaveAttribute('capture', 'environment')
+    const stop = vi.fn()
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Sacar una foto' }))
+    expect(await screen.findByRole('dialog', { name: 'Tomar foto del certificado' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(stop).toHaveBeenCalled()
     expect(screen.getByText('Período inicial')).toBeInTheDocument()
     expect(screen.getByText(/Durante los primeros 20 días/)).toBeInTheDocument()
     expect(screen.queryByText('Historial de aptos')).toBeInTheDocument()
