@@ -5,6 +5,8 @@ const isWindows = process.platform === 'win32'
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  // Real-backend specs share a disposable PostgreSQL fixture, so CI must not run their files concurrently.
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.QASE_MODE === 'testops'

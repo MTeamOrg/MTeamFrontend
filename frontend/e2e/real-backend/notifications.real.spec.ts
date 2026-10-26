@@ -143,6 +143,22 @@ test.describe('[backend y PostgreSQL reales] notificaciones', () => {
     api = await playwrightRequest.newContext()
     db = await openDatabaseProbe({ backendDir: fixture.backendDir, databaseUrl: fixture.databaseUrl })
     writer = await openDatabaseWriter({ backendDir: fixture.backendDir, databaseUrl: fixture.databaseUrl })
+
+    // Retries reuse the same disposable database. Reset this suite's business fixtures as well as
+    // notices; otherwise earlier price increases change which notices the next attempt generates.
+    await writer.rows(
+      'DELETE FROM notification WHERE user_id = ANY($1::uuid[])',
+      [[fixture.admin.id, fixture.member.id, fixture.otherMember.id, fixture.trainer.id]],
+    )
+    await writer.rows('DELETE FROM membership_price WHERE created_by_id = $1', [fixture.admin.id])
+    await writer.rows('DELETE FROM event WHERE created_by_id = $1', [fixture.admin.id])
+    await writer.rows(
+      `UPDATE medical_certificate
+       SET status = 'PENDING', reviewed_by_id = NULL, reviewed_at = NULL, review_comment = NULL
+       WHERE id = $1`,
+      [fixture.certificateId],
+    )
+
     for (const account of ['admin', 'member', 'otherMember', 'trainer'] as const) tokens[account] = await login(fixture[account].email)
 
     // The administrator drives real business events through the real API.
@@ -251,10 +267,12 @@ test.describe('[backend y PostgreSQL reales] notificaciones', () => {
     const admin = await openSessionOf(browser, 'admin')
     try {
       await admin.page.goto('/admin/eventos')
-      const card = admin.page.getByRole('article').filter({ has: admin.page.getByRole('heading', { name: title }) })
+      const eventRow = admin.page.getByRole('row').filter({ hasText: title })
+      await expect(eventRow).toBeVisible()
       admin.page.once('dialog', (dialog) => void dialog.accept())
-      await card.getByRole('button', { name: 'Cancelar evento' }).click()
-      await expect(card.getByRole('button', { name: 'Cancelar evento' })).toHaveCount(0)
+      await eventRow.getByRole('button', { name: 'Cancelar', exact: true }).click()
+      await expect(eventRow).toContainText('Cancelado')
+      await expect(eventRow.getByRole('button', { name: 'Cancelar', exact: true })).toHaveCount(0)
     } finally {
       await admin.context.close()
     }

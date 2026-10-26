@@ -15,15 +15,39 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: mteam
+          POSTGRES_PASSWORD: mteam_test_password
+          POSTGRES_DB: mteam_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mteam -d mteam_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: frontend
     env:
-      QASE_MODE: ${{ secrets.QASE_TESTOPS_API_TOKEN != '' && vars.QASE_TESTOPS_PROJECT != '' && 'testops' || 'off' }}
-      QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
-      QASE_TESTOPS_PROJECT: ${{ vars.QASE_TESTOPS_PROJECT }}
+      NODE_ENV: test
+      APP_ENV: test
+      DATABASE_URL: postgresql://mteam:mteam_test_password@localhost:5432/mteam_test
+      DIRECT_URL: postgresql://mteam:mteam_test_password@localhost:5432/mteam_test
+      NOTIFICATION_TEST_DATABASE_URL: postgresql://mteam:mteam_test_password@localhost:5432/mteam_test
+      JWT_SECRET: ci-only-secret
+      JWT_EXPIRES_IN: 3600
+      CORS_ORIGIN: http://127.0.0.1:4173
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: MTeamOrg/MTeamBackend
+          ref: develop
+          path: MTeamBackend
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,10 +55,41 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Install backend dependencies
+        working-directory: MTeamBackend/backend
+        run: npm ci --ignore-scripts
+      - name: Build backend and prepare disposable database
+        working-directory: MTeamBackend/backend
+        run: |
+          npm rebuild @prisma/engines prisma bcrypt @swc/core esbuild
+          npm run prisma:generate
+          npm run prisma:migrate:deploy
+          npm run build
+          npm run seed:e2e:notifications -- --out "$RUNNER_TEMP/mteam-e2e-fixture.json"
+      - name: Start real backend
+        working-directory: MTeamBackend/backend
+        run: |
+          node dist/index.js > "$RUNNER_TEMP/mteam-backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/mteam-backend.pid"
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3100/api/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/mteam-backend.log"
+          exit 1
+        env:
+          PORT: 3100
       - name: Browser E2E tests
         run: npm run test:e2e
         env:
+          QASE_MODE: ${{ secrets.QASE_TESTOPS_API_TOKEN != '' && vars.QASE_TESTOPS_PROJECT != '' && 'testops' || 'off' }}
+          QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
+          QASE_TESTOPS_PROJECT: ${{ vars.QASE_TESTOPS_PROJECT }}
           QASE_TESTOPS_RUN_TITLE: Frontend - end-to-end
+          E2E_REAL_API_URL: http://127.0.0.1:3100/api
+          E2E_REAL_FIXTURE: ${{ runner.temp }}/mteam-e2e-fixture.json
       - name: Preserve Playwright failure artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,3 +99,9 @@ jobs:
             frontend/playwright-report/
             frontend/test-results/
           if-no-files-found: ignore
+      - name: Stop real backend
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/mteam-backend.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/mteam-backend.pid")" || true
+          fi
