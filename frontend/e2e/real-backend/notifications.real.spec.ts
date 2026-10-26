@@ -143,6 +143,14 @@ test.describe('[backend y PostgreSQL reales] notificaciones', () => {
     api = await playwrightRequest.newContext()
     db = await openDatabaseProbe({ backendDir: fixture.backendDir, databaseUrl: fixture.databaseUrl })
     writer = await openDatabaseWriter({ backendDir: fixture.backendDir, databaseUrl: fixture.databaseUrl })
+
+    // A retry re-runs this serial suite against the same disposable database. Remove notices
+    // from the previous attempt so its setup recreates the same initial inbox state.
+    await writer.rows(
+      'DELETE FROM notification WHERE user_id = ANY($1::uuid[])',
+      [[fixture.admin.id, fixture.member.id, fixture.otherMember.id, fixture.trainer.id]],
+    )
+
     for (const account of ['admin', 'member', 'otherMember', 'trainer'] as const) tokens[account] = await login(fixture[account].email)
 
     // The administrator drives real business events through the real API.
