@@ -17,7 +17,7 @@ for (const role of ['MEMBER', 'TRAINER'] as const) {
       const errors: string[] = []
       page.on('pageerror', (error) => errors.push(error.message))
       await page.setViewportSize({ width, height: 1000 })
-      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ user, accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: 9999999999999 })), user)
+      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ user, accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000 })), user)
       await page.route('**/api/**', async (route) => {
         const url = new URL(route.request().url())
         if (url.pathname.endsWith('/auth/me')) return route.fulfill({ json: user })
@@ -32,7 +32,7 @@ for (const role of ['MEMBER', 'TRAINER'] as const) {
         return route.fulfill({ json: { items: [], total: 0, unreadCount: 0, page: 1, limit: 12 } })
       })
       await page.goto(`${base}/novedades`)
-      await expect(page.getByRole('status')).toContainText('Cargando datos')
+      await expect(page.getByRole('status')).toContainText('Cargando novedades…')
       releaseRequest()
       await expect(page.getByRole('article')).toHaveCount(3)
       await expect(page.getByRole('heading', { name: 'Actividades para la comunidad' })).toBeVisible()

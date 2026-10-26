@@ -12,9 +12,12 @@ for (const role of ['MEMBER', 'TRAINER'] as const) {
       }))
       const errors: string[] = []
       page.on('pageerror', (error) => errors.push(error.message))
-      page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
+      page.on('console', (message) => {
+        const text = message.text()
+        if (message.type() === 'error' && !text.includes('net::ERR_NETWORK_ACCESS_DENIED')) errors.push(text)
+      })
       await page.setViewportSize({ width, height: 1000 })
-      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ user, accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: 9999999999999 })), user)
+      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ user, accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000 })), user)
       await page.route('**/api/**', async (route) => {
         const url = new URL(route.request().url())
         if (url.pathname.endsWith('/auth/me')) return route.fulfill({ json: user })

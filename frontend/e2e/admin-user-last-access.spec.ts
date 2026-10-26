@@ -8,7 +8,7 @@ for (const role of ['MEMBER', 'TRAINER']) {
       await page.setViewportSize({ width, height: 900 })
       const admin = { id: 'admin', firstName: 'Admin', lastName: 'Prueba', email: 'admin@example.com', role: 'ADMIN', status: 'ACTIVE', isPasswordChangeRequired: false }
       const user = { ...admin, id: 'selected-user', firstName: 'Ana', role, documentNumber: '12345678', phone: '1100000000', birthDate: '1990-01-01', createdAt: '2026-01-01', membership: null, payments: [], medicalCertificates: [], trainerBranches: [], classes: [] }
-      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresAt: 9999999999999, user })), admin)
+      await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000, user })), admin)
       await page.route('**/api/**', async (route) => {
         const url = new URL(route.request().url())
         const path = url.pathname.replace('/api', '')

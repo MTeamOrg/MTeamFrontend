@@ -7,7 +7,7 @@ for (const viewport of [{ width: 1440, height: 1050 }, { width: 390, height: 844
     page.on('pageerror', (error) => errors.push(error.message))
     await page.clock.install({ time: new Date('2026-09-07T15:00:00-03:00') })
     const user = { id: 'trainer-id', firstName: 'Carla', lastName: 'Giménez', role: 'TRAINER', status: 'ACTIVE', email: 'trainer@example.com', isPasswordChangeRequired: false }
-    await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: 9999999999999, user })), user)
+    await page.addInitScript((user) => sessionStorage.setItem('mteam.auth', JSON.stringify({ accessToken: 'test', tokenType: 'Bearer', expiresIn: 3600, expiresAt: Date.now() + 3_600_000, user })), user)
     await page.route('**/api/**', async (route) => {
       const path = new URL(route.request().url()).pathname.replace('/api', '')
       const emptyPage = { items: [], page: 1, limit: 3, total: 0 }
