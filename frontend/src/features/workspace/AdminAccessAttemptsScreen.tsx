@@ -136,7 +136,8 @@ function SummaryCard({ label, value, tone, sub, icon, className = '' }: { label:
 }
 
 function getHistoryDateRange(isMobile: boolean, period: AccessPeriod, from: string, to: string): AccessDateRange {
-  return isMobile ? getInputDateRange(from, to) : getAccessPeriodRange(period)
+  if (isMobile || from || to) return getInputDateRange(from, to)
+  return getAccessPeriodRange(period)
 }
 
 function getInputDateRange(from: string, to: string): AccessDateRange {

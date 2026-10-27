@@ -48,6 +48,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     allowedLogId = randomUUID()
     deniedLogId = randomUUID()
     certificateId = randomUUID()
+    const certificateUploadedAt = new Date().toISOString()
 
     // These deterministic markers let the test remove leftovers if a previous run was interrupted.
     await writer.rows('DELETE FROM access_log WHERE access_point_id IN (SELECT id FROM access_point WHERE branch_id = $1 AND name = $2)', [fixture.branch.id, ACCESS_POINT_NAME])
@@ -69,7 +70,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await writer.rows(
       `INSERT INTO medical_certificate (id, member_id, file_url, status, uploaded_at)
        VALUES ($1, $2, $3, 'PENDING', $4)`,
-      [certificateId, fixture.otherMember.id, CERTIFICATE_FILE_URL, `${FILTER_DATE}T15:00:00.000Z`],
+      [certificateId, fixture.otherMember.id, CERTIFICATE_FILE_URL, certificateUploadedAt],
     )
   })
 
@@ -84,10 +85,12 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
 
   test('el administrador filtra accesos reales por socio, rol, sede, resultado y fecha', async ({ page }) => {
     await loginAsAdministrator(page, fixture)
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/admin/accesos')
-    await expect(page.getByRole('heading', { name: 'Accesos' })).toBeVisible()
-    await expect(page.getByRole('cell', { name: ACCESS_POINT_NAME }).first()).toBeVisible()
-    await expect(page.getByRole('row')).toHaveCount(3)
+    await expect(page.locator('.access-mobile-list')).toBeVisible()
+    await page.getByRole('button', { name: 'Mostrar filtros' }).click()
+    await expect(page.locator('.access-filter-fields.is-open')).toBeVisible()
+    await expect(page.locator('.access-mobile-card').filter({ hasText: fixture.branch.name })).toHaveCount(2)
 
     await page.getByLabel('Buscar por usuario o documento').fill('E2E-OTRO.SOCIO')
     await page.getByLabel('Filtrar por rol').selectOption('MEMBER')
@@ -97,12 +100,12 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
     await page.getByLabel('Hasta').fill(FILTER_DATE)
     await page.getByLabel('Buscar por usuario o documento').press('Enter')
 
-    const deniedRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
-    await expect(deniedRow).toHaveCount(1)
-    await expect(deniedRow).toContainText(ACCESS_POINT_NAME)
-    await expect(deniedRow).toContainText('Rechazado')
-    await expect(deniedRow).toContainText('Cuota vencida')
-    await expect(page.getByText('1 intentos')).toBeVisible()
+    const deniedAttempt = page.locator('.access-mobile-card').filter({ hasText: 'Omar Otro' })
+    await expect(deniedAttempt).toHaveCount(1)
+    await expect(deniedAttempt).toContainText(fixture.branch.name)
+    await expect(deniedAttempt).toContainText('Rechazado')
+    await expect(deniedAttempt).toContainText('Cuota vencida')
+    await expect(page.getByText('1 intento')).toBeVisible()
   })
 
   test('el administrador filtra aptos reales por socio, estado y fecha', async ({ page }) => {
@@ -113,8 +116,7 @@ test.describe('[backend y PostgreSQL reales] bandejas administrativas', () => {
 
     await page.getByLabel('Buscar por socio o documento').fill('E2E-OTRO.SOCIO')
     await page.getByLabel('Filtrar por estado').selectOption('PENDING')
-    await page.getByLabel('Fecha desde').fill(FILTER_DATE)
-    await page.getByLabel('Fecha hasta').fill(FILTER_DATE)
+    await page.getByLabel('Filtrar por fecha de carga').selectOption('TODAY')
     await page.getByLabel('Buscar por socio o documento').press('Enter')
 
     const certificateRow = page.getByRole('row').filter({ hasText: 'E2E-OTRO.SOCIO' })
