@@ -297,7 +297,7 @@
   .hero-highlight small{color:#777d84;font-size:9px}
   .hero-highlight:nth-child(3){display:none}
   .mobile-public-tabs{height:64px;padding:5px 8px}
-  .mobile-public-tabs a{gap:3px;font-size:9px}
+  .mobile-public-tabs a{min-width:0;flex:1;gap:3px;font-size:9px;text-align:center}
   .mobile-public-tabs svg{width:18px;height:18px;stroke-width:1.8}
 }
 .member-dashboard-welcome,.admin-dashboard-welcome{margin-bottom:28px}
