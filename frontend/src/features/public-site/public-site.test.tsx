@@ -31,17 +31,18 @@ describe('sitio público conectado al backend', () => {
     vi.unstubAllGlobals()
   })
 
-  it('no muestra Sedes, Eventos ni Novedades en la navegación pública de escritorio ni celular', () => {
+  it('muestra Sedes en la navegación pública de escritorio y celular', () => {
     renderPublicSite()
     const headerNavigation = within(screen.getByRole('navigation', { name: 'Navegación principal' }))
+    expect(headerNavigation.getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Sedes', 'Preguntas frecuentes'])
     expect(headerNavigation.getByRole('link', { name: 'Inicio' })).toHaveAttribute('href', '/')
+    expect(headerNavigation.getByRole('link', { name: 'Sedes' })).toHaveAttribute('href', '/sedes')
     expect(headerNavigation.getByRole('link', { name: 'Preguntas frecuentes' })).toHaveAttribute('href', '/preguntas-frecuentes')
-    expect(headerNavigation.queryByRole('link', { name: 'Sedes' })).not.toBeInTheDocument()
     expect(headerNavigation.queryByRole('link', { name: 'Eventos' })).not.toBeInTheDocument()
     expect(headerNavigation.queryByRole('link', { name: 'Novedades' })).not.toBeInTheDocument()
 
     const mobileNavigation = within(screen.getByRole('navigation', { name: 'Navegación' }))
-    expect(mobileNavigation.queryByRole('link', { name: /Sedes/ })).not.toBeInTheDocument()
+    expect(mobileNavigation.getByRole('link', { name: /Sedes/ })).toHaveAttribute('href', '/sedes')
     expect(mobileNavigation.queryByRole('link', { name: /Eventos/ })).not.toBeInTheDocument()
     expect(mobileNavigation.queryByRole('link', { name: /Novedades/ })).not.toBeInTheDocument()
     expect(mobileNavigation.getByRole('link', { name: /Inicio/ })).toHaveAttribute('href', '/')
@@ -52,6 +53,13 @@ describe('sitio público conectado al backend', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Preguntas frecuentes' })).toBeInTheDocument()
     expect(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: 'Preguntas frecuentes' })).toHaveClass('active')
     expect(within(screen.getByRole('navigation', { name: 'Navegación' })).getByRole('link', { name: /Ayuda/ })).toHaveClass('selected')
+  })
+
+  it('abre sedes sin autenticación y marca su acceso activo en desktop y mobile', () => {
+    renderPublicSite('/sedes')
+    expect(screen.getByRole('heading', { name: 'Sedes' })).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: 'Sedes' })).toHaveClass('active')
+    expect(within(screen.getByRole('navigation', { name: 'Navegación' })).getByRole('link', { name: /Sedes/ })).toHaveClass('selected')
   })
 
   it('carga las sedes reales y permite navegar al listado', async () => {
