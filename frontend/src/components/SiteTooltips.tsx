@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 type Hint = { text: string; x: number; y: number }
 const INTERACTIVE = 'button, a[href], [role="button"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="switch"], summary, select, input[type="checkbox"], input[type="radio"], [tabindex="0"][aria-label]'
 
-function hintFor(target: HTMLElement) {
-  const associatedLabel = 'labels' in target ? Array.from((target as HTMLInputElement).labels ?? []).map((item) => item.innerText).join(' ') : ''
+export function getTooltipText(target: HTMLElement) {
+  const associatedLabel = 'labels' in target ? Array.from((target as HTMLInputElement).labels ?? []).map((item) => item.innerText || item.textContent || '').join(' ') : ''
   const label = (target.getAttribute('aria-label') || associatedLabel || target.innerText || target.textContent || target.getAttribute('alt') || '').replace(/\s+/g, ' ').trim()
   const title = target.getAttribute('title')
   if (title && (target.matches(':disabled') || title.toLocaleLowerCase() !== label.toLocaleLowerCase())) return title
@@ -88,14 +88,16 @@ function hintFor(target: HTMLElement) {
   if (/^(mostrar filtros)\b/.test(lower)) return 'Abre los criterios disponibles para acotar la lista.'
   if (/^(filtrar por)\b/.test(lower)) return `Limita la lista según ${lower.replace('filtrar por ', '')}.`
   if (/^(filtrar|filtros?)\b/.test(lower)) return 'Abre los criterios para acotar los resultados de la lista.'
+  if (/^buscar novedad\b/.test(lower)) return 'Busca publicaciones por su título o contenido.'
+  if (/^buscar sedes\b/.test(lower)) return 'Busca sedes por nombre o dirección.'
   if (/^(buscar|buscá)\b/.test(lower)) return 'Escribí un dato y activá esta opción para encontrar coincidencias.'
   if (/^(semana anterior|semana siguiente)\b/.test(lower)) return 'Cambia el cronograma a la semana indicada.'
   if (/^(anterior|siguiente|página anterior|página siguiente)\b/.test(lower)) return 'Cambia la página de resultados que estás viendo.'
+  if (/^(escanear qr|escanear de nuevo|reintentar cámara)\b/.test(lower)) return 'Activa la cámara para leer el código QR del acceso.'
   if (/^(reintentar)\b/.test(lower)) return 'Volvé a intentar la acción que no pudo completarse.'
-  if (/^(¿olvidaste tu contraseña\?|solicitar otro enlace)\b/.test(lower)) return 'Abre la recuperación para recibir un enlace y definir una contraseña nueva.'
+  if (lower === '¿olvidaste tu contraseña?' || /^solicitar otro enlace\b/.test(lower)) return 'Abre la recuperación para recibir un enlace y definir una contraseña nueva.'
   if (/^(cerrar sesión)\b/.test(lower)) return 'Finaliza tu sesión en este dispositivo.'
   if (/^(mostrar contraseña|ocultar contraseña)\b/.test(lower)) return lower.startsWith('mostrar') ? 'Muestra el texto de la contraseña para que puedas comprobarlo.' : 'Vuelve a ocultar el texto de la contraseña.'
-  if (/^(escanear qr|escanear de nuevo|reintentar cámara)\b/.test(lower)) return 'Activa la cámara para leer el código QR del acceso.'
   if (/^(sacar una foto|tomar foto)\b/.test(lower)) return 'Abre la cámara o captura una imagen para adjuntarla al certificado médico.'
   if (/^(elegir archivo|seleccionar certificado médico)\b/.test(lower)) return 'Busca en tu dispositivo un PDF, JPG o PNG del certificado médico.'
   if (/^(ocultar detalle)\b/.test(lower)) return 'Contrae el contenido de esta notificación.'
@@ -124,8 +126,6 @@ function hintFor(target: HTMLElement) {
   if (/^guardar borrador\b/.test(lower)) return 'Guarda el evento sin publicarlo; podrás publicarlo después.'
   if (/^nuevo evento\b/.test(lower)) return 'Abre el formulario para definir título, fecha, ubicación e información del evento.'
   if (/^publicar una novedad\b/.test(lower)) return 'Abre el formulario para redactar un anuncio y elegir quién lo recibirá.'
-  if (/^buscar novedad\b/.test(lower)) return 'Busca publicaciones por su título o contenido.'
-  if (/^buscar sedes\b/.test(lower)) return 'Busca sedes por nombre o dirección.'
   if (/^reemplazar certificado\b/.test(lower)) return 'Carga una nueva versión cuando el certificado actual fue rechazado.'
   if (/^código qr del molinete\b/.test(lower)) return 'Ubica el código fijo del acceso dentro del marco de la cámara.'
   if (/^(ver archivo|ver documento|abrir en pestaña)\b/.test(lower)) return 'Abre el certificado médico mediante un enlace temporal seguro.'
@@ -141,7 +141,6 @@ function hintFor(target: HTMLElement) {
   if (/^(desactivar cuenta)\b/.test(lower)) return 'Bloquea el acceso de esta cuenta al sitio.'
   if (/^(reactivar cuenta)\b/.test(lower)) return 'Restablece el acceso de esta cuenta al sitio.'
   if (/^(cerrar|cancelar|volver|atrás)\b/.test(lower)) {
-    if (target.closest('.admin-events-action-buttons, .admin-events-actions')) return 'Cambia el evento publicado al estado cancelado.'
     if (target.closest('.app-notice-error')) return 'Descarta este aviso de permisos.'
     if (target.closest('.access-qr-controls')) return 'Detiene la cámara sin validar un código.'
     if (target.closest('.medical-camera-dialog')) return 'Cierra la cámara sin adjuntar una foto.'
@@ -178,7 +177,7 @@ export function SiteTooltips() {
       if (timer) clearTimeout(timer)
       current = target
       timer = setTimeout(() => {
-        if (current === target) setHint({ text: hintFor(target), x, y })
+        if (current === target) setHint({ text: getTooltipText(target), x, y })
       }, 650)
     }
     const onPointerOver = (event: PointerEvent) => {
